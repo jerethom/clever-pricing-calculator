@@ -33,8 +33,34 @@ export function RuntimeCard({ projectId, runtime }: RuntimeCardProps) {
     min: number
     max: number
   } | null>(null)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editName, setEditName] = useState('')
 
-  const instance = instances?.find(i => i.type === runtime.instanceType)
+  const handleStartEditName = () => {
+    setEditName(runtime.instanceName)
+    setIsEditingName(true)
+  }
+
+  const handleSaveEditName = () => {
+    if (editName.trim()) {
+      updateRuntime(projectId, runtime.id, { instanceName: editName.trim() })
+    }
+    setIsEditingName(false)
+  }
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false)
+  }
+
+  // Retrouver l'instance par le logo (unique pour chaque variant)
+  const instance = instances?.find(i => i.variant.logo === runtime.variantLogo)
+  const defaultName = instance?.name ?? runtime.instanceType
+  const isNameModified = runtime.instanceName !== defaultName
+
+  const handleResetName = () => {
+    updateRuntime(projectId, runtime.id, { instanceName: defaultName })
+    setIsEditingName(false)
+  }
   const currentFlavor = instance?.flavors.find(
     f => f.name === runtime.defaultFlavorName
   )
@@ -139,10 +165,61 @@ export function RuntimeCard({ projectId, runtime }: RuntimeCardProps) {
                 <Icons.Server className="w-6 h-6 text-base-content/40" />
               </div>
             )}
-            <div className="min-w-0">
-              <h3 className="font-bold text-base truncate">
-                {runtime.instanceName}
-              </h3>
+            <div className="min-w-0 flex-1">
+              {isEditingName ? (
+                <div className="animate-in fade-in duration-200">
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      className="input input-bordered input-sm flex-1 font-bold text-base min-w-0"
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleSaveEditName()
+                        if (e.key === 'Escape') handleCancelEditName()
+                      }}
+                      autoFocus
+                      placeholder="Nom du runtime..."
+                    />
+                    <button
+                      className="btn btn-ghost btn-xs btn-square text-success hover:bg-success/10 cursor-pointer"
+                      onClick={handleSaveEditName}
+                      aria-label="Sauvegarder"
+                    >
+                      <Icons.Check className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="tooltip tooltip-bottom" data-tip={`Reset: ${defaultName}`}>
+                      <button
+                        className="btn btn-ghost btn-xs btn-square text-base-content/50 hover:text-warning hover:bg-warning/10 cursor-pointer"
+                        onClick={handleResetName}
+                        aria-label="Réinitialiser le nom"
+                      >
+                        <Icons.Refresh className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <button
+                      className="btn btn-ghost btn-xs btn-square text-base-content/50 hover:text-error hover:bg-error/10 cursor-pointer"
+                      onClick={handleCancelEditName}
+                      aria-label="Annuler"
+                    >
+                      <Icons.X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 group/name">
+                  <h3 className="font-bold text-base truncate">
+                    {runtime.instanceName}
+                  </h3>
+                  <button
+                    className="btn btn-ghost btn-xs btn-square opacity-0 group-hover/name:opacity-100 transition-opacity cursor-pointer"
+                    onClick={handleStartEditName}
+                    aria-label="Modifier le nom du runtime"
+                  >
+                    <Icons.Edit className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
               <div className="flex items-center gap-2 flex-wrap mt-1">
                 <span className="badge badge-sm badge-ghost">
                   {runtime.instanceType}
@@ -237,21 +314,23 @@ export function RuntimeCard({ projectId, runtime }: RuntimeCardProps) {
               label="Minimum (base)"
               labelPosition="left"
               value={runtime.defaultMinInstances}
-              onChange={value =>
-                handleScalingChange(value, runtime.defaultMaxInstances)
-              }
+              onChange={value => {
+                const newMax = value > runtime.defaultMaxInstances ? value : runtime.defaultMaxInstances
+                handleScalingChange(value, newMax)
+              }}
               min={1}
-              max={runtime.defaultMaxInstances}
+              max={instance?.maxInstances ?? 40}
               size="sm"
             />
             <NumberInput
               label="Maximum (scaling)"
               labelPosition="left"
               value={runtime.defaultMaxInstances}
-              onChange={value =>
-                handleScalingChange(runtime.defaultMinInstances, value)
-              }
-              min={runtime.defaultMinInstances}
+              onChange={value => {
+                const newMin = value < runtime.defaultMinInstances ? value : runtime.defaultMinInstances
+                handleScalingChange(newMin, value)
+              }}
+              min={1}
               max={instance?.maxInstances ?? 40}
               size="sm"
             />

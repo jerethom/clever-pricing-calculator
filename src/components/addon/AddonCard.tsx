@@ -30,11 +30,37 @@ interface AddonCardProps {
 export function AddonCard({ projectId, addon }: AddonCardProps) {
   const { data: addonProviders } = useAddons()
   const removeAddon = useProjectStore(state => state.removeAddon)
+  const updateAddon = useProjectStore(state => state.updateAddon)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editName, setEditName] = useState('')
+
+  const handleStartEditName = () => {
+    setEditName(addon.providerName)
+    setIsEditingName(true)
+  }
+
+  const handleSaveEditName = () => {
+    if (editName.trim()) {
+      updateAddon(projectId, addon.id, { providerName: editName.trim() })
+    }
+    setIsEditingName(false)
+  }
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false)
+  }
 
   // Recuperer les infos du provider et du plan
   const provider = addonProviders?.find(p => p.id === addon.providerId)
+  const defaultName = provider?.name ?? addon.providerId
+  const isNameModified = addon.providerName !== defaultName
+
+  const handleResetName = () => {
+    updateAddon(projectId, addon.id, { providerName: defaultName })
+    setIsEditingName(false)
+  }
   const plan = provider?.plans.find(p => p.id === addon.planId)
   const features = plan?.features ? sortFeaturesByPriority(plan.features) : []
 
@@ -75,8 +101,59 @@ export function AddonCard({ projectId, addon }: AddonCardProps) {
                 <Icons.Puzzle className="w-6 h-6 text-base-content/40" />
               </div>
             )}
-            <div className="min-w-0">
-              <h3 className="font-bold text-base truncate">{addon.providerName}</h3>
+            <div className="min-w-0 flex-1">
+              {isEditingName ? (
+                <div className="animate-in fade-in duration-200">
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      className="input input-bordered input-sm flex-1 font-bold text-base min-w-0"
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleSaveEditName()
+                        if (e.key === 'Escape') handleCancelEditName()
+                      }}
+                      autoFocus
+                      placeholder="Nom de l'addon..."
+                    />
+                    <button
+                      className="btn btn-ghost btn-xs btn-square text-success hover:bg-success/10 cursor-pointer"
+                      onClick={handleSaveEditName}
+                      aria-label="Sauvegarder"
+                    >
+                      <Icons.Check className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="tooltip tooltip-bottom" data-tip={`Reset: ${defaultName}`}>
+                      <button
+                        className="btn btn-ghost btn-xs btn-square text-base-content/50 hover:text-warning hover:bg-warning/10 cursor-pointer"
+                        onClick={handleResetName}
+                        aria-label="Réinitialiser le nom"
+                      >
+                        <Icons.Refresh className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <button
+                      className="btn btn-ghost btn-xs btn-square text-base-content/50 hover:text-error hover:bg-error/10 cursor-pointer"
+                      onClick={handleCancelEditName}
+                      aria-label="Annuler"
+                    >
+                      <Icons.X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 group/name">
+                  <h3 className="font-bold text-base truncate">{addon.providerName}</h3>
+                  <button
+                    className="btn btn-ghost btn-xs btn-square opacity-0 group-hover/name:opacity-100 transition-opacity cursor-pointer"
+                    onClick={handleStartEditName}
+                    aria-label="Modifier le nom de l'addon"
+                  >
+                    <Icons.Edit className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
               <div className="flex items-center gap-2 flex-wrap mt-1">
                 <span className="badge badge-sm badge-ghost">{addon.planName}</span>
                 {isFree && (
