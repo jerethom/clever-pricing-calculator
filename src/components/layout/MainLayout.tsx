@@ -23,7 +23,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="drawer-content flex flex-col min-h-screen">
         <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
-        <main className="flex-1 bg-base-200 p-4 lg:p-6">
+        <main className="flex-1 bg-[#f9f9fb] p-4 lg:p-6">
           {children}
         </main>
       </div>

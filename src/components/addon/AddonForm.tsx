@@ -2,6 +2,25 @@ import { useState } from 'react'
 import { useAddons } from '@/hooks/useAddons'
 import { useProjectStore } from '@/store/projectStore'
 import { formatMonthlyPrice } from '@/lib/costCalculator'
+import type { AddonFeature } from '@/api/types'
+
+// Features prioritaires à afficher en premier (par ordre de priorité)
+const PRIORITY_FEATURES = ['memory', 'max_db_size', 'disk', 'vcpus', 'cpu', 'storage', 'max_connection_limit']
+
+// Trie les features par priorité pour un affichage cohérent
+function sortFeaturesByPriority(features: AddonFeature[]): AddonFeature[] {
+  return [...features].sort((a, b) => {
+    const aIndex = PRIORITY_FEATURES.findIndex(p => a.name_code.toLowerCase().includes(p))
+    const bIndex = PRIORITY_FEATURES.findIndex(p => b.name_code.toLowerCase().includes(p))
+    // Si les deux ont une priorité, trier par priorité
+    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
+    // Les features prioritaires viennent en premier
+    if (aIndex !== -1) return -1
+    if (bIndex !== -1) return 1
+    // Sinon garder l'ordre original
+    return 0
+  })
+}
 
 interface AddonFormProps {
   projectId: string
@@ -16,20 +35,29 @@ export function AddonForm({ projectId, onClose }: AddonFormProps) {
   const [selectedPlanId, setSelectedPlanId] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const filteredProviders = addonProviders?.filter(
-    provider =>
-      provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      provider.shortDesc.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredProviders = addonProviders
+    ?.filter(
+      provider =>
+        provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        provider.shortDesc.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   const selectedProvider = addonProviders?.find(p => p.id === selectedProviderId)
   const selectedPlan = selectedProvider?.plans.find(p => p.id === selectedPlanId)
 
+  const filteredPlans = selectedProvider?.plans
+    .filter(plan => plan.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .toSorted((a, b) => a.price - b.price)
+
   const handleProviderSelect = (providerId: string) => {
     setSelectedProviderId(providerId)
+    setSearchQuery('')
     const provider = addonProviders?.find(p => p.id === providerId)
     if (provider && provider.plans.length > 0) {
-      setSelectedPlanId(provider.plans[0].id)
+      // Sélectionner le plan le moins cher par défaut
+      const sortedPlans = provider.plans.toSorted((a, b) => a.price - b.price)
+      setSelectedPlanId(sortedPlans[0].id)
     }
   }
 
@@ -63,13 +91,27 @@ export function AddonForm({ projectId, onClose }: AddonFormProps) {
           <form onSubmit={handleSubmit}>
             {/* Recherche */}
             <div className="form-control mb-4">
-              <input
-                type="text"
-                className="input input-bordered"
-                placeholder="Rechercher un addon..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  className="input input-bordered w-full pr-10"
+                  placeholder={selectedProviderId ? 'Rechercher un plan...' : 'Rechercher un addon...'}
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content/70"
+                    onClick={() => setSearchQuery('')}
+                    aria-label="Effacer la recherche"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Liste des providers */}
@@ -131,6 +173,7 @@ export function AddonForm({ projectId, onClose }: AddonFormProps) {
                     onClick={() => {
                       setSelectedProviderId('')
                       setSelectedPlanId('')
+                      setSearchQuery('')
                     }}
                   >
                     Changer
@@ -143,7 +186,7 @@ export function AddonForm({ projectId, onClose }: AddonFormProps) {
                     <span className="label-text">Plan</span>
                   </label>
                   <div className="grid gap-2 max-h-60 overflow-y-auto">
-                    {selectedProvider?.plans.map(plan => (
+                    {filteredPlans?.map(plan => (
                       <label
                         key={plan.id}
                         className={`flex items-center gap-4 p-3 rounded-lg cursor-pointer border-2 transition-colors ${
@@ -162,7 +205,7 @@ export function AddonForm({ projectId, onClose }: AddonFormProps) {
                         <div className="flex-1">
                           <div className="font-medium">{plan.name}</div>
                           <div className="text-xs text-base-content/60">
-                            {plan.features
+                            {sortFeaturesByPriority(plan.features)
                               .slice(0, 3)
                               .map(f => `${f.name}: ${f.value}`)
                               .join(' • ')}

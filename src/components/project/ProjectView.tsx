@@ -52,7 +52,7 @@ export function ProjectView() {
   return (
     <div className="space-y-6">
       {/* En-tête du projet */}
-      <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
+      <div className="card bg-base-100 border border-base-300">
         <div className="card-body">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div
@@ -107,11 +107,11 @@ export function ProjectView() {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="bg-success/10 rounded-lg px-4 py-2 border border-success/20">
+              <div className="bg-primary/10 px-4 py-2 border border-primary/20">
                 <div className="text-xs text-base-content/70 uppercase tracking-wide">
                   Coût mensuel
                 </div>
-                <div className="text-2xl font-bold text-success tabular-nums">
+                <div className="text-2xl font-bold text-primary tabular-nums">
                   {cost ? formatPrice(cost.totalMonthlyCost) : '...'}
                 </div>
               </div>

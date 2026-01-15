@@ -9,13 +9,22 @@ interface WeeklyCalendarProps {
   maxExtraInstances: number // max instances supplémentaires autorisées
 }
 
-// Couleurs pour les différents niveaux d'instances
+// Couleurs pour les différents niveaux d'instances (style Clever Cloud)
+// Utilise le violet #5754aa avec bon contraste
 const getInstanceColor = (extra: number, max: number): string => {
   if (extra === 0) return 'bg-base-200'
   const intensity = Math.min(extra / max, 1)
-  if (intensity <= 0.33) return 'bg-primary/30'
-  if (intensity <= 0.66) return 'bg-primary/60'
-  return 'bg-primary'
+  if (intensity <= 0.33) return 'bg-[#5754aa]/40'
+  if (intensity <= 0.66) return 'bg-[#5754aa]/70'
+  return 'bg-[#5754aa]'
+}
+
+// Couleur du texte selon le fond pour assurer le contraste
+const getTextColor = (extra: number, max: number): string => {
+  if (extra === 0) return 'text-base-content'
+  const intensity = Math.min(extra / max, 1)
+  if (intensity <= 0.33) return 'text-[#1c2045]'
+  return 'text-white'
 }
 
 export function WeeklyCalendar({ schedule, onChange, maxExtraInstances }: WeeklyCalendarProps) {
@@ -130,22 +139,22 @@ export function WeeklyCalendar({ schedule, onChange, maxExtraInstances }: Weekly
       </div>
 
       {/* Légende */}
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex items-center gap-3 text-sm">
         <span className="text-base-content/60">Légende :</span>
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-4 bg-base-200 border border-base-300 rounded"></div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-5 h-5 bg-base-200 border border-base-300"></div>
           <span>0</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-4 bg-primary/30 border border-base-300 rounded"></div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-5 h-5 bg-[#5754aa]/40 border border-base-300"></div>
           <span>faible</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-4 bg-primary/60 border border-base-300 rounded"></div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-5 h-5 bg-[#5754aa]/70 border border-base-300"></div>
           <span>moyen</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-4 bg-primary border border-base-300 rounded"></div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-5 h-5 bg-[#5754aa] border border-base-300"></div>
           <span>max</span>
         </div>
       </div>
@@ -183,13 +192,13 @@ export function WeeklyCalendar({ schedule, onChange, maxExtraInstances }: Weekly
                       className={`
                         p-0 border border-base-300 cursor-pointer transition-colors
                         ${getInstanceColor(extra, maxExtraInstances)}
-                        ${inSelection ? 'ring-2 ring-secondary ring-inset' : ''}
+                        ${inSelection ? 'ring-2 ring-[#0693e3] ring-inset' : ''}
                       `}
                       onMouseDown={() => handleMouseDown(day, hour)}
                       onMouseEnter={() => handleMouseEnter(day, hour)}
                       title={`${DAY_LABELS[day]} ${hour}h : +${extra} instance(s)`}
                     >
-                      <div className="w-8 h-6 flex items-center justify-center text-xs">
+                      <div className={`w-8 h-6 flex items-center justify-center text-xs ${getTextColor(extra, maxExtraInstances)}`}>
                         {extra > 0 && <span className="font-bold">{extra}</span>}
                       </div>
                     </td>

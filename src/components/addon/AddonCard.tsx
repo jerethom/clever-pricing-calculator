@@ -19,7 +19,7 @@ export function AddonCard({ projectId, addon }: AddonCardProps) {
   }
 
   return (
-    <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
+    <div className="card bg-base-100 border border-base-300 hover:border-primary/30 transition-colors">
       <div className="card-body p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">

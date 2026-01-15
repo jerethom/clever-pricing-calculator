@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import type { ProjectCostSummary } from '@/types'
 import { formatPrice, formatMonthlyPrice, formatHourlyPrice } from '@/lib/costCalculator'
 
@@ -9,7 +10,7 @@ export function CostSummary({ cost }: CostSummaryProps) {
   return (
     <div className="space-y-6">
       {/* Résumé global */}
-      <div className="stats shadow w-full">
+      <div className="stats bg-base-100 border border-base-300 w-full">
         <div className="stat">
           <div className="stat-title">Runtimes</div>
           <div className="stat-value text-lg">{formatPrice(cost.runtimesCost)}</div>
@@ -29,14 +30,14 @@ export function CostSummary({ cost }: CostSummaryProps) {
 
       {/* Détail des runtimes */}
       {cost.runtimesDetail.length > 0 && (
-        <div className="card bg-base-100 shadow-xl">
+        <div className="card bg-base-100 border border-base-300">
           <div className="card-body">
             <h2 className="card-title">Détail des runtimes</h2>
 
             <div className="overflow-x-auto">
-              <table className="table table-zebra table-sm">
+              <table className="table table-sm">
                 <thead>
-                  <tr>
+                  <tr className="text-neutral">
                     <th>Runtime</th>
                     <th>Flavor</th>
                     <th>Prix/h</th>
@@ -46,15 +47,15 @@ export function CostSummary({ cost }: CostSummaryProps) {
                 </thead>
                 <tbody>
                   {cost.runtimesDetail.map(runtime => (
-                    <>
+                    <Fragment key={runtime.runtimeId}>
                       {/* Ligne base */}
-                      <tr key={`${runtime.runtimeId}-base`}>
+                      <tr>
                         <td className="font-medium" rowSpan={runtime.scalingHours > 0 ? 2 : 1}>
                           {runtime.runtimeName}
                         </td>
                         <td>
                           <span className="badge badge-outline badge-sm">{runtime.baseFlavorName}</span>
-                          <span className="text-xs text-base-content/60 ml-1">base</span>
+                          <span className="text-xs text-neutral ml-1">base</span>
                         </td>
                         <td>{formatHourlyPrice(runtime.baseHourlyPrice)}</td>
                         <td>{runtime.baseInstanceHours}h/sem</td>
@@ -62,17 +63,17 @@ export function CostSummary({ cost }: CostSummaryProps) {
                       </tr>
                       {/* Ligne scaling */}
                       {runtime.scalingHours > 0 && (
-                        <tr key={`${runtime.runtimeId}-scaling`}>
+                        <tr>
                           <td>
                             <span className="badge badge-outline badge-sm">{runtime.scalingFlavorName}</span>
-                            <span className="text-xs text-base-content/60 ml-1">scaling</span>
+                            <span className="text-xs text-neutral ml-1">scaling</span>
                           </td>
                           <td>{formatHourlyPrice(runtime.scalingHourlyPrice)}</td>
                           <td>{runtime.scalingInstanceHours}h/sem</td>
                           <td>{formatPrice(runtime.scalingMonthlyCost)}</td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                 </tbody>
                 <tfoot>
@@ -93,14 +94,14 @@ export function CostSummary({ cost }: CostSummaryProps) {
 
       {/* Détail des addons */}
       {cost.addonsDetail.length > 0 && (
-        <div className="card bg-base-100 shadow-xl">
+        <div className="card bg-base-100 border border-base-300">
           <div className="card-body">
             <h2 className="card-title">Détail des addons</h2>
 
             <div className="overflow-x-auto">
-              <table className="table table-zebra">
+              <table className="table">
                 <thead>
-                  <tr>
+                  <tr className="text-neutral">
                     <th>Addon</th>
                     <th>Plan</th>
                     <th>Prix mensuel</th>

@@ -26,35 +26,33 @@ export function Sidebar({ onClose }: SidebarProps) {
   }
 
   return (
-    <div className="h-full bg-base-200 w-80 p-4 flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <Icons.Folder className="w-5 h-5" />
-          Projets
-        </h2>
-        <button
-          className="btn btn-primary btn-sm gap-1"
-          onClick={handleCreateProject}
-          aria-label="Créer un nouveau projet"
-        >
-          <Icons.Plus className="w-4 h-4" />
-          Nouveau
-        </button>
+    <div className="h-full bg-[#13172e] w-80 flex flex-col">
+      {/* Header de la sidebar */}
+      <div className="px-5 py-4 border-b border-white/10">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-white/50">
+            Projets
+          </h2>
+          <span className="text-xs text-white/50 tabular-nums">
+            {projects.length} projet{projects.length !== 1 ? 's' : ''}
+          </span>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      {/* Liste des projets */}
+      <div className="flex-1 overflow-y-auto px-3 py-3">
         {projects.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="bg-base-300 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <Icons.Folder className="w-8 h-8 text-base-content/40" />
+          <div className="text-center py-16 px-4">
+            <div className="w-14 h-14 mx-auto mb-5 bg-white/5 border border-white/10 flex items-center justify-center">
+              <Icons.Folder className="w-7 h-7 text-white/40" />
             </div>
-            <p className="font-medium text-base-content/70">Aucun projet</p>
-            <p className="text-sm mt-2 text-base-content/50">
-              Créez votre premier projet pour commencer
+            <p className="font-medium text-white/80 text-sm">Aucun projet</p>
+            <p className="text-xs mt-2 text-white/50 leading-relaxed">
+              Créez votre premier projet pour estimer vos coûts
             </p>
           </div>
         ) : (
-          <ul className="menu menu-sm gap-1 p-0">
+          <ul className="space-y-1">
             {projects.map(project => {
               const cost = projectCosts.get(project.id)
               const isActive = project.id === activeProjectId
@@ -62,22 +60,47 @@ export function Sidebar({ onClose }: SidebarProps) {
               return (
                 <li key={project.id}>
                   <button
-                    className={`flex justify-between w-full transition-all duration-200 rounded-lg ${
-                      isActive
-                        ? 'bg-primary text-primary-content font-semibold shadow-md hover:bg-primary'
-                        : 'hover:bg-base-300'
-                    }`}
+                    className={`
+                      group relative w-full text-left px-3 py-2.5
+                      transition-all duration-150 ease-out
+                      ${isActive
+                        ? 'bg-[#5754aa] border-l-2 border-l-white'
+                        : 'border-l-2 border-l-transparent hover:bg-white/5 hover:border-l-white/30'
+                      }
+                    `}
                     onClick={() => handleSelectProject(project.id)}
                     aria-current={isActive ? 'page' : undefined}
                   >
-                    <span className="truncate flex-1 text-left">{project.name}</span>
-                    <span
-                      className={`badge badge-sm ${
-                        isActive ? 'badge-secondary' : 'badge-ghost'
-                      }`}
-                    >
-                      {cost ? formatPrice(cost.totalMonthlyCost) : '...'}
-                    </span>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <Icons.Folder
+                          className={`w-4 h-4 flex-shrink-0 transition-colors ${
+                            isActive ? 'text-white' : 'text-white/40 group-hover:text-white/60'
+                          }`}
+                        />
+                        <span
+                          className={`truncate text-sm transition-colors ${
+                            isActive
+                              ? 'text-white font-medium'
+                              : 'text-white/70 group-hover:text-white/90'
+                          }`}
+                        >
+                          {project.name}
+                        </span>
+                      </div>
+                      <span
+                        className={`
+                          text-xs tabular-nums font-medium flex-shrink-0 px-2 py-0.5
+                          transition-colors
+                          ${isActive
+                            ? 'text-white bg-white/20'
+                            : 'text-white/50 group-hover:text-white/70'
+                          }
+                        `}
+                      >
+                        {cost ? formatPrice(cost.totalMonthlyCost) : '...'}
+                      </span>
+                    </div>
                   </button>
                 </li>
               )
@@ -86,8 +109,27 @@ export function Sidebar({ onClose }: SidebarProps) {
         )}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-base-300 text-xs text-base-content/50">
-        <p>Données sauvegardées localement</p>
+      {/* Bouton nouveau projet */}
+      <div className="px-3 pb-3">
+        <button
+          className="
+            w-full flex items-center justify-center gap-2
+            px-4 py-2.5 text-sm font-medium
+            bg-[#5754aa] hover:bg-[#6563b8] active:bg-[#4a4899]
+            text-white transition-colors duration-150
+          "
+          onClick={handleCreateProject}
+          aria-label="Créer un nouveau projet"
+        >
+          <Icons.Plus className="w-4 h-4" />
+          Nouveau projet
+        </button>
+      </div>
+
+      {/* Footer */}
+      <div className="px-5 py-3 border-t border-white/10 flex items-center gap-2">
+        <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+        <p className="text-xs text-white/50">Sauvegarde locale active</p>
       </div>
     </div>
   )

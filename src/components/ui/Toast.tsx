@@ -26,7 +26,7 @@ export function ToastContainer() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`alert ${alertClasses[toast.type]} shadow-lg animate-in`}
+          className={`alert ${alertClasses[toast.type]} border border-base-300 animate-in`}
         >
           {iconMap[toast.type]}
           <span>{toast.message}</span>

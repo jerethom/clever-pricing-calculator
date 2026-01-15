@@ -87,7 +87,7 @@ export function RuntimeCard({ projectId, runtime }: RuntimeCardProps) {
   }
 
   return (
-    <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
+    <div className="card bg-base-100 border border-base-300 hover:border-primary/30 transition-colors">
       <div className="card-body">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">

@@ -1,16 +1,45 @@
 @import "tailwindcss";
 @plugin "daisyui" {
-  themes: light --default, dark;
+  themes: light --default;
 }
 
-/* Thème Clever Cloud personnalisé */
+/* Thème Clever Cloud */
 @theme {
-  --color-primary: #E53935;
+  /* Couleurs principales Clever Cloud */
+  --color-primary: #5754aa;
   --color-primary-content: #ffffff;
-  --color-secondary: #1E88E5;
+  --color-secondary: #0693e3;
   --color-secondary-content: #ffffff;
-  --color-accent: #43A047;
+  --color-accent: #13172e;
   --color-accent-content: #ffffff;
+
+  /* Couleurs de fond */
+  --color-base-100: #ffffff;
+  --color-base-200: #f9f9fb;
+  --color-base-300: #deddee;
+
+  /* Couleurs de texte */
+  --color-base-content: #1c2045;
+  --color-neutral: #73738e;
+  --color-neutral-content: #ffffff;
+
+  /* Couleurs sémantiques */
+  --color-info: #0693e3;
+  --color-info-content: #ffffff;
+  --color-success: #43A047;
+  --color-success-content: #ffffff;
+  --color-warning: #F59E0B;
+  --color-warning-content: #ffffff;
+  --color-error: #dc2626;
+  --color-error-content: #ffffff;
+
+  /* Typographie */
+  --font-sans: 'Plus Jakarta Sans', arial, helvetica, sans-serif;
+
+  /* Border radius - style angulaire Clever Cloud */
+  --radius-box: 2px;
+  --radius-btn: 0px;
+  --radius-badge: 2px;
 }
 
 /* Styles d'accessibilité */
