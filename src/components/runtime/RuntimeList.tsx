@@ -106,7 +106,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
   if (!project) return null
 
   const hasRuntimes = project.runtimes.length > 0
-  const showToolbar = hasRuntimes && project.runtimes.length > 1
+  const showToolbar = hasRuntimes
 
   // Calcul position jauge globale
   const gaugePosition =
@@ -193,104 +193,328 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
 
       {/* Barre d'outils (filtrage/tri) - visible si > 1 runtime */}
       {showToolbar && (
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between bg-base-100 p-3 rounded-lg border border-base-300">
-          <div className="flex flex-wrap gap-2 items-center">
-            {/* Recherche (visible si > 4 runtimes) */}
-            {project.runtimes.length > 4 && (
-              <label className="input input-sm input-bordered flex items-center gap-2 w-48">
-                <svg
-                  className="w-4 h-4 opacity-50"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+        <div className="bg-base-100 border border-base-300">
+          <div className="flex flex-col lg:flex-row gap-3 p-3">
+            {/* Section gauche: Filtres et recherche */}
+            <div className="flex flex-wrap gap-2 items-center flex-1">
+              {/* Recherche */}
+              <div className="relative">
+                  <label className="input input-sm input-bordered flex items-center gap-2 w-52 pr-8 transition-all focus-within:border-primary focus-within:shadow-sm">
+                    <svg
+                      className="w-4 h-4 text-base-content/40"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                    <input
+                      type="text"
+                      className="grow bg-transparent"
+                      placeholder="Rechercher un runtime..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                    />
+                  </label>
+                {searchQuery && (
+                  <button
+                    className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs p-0 h-5 w-5 min-h-0 hover:bg-base-300"
+                    onClick={() => setSearchQuery('')}
+                    aria-label="Effacer la recherche"
+                  >
+                    <Icons.X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Séparateur visuel */}
+              <div className="hidden sm:block w-px h-6 bg-base-300" />
+
+              {/* Filtre par type avec dropdown */}
+              <div className="dropdown dropdown-bottom">
+                  <div
+                    tabIndex={0}
+                    role="button"
+                    className={`btn btn-sm gap-2 cursor-pointer ${
+                      filterType !== 'all'
+                        ? 'btn-primary'
+                        : 'btn-ghost border border-base-300 hover:border-base-content/20'
+                    }`}
+                  >
+                    <Icons.Server className="w-4 h-4" />
+                    <span className="hidden sm:inline">
+                      {filterType === 'all' ? 'Type' : filterType}
+                    </span>
+                    {filterType !== 'all' && (
+                      <span className="sm:hidden">{filterType}</span>
+                    )}
+                    <svg
+                      className="w-3 h-3 opacity-60"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                  <ul
+                    tabIndex={0}
+                    className="dropdown-content menu bg-base-100 border border-base-300 shadow-lg z-10 w-52 p-2 mt-1"
+                  >
+                    <li>
+                      <button
+                        className={`cursor-pointer ${filterType === 'all' ? 'active' : ''}`}
+                        onClick={() => setFilterType('all')}
+                      >
+                        <Icons.Check
+                          className={`w-4 h-4 ${filterType === 'all' ? 'opacity-100' : 'opacity-0'}`}
+                        />
+                        Tous les types
+                        <span className="badge badge-sm badge-ghost ml-auto">
+                          {project.runtimes.length}
+                        </span>
+                      </button>
+                    </li>
+                    <li className="menu-title mt-2">
+                      <span>Types disponibles</span>
+                    </li>
+                    {instanceTypes.map(type => {
+                      const count = project.runtimes.filter(
+                        r => r.instanceType === type
+                      ).length
+                      return (
+                        <li key={type}>
+                          <button
+                            className={`cursor-pointer ${filterType === type ? 'active' : ''}`}
+                            onClick={() => setFilterType(type)}
+                          >
+                            <Icons.Check
+                              className={`w-4 h-4 ${filterType === type ? 'opacity-100' : 'opacity-0'}`}
+                            />
+                            {type}
+                            <span className="badge badge-sm badge-ghost ml-auto">
+                              {count}
+                            </span>
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+
+              {/* Tri avec dropdown */}
+              <div className="dropdown dropdown-bottom">
+                <div
+                  tabIndex={0}
+                  role="button"
+                  className={`btn btn-sm gap-2 cursor-pointer ${
+                    sortBy !== 'name'
+                      ? 'btn-secondary'
+                      : 'btn-ghost border border-base-300 hover:border-base-content/20'
+                  }`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  className="grow"
-                  placeholder="Rechercher..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                />
-              </label>
-            )}
+                  <Icons.Chart className="w-4 h-4" />
+                  <span className="hidden sm:inline">
+                    {sortBy === 'name' && 'Trier'}
+                    {sortBy === 'cost-desc' && 'Coût max'}
+                    {sortBy === 'cost-asc' && 'Coût min'}
+                    {sortBy === 'instances' && 'Instances'}
+                  </span>
+                  <svg
+                    className="w-3 h-3 opacity-60"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                <ul
+                  tabIndex={0}
+                  className="dropdown-content menu bg-base-100 border border-base-300 shadow-lg z-10 w-48 p-2 mt-1"
+                >
+                  <li>
+                    <button
+                      className={`cursor-pointer ${sortBy === 'name' ? 'active' : ''}`}
+                      onClick={() => setSortBy('name')}
+                    >
+                      <Icons.Check
+                        className={`w-4 h-4 ${sortBy === 'name' ? 'opacity-100' : 'opacity-0'}`}
+                      />
+                      Par nom
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className={`cursor-pointer ${sortBy === 'cost-desc' ? 'active' : ''}`}
+                      onClick={() => setSortBy('cost-desc')}
+                    >
+                      <Icons.Check
+                        className={`w-4 h-4 ${sortBy === 'cost-desc' ? 'opacity-100' : 'opacity-0'}`}
+                      />
+                      Coût décroissant
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className={`cursor-pointer ${sortBy === 'cost-asc' ? 'active' : ''}`}
+                      onClick={() => setSortBy('cost-asc')}
+                    >
+                      <Icons.Check
+                        className={`w-4 h-4 ${sortBy === 'cost-asc' ? 'opacity-100' : 'opacity-0'}`}
+                      />
+                      Coût croissant
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className={`cursor-pointer ${sortBy === 'instances' ? 'active' : ''}`}
+                      onClick={() => setSortBy('instances')}
+                    >
+                      <Icons.Check
+                        className={`w-4 h-4 ${sortBy === 'instances' ? 'opacity-100' : 'opacity-0'}`}
+                      />
+                      Nb instances
+                    </button>
+                  </li>
+                </ul>
+              </div>
 
-            {/* Filtre par type */}
-            {instanceTypes.length > 1 && (
-              <select
-                className="select select-sm select-bordered"
-                value={filterType}
-                onChange={e => setFilterType(e.target.value)}
+              {/* Bouton reset (visible si filtres actifs) */}
+              {(filterType !== 'all' || searchQuery || sortBy !== 'name') && (
+                <button
+                  className="btn btn-sm btn-ghost text-base-content/60 hover:text-error gap-1 cursor-pointer"
+                  onClick={() => {
+                    setFilterType('all')
+                    setSearchQuery('')
+                    setSortBy('name')
+                  }}
+                  aria-label="Réinitialiser tous les filtres"
+                >
+                  <Icons.X className="w-4 h-4" />
+                  <span className="hidden sm:inline">Reset</span>
+                </button>
+              )}
+            </div>
+
+            {/* Section droite: Toggle vue + indicateur filtres */}
+            <div className="flex items-center gap-3">
+              {/* Indicateur de filtres actifs */}
+              {(filterType !== 'all' || searchQuery) && (
+                <div className="hidden md:flex items-center gap-2 text-sm text-base-content/60 px-2">
+                  <span className="font-medium">
+                    {filteredAndSortedRuntimes.length}
+                  </span>
+                  <span>sur {project.runtimes.length}</span>
+                </div>
+              )}
+
+              {/* Séparateur */}
+              {(filterType !== 'all' || searchQuery) && (
+                <div className="hidden md:block w-px h-6 bg-base-300" />
+              )}
+
+              {/* Toggle vue */}
+              <div
+                className="join border border-base-300"
+                role="group"
+                aria-label="Mode d'affichage"
               >
-                <option value="all">Tous les types</option>
-                {instanceTypes.map(type => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {/* Tri */}
-            <select
-              className="select select-sm select-bordered"
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value as SortOption)}
-            >
-              <option value="name">Trier par nom</option>
-              <option value="cost-desc">Cout decroissant</option>
-              <option value="cost-asc">Cout croissant</option>
-              <option value="instances">Nb instances</option>
-            </select>
+                <div className="tooltip tooltip-bottom" data-tip="Vue grille">
+                  <button
+                    className={`btn btn-sm join-item border-0 cursor-pointer ${
+                      viewMode === 'grid'
+                        ? 'bg-primary text-primary-content hover:bg-primary/90'
+                        : 'bg-base-100 hover:bg-base-200'
+                    }`}
+                    onClick={() => setViewMode('grid')}
+                    aria-label="Vue grille"
+                    aria-pressed={viewMode === 'grid'}
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <div className="tooltip tooltip-bottom" data-tip="Vue liste">
+                  <button
+                    className={`btn btn-sm join-item border-0 cursor-pointer ${
+                      viewMode === 'compact'
+                        ? 'bg-primary text-primary-content hover:bg-primary/90'
+                        : 'bg-base-100 hover:bg-base-200'
+                    }`}
+                    onClick={() => setViewMode('compact')}
+                    aria-label="Vue liste"
+                    aria-pressed={viewMode === 'compact'}
+                  >
+                    <Icons.Menu className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Toggle vue */}
-          <div className="join">
-            <button
-              className={`btn btn-sm join-item ${viewMode === 'grid' ? 'btn-active' : ''}`}
-              onClick={() => setViewMode('grid')}
-              aria-label="Vue grille"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                />
-              </svg>
-            </button>
-            <button
-              className={`btn btn-sm join-item ${viewMode === 'compact' ? 'btn-active' : ''}`}
-              onClick={() => setViewMode('compact')}
-              aria-label="Vue compacte"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-          </div>
+          {/* Barre d'indicateurs de filtres actifs */}
+          {(filterType !== 'all' || searchQuery) && (
+            <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-base-200/50 border-t border-base-300">
+              <span className="text-xs text-base-content/50 uppercase tracking-wide">
+                Filtres:
+              </span>
+              {searchQuery && (
+                <span className="badge badge-sm gap-1 bg-base-100">
+                  Recherche: "{searchQuery}"
+                  <button
+                    className="hover:text-error cursor-pointer"
+                    onClick={() => setSearchQuery('')}
+                    aria-label="Supprimer le filtre de recherche"
+                  >
+                    <Icons.X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {filterType !== 'all' && (
+                <span className="badge badge-sm gap-1 bg-primary/10 text-primary border-primary/20">
+                  Type: {filterType}
+                  <button
+                    className="hover:text-error cursor-pointer"
+                    onClick={() => setFilterType('all')}
+                    aria-label="Supprimer le filtre de type"
+                  >
+                    <Icons.X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
 

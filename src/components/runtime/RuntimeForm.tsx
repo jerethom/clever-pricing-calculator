@@ -413,7 +413,7 @@ export function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
                             if (value > maxInstances) setMaxInstances(value)
                           }}
                           min={1}
-                          max={maxInstances}
+                          max={selectedInstance.maxInstances}
                         />
                         <p className="text-xs text-base-content/50 mt-2">
                           Toujours en execution, facturation 24/7
@@ -428,7 +428,7 @@ export function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
                             setMaxInstances(value)
                             if (value < minInstances) setMinInstances(value)
                           }}
-                          min={minInstances}
+                          min={1}
                           max={selectedInstance.maxInstances}
                         />
                         <p className="text-xs text-base-content/50 mt-2">
