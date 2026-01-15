@@ -184,9 +184,16 @@ export function Sidebar({ onClose }: SidebarProps) {
   }, [setActiveOrganization, onClose])
 
   const handleSelectProject = useCallback((projectId: string) => {
+    // Trouver le projet pour obtenir son organisation
+    const project = allProjects.find(p => p.id === projectId)
+    if (project && project.organizationId !== activeOrgId) {
+      // Changer l'organisation active si le projet appartient à une autre org
+      setActiveOrganization(project.organizationId)
+      setExpandedOrgs(prev => new Set(prev).add(project.organizationId))
+    }
     setActiveProject(projectId)
     onClose?.()
-  }, [setActiveProject, onClose])
+  }, [allProjects, activeOrgId, setActiveOrganization, setActiveProject, onClose])
 
   const handleCreateOrganization = useCallback(() => {
     const name = `Organisation ${organizations.length + 1}`

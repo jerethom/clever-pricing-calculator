@@ -1,10 +1,13 @@
-import { useAllProjectsCosts } from '@/hooks/useCostCalculation'
+import { useMemo } from 'react'
+import { useShallow } from 'zustand/shallow'
+import { useActiveOrganizationCosts } from '@/hooks/useCostCalculation'
 import {
   useSelector,
-  selectProjects,
   selectActiveOrganization,
   selectActiveProject,
+  selectActiveOrganizationProjects,
 } from '@/store'
+import { useProjectStore } from '@/store/projectStore'
 import { formatPrice } from '@/lib/costCalculator'
 import { Icons } from '@/components/ui'
 
@@ -13,29 +16,34 @@ interface HeaderProps {
 }
 
 export function Header({ onToggleSidebar }: HeaderProps) {
-  const projectCosts = useAllProjectsCosts()
-  const projects = useSelector(selectProjects)
+  const projectCosts = useActiveOrganizationCosts()
   const activeOrg = useSelector(selectActiveOrganization)
   const activeProject = useSelector(selectActiveProject)
+  // Projets de l'organisation active seulement
+  const orgProjects = useProjectStore(useShallow(selectActiveOrganizationProjects))
 
-  // Calcul des totaux de tous les projets
-  const totals = Array.from(projectCosts.values()).reduce(
-    (acc, cost) => ({
-      runtimes: acc.runtimes + cost.runtimesCost,
-      addons: acc.addons + cost.addonsCost,
-      total: acc.total + cost.totalMonthlyCost,
-    }),
-    { runtimes: 0, addons: 0, total: 0 }
-  )
+  // Calcul des totaux des projets de l'organisation active
+  const totals = useMemo(() => {
+    return Array.from(projectCosts.values()).reduce(
+      (acc, cost) => ({
+        runtimes: acc.runtimes + cost.runtimesCost,
+        addons: acc.addons + cost.addonsCost,
+        total: acc.total + cost.totalMonthlyCost,
+      }),
+      { runtimes: 0, addons: 0, total: 0 }
+    )
+  }, [projectCosts])
 
-  // Comptage des runtimes et addons
-  const counts = projects.reduce(
-    (acc, project) => ({
-      runtimes: acc.runtimes + project.runtimes.length,
-      addons: acc.addons + project.addons.length,
-    }),
-    { runtimes: 0, addons: 0 }
-  )
+  // Comptage des runtimes et addons de l'organisation active
+  const counts = useMemo(() => {
+    return orgProjects.reduce(
+      (acc, project) => ({
+        runtimes: acc.runtimes + project.runtimes.length,
+        addons: acc.addons + project.addons.length,
+      }),
+      { runtimes: 0, addons: 0 }
+    )
+  }, [orgProjects])
 
   return (
     <div className="navbar bg-[#13172e] sticky top-0 z-50 border-b border-[#1c2045]">
@@ -76,8 +84,8 @@ export function Header({ onToggleSidebar }: HeaderProps) {
             {/* Projets */}
             <div className="flex items-center gap-2">
               <Icons.Folder className="w-4 h-4 text-white/60" />
-              <span className="font-medium text-white tabular-nums">{projects.length}</span>
-              <span className="text-white/50">projet{projects.length !== 1 ? 's' : ''}</span>
+              <span className="font-medium text-white tabular-nums">{orgProjects.length}</span>
+              <span className="text-white/50">projet{orgProjects.length !== 1 ? 's' : ''}</span>
             </div>
 
             <span className="text-white/20">|</span>

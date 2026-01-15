@@ -205,7 +205,8 @@ export const AddonCard = memo(function AddonCard({ projectId, addon }: AddonCard
             </span>
           </label>
           <button
-            className="btn btn-ghost btn-block justify-between h-auto py-3 px-4 border border-base-300 hover:border-primary/50 hover:bg-base-200"
+            type="button"
+            className="btn btn-ghost btn-block justify-between h-auto py-3 px-4 border border-base-300 hover:border-secondary/50 hover:bg-base-200 cursor-pointer"
             onClick={() => setShowEditForm(true)}
           >
             <div className="flex flex-col items-start gap-0.5">
@@ -217,7 +218,7 @@ export const AddonCard = memo(function AddonCard({ projectId, addon }: AddonCard
               )}
             </div>
             <div className="flex flex-col items-end gap-0.5">
-              <span className="text-primary font-bold">
+              <span className="text-secondary font-bold">
                 {isFree ? 'Gratuit' : formatMonthlyPrice(addon.monthlyPrice)}
               </span>
               <span className="text-xs text-base-content/60">
@@ -235,7 +236,7 @@ export const AddonCard = memo(function AddonCard({ projectId, addon }: AddonCard
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm text-base-content/70">Estimation mensuelle</p>
-                <p className="text-2xl font-bold text-primary">
+                <p className="text-2xl font-bold text-secondary">
                   {isFree ? 'Gratuit' : formatMonthlyPrice(addon.monthlyPrice)}
                 </p>
               </div>

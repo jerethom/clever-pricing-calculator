@@ -49,6 +49,10 @@
   *:focus-visible {
     @apply outline-2 outline-offset-2 outline-primary;
   }
+
+  button {
+    @apply cursor-pointer;
+  }
 }
 
 /* Animations */

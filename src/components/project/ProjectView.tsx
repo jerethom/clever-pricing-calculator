@@ -9,6 +9,7 @@ import { useActiveProjectCost } from '@/hooks/useCostCalculation'
 import { formatPrice } from '@/lib/costCalculator'
 import { RuntimeList } from '@/components/runtime/RuntimeList'
 import { AddonList } from '@/components/addon/AddonList'
+import { OrganizationDashboard } from '@/components/organization'
 import { Icons, ConfirmDialog, CostSummarySkeleton } from '@/components/ui'
 
 const CostSummary = lazy(() => import('@/components/project/CostSummary'))
@@ -24,15 +25,21 @@ export function ProjectView() {
   const [activeTab, setActiveTab] = useState<'runtimes' | 'addons' | 'summary'>('runtimes')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+  // Si une organisation est selectionnee mais pas de projet -> Dashboard organisation
+  if (!activeProject && activeOrg) {
+    return <OrganizationDashboard />
+  }
+
+  // Si aucune organisation ni projet -> Message d'accueil
   if (!activeProject) {
     return (
       <div className="flex flex-col items-center justify-center h-96 text-center">
         <div className="bg-base-200 rounded-full p-6 mb-6">
-          <Icons.Folder className="w-16 h-16 text-base-content/30" />
+          <Icons.Building className="w-16 h-16 text-base-content/30" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Aucun projet sélectionné</h2>
+        <h2 className="text-2xl font-bold mb-2">Bienvenue</h2>
         <p className="text-base-content/70 max-w-md">
-          Sélectionnez un projet dans la barre latérale ou créez-en un nouveau
+          Selectionnez une organisation dans la barre laterale ou creez-en une nouvelle pour commencer
         </p>
       </div>
     )
@@ -83,14 +90,16 @@ export function ProjectView() {
                   />
                   <div className="flex gap-2">
                     <button
-                      className="btn btn-primary flex-1 sm:flex-none gap-2 cursor-pointer"
+                      type="button"
+                      className="btn btn-primary flex-1 sm:flex-none gap-2"
                       onClick={handleSaveEdit}
                     >
                       <Icons.Check className="w-4 h-4" />
                       <span>Sauvegarder</span>
                     </button>
                     <button
-                      className="btn btn-ghost cursor-pointer"
+                      type="button"
+                      className="btn btn-ghost"
                       onClick={() => setIsEditing(false)}
                       aria-label="Annuler"
                     >
@@ -113,7 +122,8 @@ export function ProjectView() {
                     {activeProject.name}
                   </h1>
                   <button
-                    className="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    type="button"
+                    className="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                     onClick={handleStartEdit}
                     aria-label="Modifier le nom du projet"
                   >
@@ -128,7 +138,8 @@ export function ProjectView() {
           {!isEditing && (
             <div className="tooltip tooltip-left hidden sm:block" data-tip="Supprimer ce projet">
               <button
-                className="btn btn-ghost btn-sm text-base-content/50 hover:text-error hover:bg-error/10 cursor-pointer"
+                type="button"
+                className="btn btn-ghost btn-sm text-base-content/50 hover:text-error hover:bg-error/10"
                 onClick={() => setShowDeleteConfirm(true)}
                 aria-label={`Supprimer le projet ${activeProject.name}`}
               >
@@ -154,7 +165,7 @@ export function ProjectView() {
             </div>
 
             {/* Separateur */}
-            <span className="hidden sm:block text-base-300">|</span>
+            <span className="hidden sm:block text-base-300" aria-hidden="true">|</span>
 
             {/* Addons */}
             <div className="flex items-center gap-2">
@@ -169,7 +180,7 @@ export function ProjectView() {
             </div>
 
             {/* Separateur */}
-            <span className="hidden sm:block text-base-300">|</span>
+            <span className="hidden sm:block text-base-300" aria-hidden="true">|</span>
 
             {/* Cout total */}
             <div className="flex items-center gap-2">
@@ -186,7 +197,8 @@ export function ProjectView() {
         {!isEditing && (
           <div className="sm:hidden pt-1">
             <button
-              className="btn btn-ghost btn-sm text-base-content/50 hover:text-error hover:bg-error/10 w-full justify-center gap-2 cursor-pointer"
+              type="button"
+              className="btn btn-ghost btn-sm text-base-content/50 hover:text-error hover:bg-error/10 w-full justify-center gap-2"
               onClick={() => setShowDeleteConfirm(true)}
               aria-label={`Supprimer le projet ${activeProject.name}`}
             >
@@ -200,13 +212,17 @@ export function ProjectView() {
       {/* Onglets */}
       <div
         role="tablist"
+        aria-label="Sections du projet"
         className="grid grid-cols-1 sm:grid-cols-3 gap-1 p-1 bg-base-200/50 rounded-xl pb-8"
       >
         {/* Onglet Runtimes */}
         <button
+          type="button"
           role="tab"
+          id="tab-runtimes"
           aria-selected={activeTab === 'runtimes'}
-          className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors duration-200 cursor-pointer
+          aria-controls="tabpanel-runtimes"
+          className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors duration-200
             ${activeTab === 'runtimes'
               ? 'bg-base-100 border-b-2 border-primary'
               : 'bg-base-100 hover:bg-primary/10'
@@ -226,9 +242,12 @@ export function ProjectView() {
 
         {/* Onglet Addons */}
         <button
+          type="button"
           role="tab"
+          id="tab-addons"
           aria-selected={activeTab === 'addons'}
-          className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors duration-200 cursor-pointer
+          aria-controls="tabpanel-addons"
+          className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors duration-200
             ${activeTab === 'addons'
               ? 'bg-base-100 border-b-2 border-secondary'
               : 'bg-base-100 hover:bg-secondary/10'
@@ -248,9 +267,12 @@ export function ProjectView() {
 
         {/* Onglet Projection */}
         <button
+          type="button"
           role="tab"
+          id="tab-summary"
           aria-selected={activeTab === 'summary'}
-          className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors duration-200 cursor-pointer
+          aria-controls="tabpanel-summary"
+          className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors duration-200
             ${activeTab === 'summary'
               ? 'bg-base-100 border-b-2 border-accent'
               : 'bg-base-100 hover:bg-accent/10'
@@ -268,13 +290,34 @@ export function ProjectView() {
 
       {/* Contenu des onglets */}
       <div className="mt-2">
-        {activeTab === 'runtimes' && <RuntimeList projectId={activeProject.id} />}
-        {activeTab === 'addons' && <AddonList projectId={activeProject.id} />}
-        {activeTab === 'summary' && cost && (
-          <Suspense fallback={<CostSummarySkeleton />}>
-            <CostSummary cost={cost} />
-          </Suspense>
-        )}
+        <div
+          role="tabpanel"
+          id="tabpanel-runtimes"
+          aria-labelledby="tab-runtimes"
+          hidden={activeTab !== 'runtimes'}
+        >
+          {activeTab === 'runtimes' && <RuntimeList projectId={activeProject.id} />}
+        </div>
+        <div
+          role="tabpanel"
+          id="tabpanel-addons"
+          aria-labelledby="tab-addons"
+          hidden={activeTab !== 'addons'}
+        >
+          {activeTab === 'addons' && <AddonList projectId={activeProject.id} />}
+        </div>
+        <div
+          role="tabpanel"
+          id="tabpanel-summary"
+          aria-labelledby="tab-summary"
+          hidden={activeTab !== 'summary'}
+        >
+          {activeTab === 'summary' && cost && (
+            <Suspense fallback={<CostSummarySkeleton />}>
+              <CostSummary cost={cost} />
+            </Suspense>
+          )}
+        </div>
       </div>
 
       {/* Modal de confirmation de suppression */}

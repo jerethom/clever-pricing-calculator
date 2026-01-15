@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useShallow } from 'zustand/shallow'
 import { useInstances } from './useInstances'
 import {
   useSelector,
@@ -9,6 +10,7 @@ import {
   selectActiveOrganizationProjects,
   selectProjectsByOrganization,
 } from '@/store'
+import { useProjectStore } from '@/store/projectStore'
 import { calculateProjectCost } from '@/lib/costCalculator'
 import type { ProjectCostSummary } from '@/types'
 
@@ -63,7 +65,8 @@ export function useAllProjectsCosts(): Map<string, ProjectCostSummary> {
  */
 export function useActiveOrganizationCosts(): Map<string, ProjectCostSummary> {
   const { data: instances } = useInstances()
-  const orgProjects = useSelector(selectActiveOrganizationProjects)
+  // Utiliser useShallow pour éviter les re-renders quand le tableau est recréé mais identique
+  const orgProjects = useProjectStore(useShallow(selectActiveOrganizationProjects))
 
   return useMemo(() => {
     const costsMap = new Map<string, ProjectCostSummary>()
