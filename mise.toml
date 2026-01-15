@@ -1,0 +1,8 @@
+[tools]
+node = "lts"
+pnpm = "10.28.0"
+
+[tasks]
+dev = "pnpm run dev"
+build = "pnpm run build"
+lint = "pnpm run lint"

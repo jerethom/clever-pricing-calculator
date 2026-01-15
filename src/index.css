@@ -1,0 +1,39 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: light --default, dark;
+}
+
+/* Thème Clever Cloud personnalisé */
+@theme {
+  --color-primary: #E53935;
+  --color-primary-content: #ffffff;
+  --color-secondary: #1E88E5;
+  --color-secondary-content: #ffffff;
+  --color-accent: #43A047;
+  --color-accent-content: #ffffff;
+}
+
+/* Styles d'accessibilité */
+@layer base {
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+}
+
+/* Animations */
+@layer utilities {
+  .animate-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
