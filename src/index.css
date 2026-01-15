@@ -3,43 +3,45 @@
   themes: light --default;
 }
 
-/* Thème Clever Cloud */
-@theme {
-  /* Couleurs principales Clever Cloud */
-  --color-primary: #5754aa;
-  --color-primary-content: #ffffff;
-  --color-secondary: #0693e3;
-  --color-secondary-content: #ffffff;
-  --color-accent: #13172e;
-  --color-accent-content: #ffffff;
+/* Thème personnalisé Clever Cloud pour DaisyUI */
+[data-theme="light"] {
+  /* Couleurs principales */
+  --color-primary: oklch(49.02% 0.1046 281.52);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(60.54% 0.1752 230.9);
+  --color-secondary-content: oklch(100% 0 0);
+  --color-accent: oklch(20.51% 0.0555 275.75);
+  --color-accent-content: oklch(100% 0 0);
 
   /* Couleurs de fond */
-  --color-base-100: #ffffff;
-  --color-base-200: #f9f9fb;
-  --color-base-300: #deddee;
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(98.04% 0.0039 286.38);
+  --color-base-300: oklch(90.59% 0.0196 292.59);
+  --color-base-content: oklch(22.35% 0.0471 277.08);
 
-  /* Couleurs de texte */
-  --color-base-content: #1c2045;
-  --color-neutral: #73738e;
-  --color-neutral-content: #ffffff;
+  /* Couleur neutre */
+  --color-neutral: oklch(56.86% 0.0314 286.38);
+  --color-neutral-content: oklch(100% 0 0);
 
   /* Couleurs sémantiques */
-  --color-info: #0693e3;
-  --color-info-content: #ffffff;
-  --color-success: #43A047;
-  --color-success-content: #ffffff;
-  --color-warning: #F59E0B;
-  --color-warning-content: #ffffff;
-  --color-error: #dc2626;
-  --color-error-content: #ffffff;
-
-  /* Typographie */
-  --font-sans: 'Plus Jakarta Sans', arial, helvetica, sans-serif;
+  --color-info: oklch(60.54% 0.1752 230.9);
+  --color-info-content: oklch(100% 0 0);
+  --color-success: oklch(56.47% 0.1412 145.08);
+  --color-success-content: oklch(100% 0 0);
+  --color-warning: oklch(76.08% 0.1647 70.08);
+  --color-warning-content: oklch(100% 0 0);
+  --color-error: oklch(52.94% 0.1961 27.33);
+  --color-error-content: oklch(100% 0 0);
 
   /* Border radius - style angulaire Clever Cloud */
   --radius-box: 2px;
   --radius-btn: 0px;
   --radius-badge: 2px;
+}
+
+/* Typographie globale */
+@theme {
+  --font-sans: 'Plus Jakarta Sans', arial, helvetica, sans-serif;
 }
 
 /* Styles d'accessibilité */

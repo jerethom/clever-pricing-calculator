@@ -44,11 +44,11 @@ export function PaintToolbar({
                 onClick={() => onChange(value)}
                 className={`
                   relative flex items-center justify-center
-                  w-10 h-10 border-2 transition-all
+                  w-10 h-10 border-2 transition-all cursor-pointer
                   font-bold text-sm
                   ${
                     isSelected
-                      ? 'border-secondary bg-secondary text-secondary-content scale-110 z-10 shadow-lg'
+                      ? 'border-primary bg-primary/20 text-primary'
                       : 'border-base-300 bg-base-100 hover:border-primary/50'
                   }
                   ${isEraser && !isSelected ? 'bg-base-200' : ''}

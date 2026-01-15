@@ -136,7 +136,7 @@ export function SchedulePresets({
               group flex items-center gap-2 px-3 py-2
               bg-base-100 border border-base-300
               hover:border-primary hover:bg-primary/5
-              transition-all text-left
+              transition-all text-left cursor-pointer
             "
             title={preset.description}
           >
