@@ -141,7 +141,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
       {hasRuntimes && (
         <div className="card bg-gradient-to-r from-base-200 to-base-100 border border-base-300">
           <div className="card-body p-4">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
               {/* Cout total */}
               <div className="flex items-center gap-4">
                 <div className="bg-primary/10 p-3 rounded-lg">
@@ -158,7 +158,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
               </div>
 
               {/* Jauge min-max */}
-              <div className="flex-1 max-w-md">
+              <div className="w-full max-w-md justify-self-center">
                 <div className="flex justify-between text-xs text-base-content/60 mb-1">
                   <span>{formatPrice(costSummary.min)}</span>
                   <span>{formatPrice(costSummary.max)}</span>
@@ -176,8 +176,8 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
               </div>
 
               {/* Stats rapides */}
-              <div className="flex gap-4">
-                <div className="text-center px-4 border-l border-base-300">
+              <div className="justify-self-center lg:justify-self-end">
+                <div className="text-center px-4 lg:border-l border-base-300">
                   <p className="text-2xl font-bold">{costSummary.instances}</p>
                   <p className="text-xs text-base-content/60">Instance(s) max</p>
                 </div>
