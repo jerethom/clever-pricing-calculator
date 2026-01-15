@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAddons } from '@/hooks/useAddons'
 import { useProjectStore } from '@/store/projectStore'
 import { formatMonthlyPrice } from '@/lib/costCalculator'
+import { Portal } from '@/components/ui'
 import type { AddonFeature } from '@/api/types'
 import type { AddonConfig } from '@/types/project'
 
@@ -39,6 +40,23 @@ export function AddonForm({ projectId, onClose, editingAddon }: AddonFormProps) 
   const [selectedProviderId, setSelectedProviderId] = useState(editingAddon?.providerId ?? '')
   const [selectedPlanId, setSelectedPlanId] = useState(editingAddon?.planId ?? '')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Gestion de la touche Escape et du body overflow
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    },
+    [onClose]
+  )
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [handleKeyDown])
 
   const filteredProviders = addonProviders
     ?.filter(
@@ -92,11 +110,20 @@ export function AddonForm({ projectId, onClose, editingAddon }: AddonFormProps) 
   }
 
   return (
-    <div className="modal modal-open">
-      <div className="modal-box max-w-3xl">
-        <h3 className="font-bold text-lg mb-4">
-          {isEditMode ? 'Modifier l\'addon' : 'Ajouter un addon'}
-        </h3>
+    <Portal>
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-[#13172e]/80"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+        {/* Dialog */}
+        <div className="relative bg-base-100 max-w-3xl w-full mx-4 border border-base-300 animate-in max-h-[90vh] overflow-y-auto">
+          <div className="p-6">
+            <h3 className="font-bold text-lg mb-4">
+              {isEditMode ? 'Modifier l\'addon' : 'Ajouter un addon'}
+            </h3>
 
         {isLoading ? (
           <div className="flex justify-center py-8">
@@ -238,8 +265,8 @@ export function AddonForm({ projectId, onClose, editingAddon }: AddonFormProps) 
               </>
             )}
 
-            <div className="modal-action">
-              <button type="button" className="btn" onClick={onClose}>
+            <div className="flex justify-end gap-2 mt-6">
+              <button type="button" className="btn btn-ghost" onClick={onClose}>
                 Annuler
               </button>
               <button
@@ -252,8 +279,9 @@ export function AddonForm({ projectId, onClose, editingAddon }: AddonFormProps) 
             </div>
           </form>
         )}
+          </div>
+        </div>
       </div>
-      <div className="modal-backdrop" onClick={onClose}></div>
-    </div>
+    </Portal>
   )
 }
