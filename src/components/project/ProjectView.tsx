@@ -130,36 +130,95 @@ export function ProjectView() {
       </div>
 
       {/* Onglets */}
-      <div role="tablist" className="tabs tabs-bordered tabs-lg">
+      <div
+        role="tablist"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-1 bg-base-200/50 rounded-2xl"
+      >
+        {/* Onglet Runtimes */}
         <button
           role="tab"
-          className={`tab gap-2 ${activeTab === 'runtimes' ? 'tab-active font-semibold' : ''}`}
+          aria-selected={activeTab === 'runtimes'}
+          className={`group relative flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-300 ease-out cursor-pointer
+            ${activeTab === 'runtimes'
+              ? 'bg-base-100 shadow-lg shadow-primary/10 ring-2 ring-primary/20'
+              : 'hover:bg-base-100/50 hover:shadow-md'
+            }`}
           onClick={() => setActiveTab('runtimes')}
         >
-          <Icons.Server className="w-5 h-5" />
-          Runtimes
-          <span className="badge badge-sm badge-primary">
-            {activeProject.runtimes.length}
-          </span>
+          <div className={`flex items-center gap-2 transition-transform duration-300 ${activeTab === 'runtimes' ? 'scale-110' : 'group-hover:scale-105'}`}>
+            <div className={`p-2 rounded-lg transition-colors duration-300 ${activeTab === 'runtimes' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/70 group-hover:bg-primary/20 group-hover:text-primary'}`}>
+              <Icons.Server className="w-5 h-5" />
+            </div>
+            <span className={`font-semibold text-lg transition-colors duration-300 ${activeTab === 'runtimes' ? 'text-primary' : 'text-base-content/80 group-hover:text-base-content'}`}>
+              Runtimes
+            </span>
+            <span className={`badge badge-sm transition-all duration-300 ${activeTab === 'runtimes' ? 'badge-primary' : 'badge-ghost group-hover:badge-primary/50'}`}>
+              {activeProject.runtimes.length}
+            </span>
+          </div>
+          <div className={`text-xs tabular-nums transition-all duration-300 ${activeTab === 'runtimes' ? 'text-primary font-medium' : 'text-base-content/50'}`}>
+            {cost ? formatPrice(cost.runtimesCost) : '...'}/mois
+          </div>
+          {activeTab === 'runtimes' && (
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary rounded-full" />
+          )}
         </button>
+
+        {/* Onglet Addons */}
         <button
           role="tab"
-          className={`tab gap-2 ${activeTab === 'addons' ? 'tab-active font-semibold' : ''}`}
+          aria-selected={activeTab === 'addons'}
+          className={`group relative flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-300 ease-out cursor-pointer
+            ${activeTab === 'addons'
+              ? 'bg-base-100 shadow-lg shadow-secondary/10 ring-2 ring-secondary/20'
+              : 'hover:bg-base-100/50 hover:shadow-md'
+            }`}
           onClick={() => setActiveTab('addons')}
         >
-          <Icons.Puzzle className="w-5 h-5" />
-          Addons
-          <span className="badge badge-sm badge-secondary">
-            {activeProject.addons.length}
-          </span>
+          <div className={`flex items-center gap-2 transition-transform duration-300 ${activeTab === 'addons' ? 'scale-110' : 'group-hover:scale-105'}`}>
+            <div className={`p-2 rounded-lg transition-colors duration-300 ${activeTab === 'addons' ? 'bg-secondary text-secondary-content' : 'bg-base-300 text-base-content/70 group-hover:bg-secondary/20 group-hover:text-secondary'}`}>
+              <Icons.Puzzle className="w-5 h-5" />
+            </div>
+            <span className={`font-semibold text-lg transition-colors duration-300 ${activeTab === 'addons' ? 'text-secondary' : 'text-base-content/80 group-hover:text-base-content'}`}>
+              Addons
+            </span>
+            <span className={`badge badge-sm transition-all duration-300 ${activeTab === 'addons' ? 'badge-secondary' : 'badge-ghost group-hover:badge-secondary/50'}`}>
+              {activeProject.addons.length}
+            </span>
+          </div>
+          <div className={`text-xs tabular-nums transition-all duration-300 ${activeTab === 'addons' ? 'text-secondary font-medium' : 'text-base-content/50'}`}>
+            {cost ? formatPrice(cost.addonsCost) : '...'}/mois
+          </div>
+          {activeTab === 'addons' && (
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-secondary rounded-full" />
+          )}
         </button>
+
+        {/* Onglet Résumé */}
         <button
           role="tab"
-          className={`tab gap-2 ${activeTab === 'summary' ? 'tab-active font-semibold' : ''}`}
+          aria-selected={activeTab === 'summary'}
+          className={`group relative flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-300 ease-out cursor-pointer
+            ${activeTab === 'summary'
+              ? 'bg-base-100 shadow-lg shadow-accent/10 ring-2 ring-accent/20'
+              : 'hover:bg-base-100/50 hover:shadow-md'
+            }`}
           onClick={() => setActiveTab('summary')}
         >
-          <Icons.Chart className="w-5 h-5" />
-          Résumé des coûts
+          <div className={`flex items-center gap-2 transition-transform duration-300 ${activeTab === 'summary' ? 'scale-110' : 'group-hover:scale-105'}`}>
+            <div className={`p-2 rounded-lg transition-colors duration-300 ${activeTab === 'summary' ? 'bg-accent text-accent-content' : 'bg-base-300 text-base-content/70 group-hover:bg-accent/20 group-hover:text-accent'}`}>
+              <Icons.Chart className="w-5 h-5" />
+            </div>
+            <span className={`font-semibold text-lg transition-colors duration-300 ${activeTab === 'summary' ? 'text-accent' : 'text-base-content/80 group-hover:text-base-content'}`}>
+              Résumé
+            </span>
+          </div>
+          <div className={`text-xs tabular-nums transition-all duration-300 ${activeTab === 'summary' ? 'text-accent font-medium' : 'text-base-content/50'}`}>
+            {cost ? formatPrice(cost.totalMonthlyCost) : '...'}/mois
+          </div>
+          {activeTab === 'summary' && (
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-accent rounded-full" />
+          )}
         </button>
       </div>
 
