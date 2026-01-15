@@ -137,13 +137,19 @@ export function calculateProjectCost(
 }
 
 /**
- * Formate un prix en euros
+ * Formate un prix en euros avec une meilleure lisibilité
+ * - Pas de décimales pour les montants >= 10€
+ * - 2 décimales pour les petits montants
  */
 export function formatPrice(price: number): string {
-  return new Intl.NumberFormat('fr-FR', {
+  const options: Intl.NumberFormatOptions = {
     style: 'currency',
     currency: 'EUR',
-  }).format(price)
+    // Pas de centimes pour les montants >= 10€
+    minimumFractionDigits: price >= 10 ? 0 : 2,
+    maximumFractionDigits: price >= 10 ? 0 : 2,
+  }
+  return new Intl.NumberFormat('fr-FR', options).format(price)
 }
 
 /**

@@ -51,174 +51,136 @@ export function ProjectView() {
 
   return (
     <div className="space-y-6">
-      {/* En-tête du projet */}
-      <div className="card bg-gradient-to-br from-base-100 via-base-100 to-primary/5 border border-base-300 shadow-xl overflow-hidden">
-        {/* Barre décorative en haut */}
-        <div className="h-1 bg-gradient-to-r from-primary via-secondary to-accent" />
-
-        <div className="card-body p-4 sm:p-6">
-          {/* Ligne principale: Nom du projet + Actions */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            {/* Nom du projet avec icône */}
-            <div className="flex-1 min-w-0">
-              {isEditing ? (
-                <div className="animate-in fade-in slide-in-from-left-2 duration-200">
-                  <div className="bg-base-200/80 backdrop-blur-sm p-4 rounded-xl border border-base-300 shadow-inner">
-                    <label className="text-xs font-medium text-base-content/60 uppercase tracking-wider mb-2 block">
-                      Renommer le projet
-                    </label>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <input
-                        type="text"
-                        className="input input-bordered input-lg flex-1 font-bold text-xl bg-base-100 focus:ring-2 focus:ring-primary/30"
-                        value={editName}
-                        onChange={e => setEditName(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') handleSaveEdit()
-                          if (e.key === 'Escape') setIsEditing(false)
-                        }}
-                        autoFocus
-                        placeholder="Nom du projet..."
-                      />
-                      <div className="flex gap-2 sm:flex-shrink-0">
-                        <button
-                          className="btn btn-primary flex-1 sm:flex-none gap-2 cursor-pointer"
-                          onClick={handleSaveEdit}
-                        >
-                          <Icons.Check className="w-5 h-5" />
-                          <span className="sm:inline">Sauvegarder</span>
-                        </button>
-                        <button
-                          className="btn btn-ghost cursor-pointer"
-                          onClick={() => setIsEditing(false)}
-                          aria-label="Annuler"
-                        >
-                          <Icons.X className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
+      {/* En-tete du projet */}
+      <div className="space-y-4">
+        {/* Ligne principale: Nom du projet + Actions */}
+        <div className="flex items-start sm:items-center justify-between gap-3">
+          {/* Nom du projet */}
+          <div className="flex-1 min-w-0">
+            {isEditing ? (
+              <div className="animate-in">
+                <label className="text-xs font-medium text-base-content/60 uppercase tracking-wider mb-2 block">
+                  Renommer le projet
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    className="input input-bordered flex-1 font-semibold text-lg"
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleSaveEdit()
+                      if (e.key === 'Escape') setIsEditing(false)
+                    }}
+                    autoFocus
+                    placeholder="Nom du projet..."
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      className="btn btn-primary flex-1 sm:flex-none gap-2 cursor-pointer"
+                      onClick={handleSaveEdit}
+                    >
+                      <Icons.Check className="w-4 h-4" />
+                      <span>Sauvegarder</span>
+                    </button>
+                    <button
+                      className="btn btn-ghost cursor-pointer"
+                      onClick={() => setIsEditing(false)}
+                      aria-label="Annuler"
+                    >
+                      <Icons.X className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              ) : (
-                <div className="flex items-center gap-3 group">
-                  <div className="p-2.5 bg-primary/10 rounded-xl ring-1 ring-primary/20 transition-all duration-300 group-hover:bg-primary/20 group-hover:scale-105">
-                    <Icons.Folder className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate">
-                      {activeProject.name}
-                    </h1>
-                  </div>
-                  <button
-                    className="btn btn-ghost btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10 cursor-pointer"
-                    onClick={handleStartEdit}
-                    aria-label="Modifier le nom du projet"
-                  >
-                    <Icons.Edit className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Bouton supprimer (visible uniquement hors mode édition) */}
-            {!isEditing && (
-              <div className="tooltip tooltip-left hidden sm:block" data-tip="Supprimer ce projet">
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 group">
+                <Icons.Folder className="w-5 h-5 text-primary shrink-0" />
+                <h1 className="text-xl sm:text-2xl font-bold truncate">
+                  {activeProject.name}
+                </h1>
                 <button
-                  className="btn btn-ghost btn-sm text-error hover:bg-error/10 transition-colors cursor-pointer"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  aria-label={`Supprimer le projet ${activeProject.name}`}
+                  className="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  onClick={handleStartEdit}
+                  aria-label="Modifier le nom du projet"
                 >
-                  <Icons.Trash className="w-5 h-5" />
+                  <Icons.Edit className="w-3.5 h-3.5" />
                 </button>
               </div>
             )}
           </div>
 
-          {/* Séparateur */}
-          {!isEditing && <div className="divider my-3 sm:my-4" />}
-
-          {/* Statistiques et coût total */}
+          {/* Bouton supprimer desktop */}
           {!isEditing && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {/* Stat: Runtimes */}
-              <div className="bg-base-200/50 rounded-xl p-3 sm:p-4 border border-base-300/50 transition-all duration-200 hover:bg-base-200/80 hover:border-primary/20">
-                <div className="flex items-center gap-2 mb-1">
-                  <Icons.Server className="w-4 h-4 text-primary/70" />
-                  <span className="text-xs font-medium text-base-content/60 uppercase tracking-wide">Runtimes</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl sm:text-3xl font-bold text-base-content tabular-nums">
-                    {activeProject.runtimes.length}
-                  </span>
-                  <span className="text-xs text-base-content/50">
-                    {cost ? formatPrice(cost.runtimesCost) : '...'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Stat: Addons */}
-              <div className="bg-base-200/50 rounded-xl p-3 sm:p-4 border border-base-300/50 transition-all duration-200 hover:bg-base-200/80 hover:border-secondary/20">
-                <div className="flex items-center gap-2 mb-1">
-                  <Icons.Puzzle className="w-4 h-4 text-secondary/70" />
-                  <span className="text-xs font-medium text-base-content/60 uppercase tracking-wide">Addons</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl sm:text-3xl font-bold text-base-content tabular-nums">
-                    {activeProject.addons.length}
-                  </span>
-                  <span className="text-xs text-base-content/50">
-                    {cost ? formatPrice(cost.addonsCost) : '...'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Coût total - prend 2 colonnes sur mobile, 2 sur desktop */}
-              <div className="col-span-2 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl p-4 sm:p-5 border border-primary/20 relative overflow-hidden group transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10">
-                {/* Cercle décoratif */}
-                <div className="absolute -right-8 -top-8 w-32 h-32 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors duration-500" />
-
-                <div className="relative">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Icons.Chart className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-semibold text-primary uppercase tracking-wider">Coût mensuel total</span>
-                  </div>
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-primary tabular-nums tracking-tight">
-                      {cost ? formatPrice(cost.totalMonthlyCost) : '...'}
-                    </span>
-                    <span className="text-base-content/50 text-sm font-medium">/mois</span>
-                  </div>
-                  {cost && cost.totalMonthlyCost > 0 && (
-                    <div className="mt-2 flex items-center gap-4 text-xs text-base-content/60">
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-primary/60" />
-                        Runtimes: {Math.round((cost.runtimesCost / cost.totalMonthlyCost) * 100)}%
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-secondary/60" />
-                        Addons: {Math.round((cost.addonsCost / cost.totalMonthlyCost) * 100)}%
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Bouton supprimer mobile (visible uniquement hors mode édition) */}
-          {!isEditing && (
-            <div className="sm:hidden mt-3 pt-3 border-t border-base-300/50">
+            <div className="tooltip tooltip-left hidden sm:block" data-tip="Supprimer ce projet">
               <button
-                className="btn btn-ghost btn-sm text-error w-full justify-center gap-2 cursor-pointer"
+                className="btn btn-ghost btn-sm text-base-content/50 hover:text-error hover:bg-error/10 cursor-pointer"
                 onClick={() => setShowDeleteConfirm(true)}
                 aria-label={`Supprimer le projet ${activeProject.name}`}
               >
                 <Icons.Trash className="w-4 h-4" />
-                Supprimer ce projet
               </button>
             </div>
           )}
         </div>
+
+        {/* Statistiques */}
+        {!isEditing && (
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+            {/* Runtimes */}
+            <div className="flex items-center gap-2">
+              <Icons.Server className="w-4 h-4 text-primary" />
+              <span className="font-medium">{activeProject.runtimes.length}</span>
+              <span className="text-base-content/60">
+                runtime{activeProject.runtimes.length !== 1 ? 's' : ''}
+              </span>
+              <span className="text-base-content/40">
+                ({cost ? formatPrice(cost.runtimesCost) : '...'})
+              </span>
+            </div>
+
+            {/* Separateur */}
+            <span className="hidden sm:block text-base-300">|</span>
+
+            {/* Addons */}
+            <div className="flex items-center gap-2">
+              <Icons.Puzzle className="w-4 h-4 text-secondary" />
+              <span className="font-medium">{activeProject.addons.length}</span>
+              <span className="text-base-content/60">
+                addon{activeProject.addons.length !== 1 ? 's' : ''}
+              </span>
+              <span className="text-base-content/40">
+                ({cost ? formatPrice(cost.addonsCost) : '...'})
+              </span>
+            </div>
+
+            {/* Separateur */}
+            <span className="hidden sm:block text-base-300">|</span>
+
+            {/* Cout total */}
+            <div className="flex items-center gap-2">
+              <Icons.Chart className="w-4 h-4 text-primary" />
+              <span className="font-bold text-primary text-base">
+                {cost ? formatPrice(cost.totalMonthlyCost) : '...'}
+              </span>
+              <span className="text-base-content/60">/mois</span>
+            </div>
+          </div>
+        )}
+
+        {/* Bouton supprimer mobile */}
+        {!isEditing && (
+          <div className="sm:hidden pt-1">
+            <button
+              className="btn btn-ghost btn-sm text-base-content/50 hover:text-error hover:bg-error/10 w-full justify-center gap-2 cursor-pointer"
+              onClick={() => setShowDeleteConfirm(true)}
+              aria-label={`Supprimer le projet ${activeProject.name}`}
+            >
+              <Icons.Trash className="w-4 h-4" />
+              Supprimer ce projet
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Onglets */}
