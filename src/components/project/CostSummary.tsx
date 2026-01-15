@@ -164,57 +164,136 @@ export function CostSummary({ cost }: CostSummaryProps) {
   const totalMinCost = cost.runtimesDetail.reduce((sum, r) => sum + r.minMonthlyCost, 0) + cost.addonsCost
   const totalMaxCost = cost.runtimesDetail.reduce((sum, r) => sum + r.maxMonthlyCost, 0) + cost.addonsCost
   const hasCostRange = totalMinCost !== totalMaxCost
+  const annualCost = cost.totalMonthlyCost * 12
 
   return (
     <div className="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-      {/* Header avec cout total */}
-      <div className="card bg-gradient-to-br from-primary/10 via-base-100 to-secondary/10 border border-base-300 overflow-hidden">
-        <div className="card-body">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            {/* Cout total principal */}
-            <div className="text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                <Icons.Chart className="w-5 h-5 text-primary" />
-                <span className="text-sm font-medium text-base-content/70 uppercase tracking-wide">
-                  Cout mensuel estime
-                </span>
+      {/* Section Projection - Cartes Mensuel et Annuel */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Carte Mensuel - Principale */}
+        <div className="card bg-gradient-to-br from-primary/15 via-primary/5 to-base-100 border-2 border-primary/30 shadow-xl shadow-primary/10 overflow-hidden relative group transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/50">
+          {/* Badge Estime */}
+          <div className="absolute top-3 right-3">
+            <span className="badge badge-primary badge-sm gap-1">
+              <Icons.TrendingUp className="w-3 h-3" />
+              Estime
+            </span>
+          </div>
+
+          {/* Effet de brillance */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+          <div className="card-body p-6 relative">
+            {/* Header avec icone */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-primary/20 rounded-xl ring-2 ring-primary/30">
+                <Icons.Calendar className="w-6 h-6 text-primary" />
               </div>
-              <div className="text-4xl md:text-5xl font-bold text-primary animate-[scaleIn_0.3s_ease-out]">
-                {formatPrice(cost.totalMonthlyCost)}
+              <div>
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">Cout mensuel</span>
+                <p className="text-xs text-base-content/50">Projection sur 1 mois</p>
               </div>
-              {hasCostRange && (
-                <div className="mt-2 text-sm text-base-content/60">
-                  Fourchette: {formatPrice(totalMinCost)} - {formatPrice(totalMaxCost)}
-                </div>
-              )}
             </div>
 
-            {/* Stats rapides */}
-            <div className="flex justify-center gap-6">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Icons.Server className="w-4 h-4 text-primary" />
-                  <span className="text-xs text-base-content/60">Runtimes</span>
-                </div>
-                <div className="font-bold text-xl text-primary">{formatPrice(cost.runtimesCost)}</div>
-                <div className="text-xs text-base-content/50">{cost.runtimesDetail.length} instance(s)</div>
+            {/* Montant principal */}
+            <div className="text-center py-4">
+              <div className="text-5xl md:text-6xl font-black text-primary tabular-nums tracking-tight animate-[scaleIn_0.3s_ease-out]">
+                {formatPrice(cost.totalMonthlyCost)}
               </div>
-              <div className="divider divider-horizontal mx-0" />
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Icons.Puzzle className="w-4 h-4 text-secondary" />
-                  <span className="text-xs text-base-content/60">Addons</span>
+              <div className="text-lg text-primary/70 font-medium mt-1">/mois</div>
+            </div>
+
+            {/* Fourchette si applicable */}
+            {hasCostRange && (
+              <div className="mt-4 pt-4 border-t border-primary/20">
+                <div className="flex items-center justify-center gap-2 text-sm text-base-content/60">
+                  <span>Fourchette:</span>
+                  <span className="font-semibold text-base-content">{formatPrice(totalMinCost)}</span>
+                  <span>-</span>
+                  <span className="font-semibold text-base-content">{formatPrice(totalMaxCost)}</span>
                 </div>
-                <div className="font-bold text-xl text-secondary">{formatPrice(cost.addonsCost)}</div>
-                <div className="text-xs text-base-content/50">{cost.addonsDetail.length} service(s)</div>
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Carte Annuel - Secondaire */}
+        <div className="card bg-gradient-to-br from-accent/15 via-accent/5 to-base-100 border-2 border-accent/30 shadow-xl shadow-accent/10 overflow-hidden relative group transition-all duration-300 hover:shadow-2xl hover:shadow-accent/20 hover:border-accent/50">
+          {/* Badge Projection */}
+          <div className="absolute top-3 right-3">
+            <span className="badge badge-accent badge-sm gap-1">
+              <Icons.TrendingUp className="w-3 h-3" />
+              Projection
+            </span>
+          </div>
+
+          {/* Effet de brillance */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+          <div className="card-body p-6 relative">
+            {/* Header avec icone */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-accent/20 rounded-xl ring-2 ring-accent/30">
+                <Icons.CalendarYear className="w-6 h-6 text-accent" />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-accent uppercase tracking-wider">Cout annuel</span>
+                <p className="text-xs text-base-content/50">Projection sur 12 mois</p>
+              </div>
+            </div>
+
+            {/* Montant principal */}
+            <div className="text-center py-4">
+              <div className="text-5xl md:text-6xl font-black text-accent tabular-nums tracking-tight animate-[scaleIn_0.3s_ease-out_0.1s_both]">
+                {formatPrice(annualCost)}
+              </div>
+              <div className="text-lg text-accent/70 font-medium mt-1">/an</div>
+            </div>
+
+            {/* Fourchette annuelle si applicable */}
+            {hasCostRange && (
+              <div className="mt-4 pt-4 border-t border-accent/20">
+                <div className="flex items-center justify-center gap-2 text-sm text-base-content/60">
+                  <span>Fourchette:</span>
+                  <span className="font-semibold text-base-content">{formatPrice(totalMinCost * 12)}</span>
+                  <span>-</span>
+                  <span className="font-semibold text-base-content">{formatPrice(totalMaxCost * 12)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Stats rapides et repartition */}
+      <div className="card bg-base-100 border border-base-300 overflow-hidden">
+        <div className="card-body p-5">
+          {/* Stats rapides */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-center gap-6 mb-6">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <Icons.Server className="w-4 h-4 text-primary" />
+                <span className="text-xs text-base-content/60 uppercase tracking-wide">Runtimes</span>
+              </div>
+              <div className="font-bold text-2xl text-primary">{formatPrice(cost.runtimesCost)}</div>
+              <div className="text-xs text-base-content/50">{cost.runtimesDetail.length} instance(s)</div>
+            </div>
+            <div className="hidden sm:block divider divider-horizontal mx-0 h-16" />
+            <div className="sm:hidden divider my-0" />
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <Icons.Puzzle className="w-4 h-4 text-secondary" />
+                <span className="text-xs text-base-content/60 uppercase tracking-wide">Addons</span>
+              </div>
+              <div className="font-bold text-2xl text-secondary">{formatPrice(cost.addonsCost)}</div>
+              <div className="text-xs text-base-content/50">{cost.addonsDetail.length} service(s)</div>
             </div>
           </div>
 
           {/* Barre de repartition */}
           {cost.totalMonthlyCost > 0 && (
             <>
-              <div className="divider my-4" />
+              <div className="divider my-2" />
               <CostBreakdownBar
                 runtimesCost={cost.runtimesCost}
                 addonsCost={cost.addonsCost}
@@ -285,10 +364,10 @@ export function CostSummary({ cost }: CostSummaryProps) {
       {cost.runtimesDetail.length === 0 && cost.addonsDetail.length === 0 && (
         <div className="card bg-base-100 border border-base-300">
           <div className="card-body items-center text-center py-12">
-            <Icons.Chart className="w-12 h-12 text-base-content/20 mb-4" />
+            <Icons.TrendingUp className="w-12 h-12 text-base-content/20 mb-4" />
             <h3 className="font-semibold text-lg">Aucun element a facturer</h3>
             <p className="text-base-content/60">
-              Ajoutez des runtimes ou des addons pour voir l'estimation des couts.
+              Ajoutez des runtimes ou des addons pour voir la projection des couts.
             </p>
           </div>
         </div>

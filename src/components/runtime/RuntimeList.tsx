@@ -178,10 +178,6 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
               {/* Stats rapides */}
               <div className="flex gap-4">
                 <div className="text-center px-4 border-l border-base-300">
-                  <p className="text-2xl font-bold">{project.runtimes.length}</p>
-                  <p className="text-xs text-base-content/60">Runtime(s)</p>
-                </div>
-                <div className="text-center px-4 border-l border-base-300">
                   <p className="text-2xl font-bold">{costSummary.instances}</p>
                   <p className="text-xs text-base-content/60">Instance(s) max</p>
                 </div>

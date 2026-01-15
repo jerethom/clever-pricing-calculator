@@ -125,10 +125,6 @@ export function AddonList({ projectId }: AddonListProps) {
               {/* Stats rapides */}
               <div className="flex gap-4">
                 <div className="text-center px-4 border-l border-base-300">
-                  <p className="text-2xl font-bold">{costSummary.count}</p>
-                  <p className="text-xs text-base-content/60">Addon(s)</p>
-                </div>
-                <div className="text-center px-4 border-l border-base-300">
                   <p className="text-2xl font-bold">{providers.length}</p>
                   <p className="text-xs text-base-content/60">Provider(s)</p>
                 </div>

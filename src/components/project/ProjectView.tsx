@@ -108,9 +108,6 @@ export function ProjectView() {
                     <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate">
                       {activeProject.name}
                     </h1>
-                    <p className="text-xs text-base-content/50 mt-0.5">
-                      {activeProject.runtimes.length + activeProject.addons.length} ressources configurées
-                    </p>
                   </div>
                   <button
                     className="btn btn-ghost btn-sm btn-circle opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10 cursor-pointer"
@@ -251,9 +248,6 @@ export function ProjectView() {
               {activeProject.runtimes.length}
             </span>
           </div>
-          <div className={`text-xs tabular-nums transition-all duration-300 ${activeTab === 'runtimes' ? 'text-primary font-medium' : 'text-base-content/50'}`}>
-            {cost ? formatPrice(cost.runtimesCost) : '...'}/mois
-          </div>
           {activeTab === 'runtimes' && (
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary rounded-full" />
           )}
@@ -281,15 +275,12 @@ export function ProjectView() {
               {activeProject.addons.length}
             </span>
           </div>
-          <div className={`text-xs tabular-nums transition-all duration-300 ${activeTab === 'addons' ? 'text-secondary font-medium' : 'text-base-content/50'}`}>
-            {cost ? formatPrice(cost.addonsCost) : '...'}/mois
-          </div>
           {activeTab === 'addons' && (
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-secondary rounded-full" />
           )}
         </button>
 
-        {/* Onglet Résumé */}
+        {/* Onglet Projection */}
         <button
           role="tab"
           aria-selected={activeTab === 'summary'}
@@ -302,14 +293,11 @@ export function ProjectView() {
         >
           <div className={`flex items-center gap-2 transition-transform duration-300 ${activeTab === 'summary' ? 'scale-110' : 'group-hover:scale-105'}`}>
             <div className={`p-2 rounded-lg transition-colors duration-300 ${activeTab === 'summary' ? 'bg-accent text-accent-content' : 'bg-base-300 text-base-content/70 group-hover:bg-accent/20 group-hover:text-accent'}`}>
-              <Icons.Chart className="w-5 h-5" />
+              <Icons.TrendingUp className="w-5 h-5" />
             </div>
             <span className={`font-semibold text-lg transition-colors duration-300 ${activeTab === 'summary' ? 'text-accent' : 'text-base-content/80 group-hover:text-base-content'}`}>
-              Résumé
+              Projection
             </span>
-          </div>
-          <div className={`text-xs tabular-nums transition-all duration-300 ${activeTab === 'summary' ? 'text-accent font-medium' : 'text-base-content/50'}`}>
-            {cost ? formatPrice(cost.totalMonthlyCost) : '...'}/mois
           </div>
           {activeTab === 'summary' && (
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-accent rounded-full" />
