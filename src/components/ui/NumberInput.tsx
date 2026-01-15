@@ -83,7 +83,7 @@ export function NumberInput({
   const buttonBaseClasses = `
     join-item flex items-center justify-center
     bg-base-200 border border-base-300
-    text-base-content
+    text-base-content cursor-pointer
     transition-all duration-150 ease-out
     hover:bg-primary hover:text-primary-content hover:border-primary
     focus-visible:z-10
@@ -167,12 +167,13 @@ export function NumberInput({
 
   // Variante par défaut : label au-dessus
   return (
-    <div className={`form-control ${className}`}>
+    <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
-        <label htmlFor={inputId} className="label py-1">
-          <span className={`label-text font-medium ${sizeClasses[size].label}`}>
-            {label}
-          </span>
+        <label
+          htmlFor={inputId}
+          className={`${sizeClasses[size].label} font-medium text-base-content/80`}
+        >
+          {label}
         </label>
       )}
       {inputGroup}

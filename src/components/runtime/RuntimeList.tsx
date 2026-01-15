@@ -377,7 +377,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
         <div
           className={
             viewMode === 'grid'
-              ? 'grid gap-4 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+              ? 'grid gap-4 grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3'
               : 'flex flex-col gap-3'
           }
         >
