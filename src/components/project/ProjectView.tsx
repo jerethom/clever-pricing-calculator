@@ -3,6 +3,7 @@ import {
   useSelector,
   useProjectActions,
   selectActiveProject,
+  selectActiveOrganization,
 } from '@/store'
 import { useActiveProjectCost } from '@/hooks/useCostCalculation'
 import { formatPrice } from '@/lib/costCalculator'
@@ -14,6 +15,7 @@ const CostSummary = lazy(() => import('@/components/project/CostSummary'))
 
 export function ProjectView() {
   const activeProject = useSelector(selectActiveProject)
+  const activeOrg = useSelector(selectActiveOrganization)
   const { updateProject, deleteProject } = useProjectActions()
   const cost = useActiveProjectCost()
 
@@ -98,18 +100,26 @@ export function ProjectView() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 group">
-                <Icons.Folder className="w-5 h-5 text-primary shrink-0" />
-                <h1 className="text-xl sm:text-2xl font-bold truncate">
-                  {activeProject.name}
-                </h1>
-                <button
-                  className="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                  onClick={handleStartEdit}
-                  aria-label="Modifier le nom du projet"
-                >
-                  <Icons.Edit className="w-3.5 h-3.5" />
-                </button>
+              <div>
+                {activeOrg && (
+                  <div className="flex items-center gap-1.5 text-sm text-base-content/50 mb-1">
+                    <Icons.Building className="w-3.5 h-3.5" />
+                    <span>{activeOrg.name}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 group">
+                  <Icons.Folder className="w-5 h-5 text-primary shrink-0" />
+                  <h1 className="text-xl sm:text-2xl font-bold truncate">
+                    {activeProject.name}
+                  </h1>
+                  <button
+                    className="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    onClick={handleStartEdit}
+                    aria-label="Modifier le nom du projet"
+                  >
+                    <Icons.Edit className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             )}
           </div>

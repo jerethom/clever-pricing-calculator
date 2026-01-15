@@ -6,6 +6,8 @@ import {
   selectActiveProject,
   selectProjectById,
   selectProjects,
+  selectActiveOrganizationProjects,
+  selectProjectsByOrganization,
 } from '@/store'
 import { calculateProjectCost } from '@/lib/costCalculator'
 import type { ProjectCostSummary } from '@/types'
@@ -53,5 +55,42 @@ export function useAllProjectsCosts(): Map<string, ProjectCostSummary> {
     }
 
     return costsMap
+  }, [projects, instances])
+}
+
+/**
+ * Hook pour calculer les couts des projets de l'organisation active
+ */
+export function useActiveOrganizationCosts(): Map<string, ProjectCostSummary> {
+  const { data: instances } = useInstances()
+  const orgProjects = useSelector(selectActiveOrganizationProjects)
+
+  return useMemo(() => {
+    const costsMap = new Map<string, ProjectCostSummary>()
+
+    if (!instances) return costsMap
+
+    for (const project of orgProjects) {
+      costsMap.set(project.id, calculateProjectCost(project, instances))
+    }
+
+    return costsMap
+  }, [orgProjects, instances])
+}
+
+/**
+ * Hook pour calculer le total des couts d'une organisation
+ */
+export function useOrganizationTotalCost(organizationId: string): number {
+  const { data: instances } = useInstances()
+  const projects = useSelectorWith(selectProjectsByOrganization, organizationId)
+
+  return useMemo(() => {
+    if (!instances) return 0
+
+    return projects.reduce((total, project) => {
+      const cost = calculateProjectCost(project, instances)
+      return total + cost.totalMonthlyCost
+    }, 0)
   }, [projects, instances])
 }

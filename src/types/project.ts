@@ -24,6 +24,7 @@ export interface AddonConfig {
 
 export interface Project {
   id: string
+  organizationId: string
   name: string
   createdAt: string
   updatedAt: string

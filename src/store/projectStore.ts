@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
-import type { Project, RuntimeConfig, AddonConfig } from '@/types'
+import type { Project, RuntimeConfig, AddonConfig, Organization } from '@/types'
+import { DEFAULT_ORGANIZATION_ID, DEFAULT_ORGANIZATION_NAME } from '@/types'
 
 function generateId(): string {
   return crypto.randomUUID()
@@ -13,13 +14,23 @@ function now(): string {
 
 export interface ProjectState {
   // State
+  organizations: Organization[]
   projects: Project[]
+  activeOrganizationId: string | null
   activeProjectId: string | null
+}
+
+export interface OrganizationActions {
+  // Organization actions
+  createOrganization: (name: string) => string
+  updateOrganization: (id: string, updates: Partial<Pick<Organization, 'name'>>) => void
+  deleteOrganization: (id: string) => void
+  setActiveOrganization: (id: string | null) => void
 }
 
 export interface ProjectActions {
   // Project actions
-  createProject: (name: string) => string
+  createProject: (organizationId: string, name: string) => string
   updateProject: (id: string, updates: Partial<Pick<Project, 'name'>>) => void
   deleteProject: (id: string) => void
   setActiveProject: (id: string | null) => void
@@ -35,20 +46,90 @@ export interface ProjectActions {
   removeAddon: (projectId: string, addonId: string) => void
 }
 
-export type ProjectStore = ProjectState & ProjectActions
+export type ProjectStore = ProjectState & OrganizationActions & ProjectActions
+
+// Type pour la migration depuis la version 1
+interface V1State {
+  projects: Omit<Project, 'organizationId'>[]
+  activeProjectId: string | null
+}
+
+// Organisation par defaut pour les nouveaux utilisateurs
+function createDefaultOrganization(): Organization {
+  const timestamp = now()
+  return {
+    id: DEFAULT_ORGANIZATION_ID,
+    name: DEFAULT_ORGANIZATION_NAME,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }
+}
 
 export const useProjectStore = create<ProjectStore>()(
   persist(
     immer((set) => ({
+      organizations: [createDefaultOrganization()],
       projects: [],
+      activeOrganizationId: DEFAULT_ORGANIZATION_ID,
       activeProjectId: null,
 
+      // Organization actions
+      createOrganization: (name: string) => {
+        const id = generateId()
+        const timestamp = now()
+        const newOrg: Organization = {
+          id,
+          name,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        }
+        set(state => {
+          state.organizations.push(newOrg)
+          state.activeOrganizationId = id
+          state.activeProjectId = null
+        })
+        return id
+      },
+
+      updateOrganization: (id: string, updates: Partial<Pick<Organization, 'name'>>) => {
+        set(state => {
+          const org = state.organizations.find(o => o.id === id)
+          if (org) {
+            Object.assign(org, updates)
+            org.updatedAt = now()
+          }
+        })
+      },
+
+      deleteOrganization: (id: string) => {
+        set(state => {
+          const index = state.organizations.findIndex(o => o.id === id)
+          if (index !== -1) {
+            state.organizations.splice(index, 1)
+            // Supprimer tous les projets de l'organisation
+            state.projects = state.projects.filter(p => p.organizationId !== id)
+          }
+          if (state.activeOrganizationId === id) {
+            state.activeOrganizationId = state.organizations[0]?.id ?? null
+            state.activeProjectId = null
+          }
+        })
+      },
+
+      setActiveOrganization: (id: string | null) => {
+        set(state => {
+          state.activeOrganizationId = id
+          state.activeProjectId = null
+        })
+      },
+
       // Project actions
-      createProject: (name: string) => {
+      createProject: (organizationId: string, name: string) => {
         const id = generateId()
         const timestamp = now()
         const newProject: Project = {
           id,
+          organizationId,
           name,
           createdAt: timestamp,
           updatedAt: timestamp,
@@ -170,7 +251,35 @@ export const useProjectStore = create<ProjectStore>()(
     })),
     {
       name: 'clever-pricing-projects',
-      version: 1,
+      version: 2,
+      migrate: (persistedState: unknown, version: number) => {
+        if (version === 1) {
+          const state = persistedState as V1State
+          const timestamp = now()
+
+          // Creer l'organisation par defaut
+          const defaultOrg: Organization = {
+            id: DEFAULT_ORGANIZATION_ID,
+            name: DEFAULT_ORGANIZATION_NAME,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          }
+
+          // Migrer les projets existants vers l'org par defaut
+          const migratedProjects: Project[] = state.projects.map(project => ({
+            ...project,
+            organizationId: DEFAULT_ORGANIZATION_ID,
+          }))
+
+          return {
+            organizations: [defaultOrg],
+            projects: migratedProjects,
+            activeOrganizationId: DEFAULT_ORGANIZATION_ID,
+            activeProjectId: state.activeProjectId,
+          }
+        }
+        return persistedState
+      },
     }
   )
 )

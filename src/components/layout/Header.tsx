@@ -1,5 +1,10 @@
 import { useAllProjectsCosts } from '@/hooks/useCostCalculation'
-import { useSelector, selectProjects } from '@/store'
+import {
+  useSelector,
+  selectProjects,
+  selectActiveOrganization,
+  selectActiveProject,
+} from '@/store'
 import { formatPrice } from '@/lib/costCalculator'
 import { Icons } from '@/components/ui'
 
@@ -10,6 +15,8 @@ interface HeaderProps {
 export function Header({ onToggleSidebar }: HeaderProps) {
   const projectCosts = useAllProjectsCosts()
   const projects = useSelector(selectProjects)
+  const activeOrg = useSelector(selectActiveOrganization)
+  const activeProject = useSelector(selectActiveProject)
 
   // Calcul des totaux de tous les projets
   const totals = Array.from(projectCosts.values()).reduce(
@@ -42,10 +49,24 @@ export function Header({ onToggleSidebar }: HeaderProps) {
         </button>
       </div>
 
-      <div className="flex-1">
+      <div className="flex-1 flex items-center gap-4">
         <span className="text-xl font-semibold px-4 tracking-tight text-white">
           Clever Cloud Pricing Calculator
         </span>
+        {/* Breadcrumb organisation / projet */}
+        {activeOrg && (
+          <div className="hidden sm:flex items-center gap-2 text-sm text-white/60 px-3 py-1 bg-white/5 rounded">
+            <Icons.Building className="w-3.5 h-3.5" />
+            <span className="truncate max-w-32">{activeOrg.name}</span>
+            {activeProject && (
+              <>
+                <Icons.ChevronRight className="w-3 h-3 text-white/40" />
+                <Icons.Folder className="w-3.5 h-3.5 text-primary" />
+                <span className="truncate max-w-32 text-white/80">{activeProject.name}</span>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex-none">

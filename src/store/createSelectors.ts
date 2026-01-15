@@ -57,6 +57,12 @@ export function useSelectors<T extends object>(
 
 // Selector stable pour les actions (ne change jamais)
 const selectActions = (state: ProjectStore) => ({
+  // Organization actions
+  createOrganization: state.createOrganization,
+  updateOrganization: state.updateOrganization,
+  deleteOrganization: state.deleteOrganization,
+  setActiveOrganization: state.setActiveOrganization,
+  // Project actions
   createProject: state.createProject,
   updateProject: state.updateProject,
   deleteProject: state.deleteProject,

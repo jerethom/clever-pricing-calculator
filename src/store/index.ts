@@ -1,6 +1,6 @@
 // Store principal
 export { useProjectStore } from './projectStore'
-export type { ProjectStore, ProjectState, ProjectActions } from './projectStore'
+export type { ProjectStore, ProjectState, ProjectActions, OrganizationActions } from './projectStore'
 
 // Selectors
 export * from './selectors'
