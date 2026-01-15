@@ -65,4 +65,39 @@
       transform: translateY(0);
     }
   }
+
+  /* Animation de mise à jour de prix */
+  .price-update {
+    animation: priceFlash 0.4s ease-out;
+  }
+
+  @keyframes priceFlash {
+    0% {
+      background-color: var(--color-primary);
+      color: var(--color-primary-content);
+      transform: scale(1.05);
+    }
+    100% {
+      background-color: transparent;
+      transform: scale(1);
+    }
+  }
+
+  /* Animation du badge de statut scaling */
+  .status-scaling {
+    animation: statusPulse 2s infinite;
+  }
+
+  @keyframes statusPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Mode tactile : cellules plus grandes */
+  @media (pointer: coarse) {
+    .touch-calendar-cell {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
 }

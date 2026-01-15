@@ -28,7 +28,7 @@ export function Sidebar({ onClose }: SidebarProps) {
   return (
     <div className="h-full bg-[#13172e] w-80 flex flex-col">
       {/* Header de la sidebar */}
-      <div className="px-5 py-4 border-b border-white/10">
+      <div className="px-5 py-[1.8rem] border-b border-white/10">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-white/50">
             Projets

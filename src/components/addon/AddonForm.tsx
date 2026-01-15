@@ -48,7 +48,7 @@ export function AddonForm({ projectId, onClose }: AddonFormProps) {
 
   const filteredPlans = selectedProvider?.plans
     .filter(plan => plan.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .toSorted((a, b) => a.price - b.price)
+    .sort((a, b) => a.price - b.price)
 
   const handleProviderSelect = (providerId: string) => {
     setSelectedProviderId(providerId)
@@ -56,7 +56,7 @@ export function AddonForm({ projectId, onClose }: AddonFormProps) {
     const provider = addonProviders?.find(p => p.id === providerId)
     if (provider && provider.plans.length > 0) {
       // Sélectionner le plan le moins cher par défaut
-      const sortedPlans = provider.plans.toSorted((a, b) => a.price - b.price)
+      const sortedPlans = [...provider.plans].sort((a, b) => a.price - b.price)
       setSelectedPlanId(sortedPlans[0].id)
     }
   }

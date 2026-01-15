@@ -5,7 +5,13 @@ interface IconProps {
 export const Icons = {
   Plus: ({ className = 'w-4 h-4' }: IconProps) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+      <path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+    </svg>
+  ),
+
+  Minus: ({ className = 'w-4 h-4' }: IconProps) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2.5" d="M5 12h14" />
     </svg>
   ),
 
