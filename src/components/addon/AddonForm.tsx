@@ -3,6 +3,7 @@ import { useAddons } from '@/hooks/useAddons'
 import { useProjectStore } from '@/store/projectStore'
 import { formatMonthlyPrice } from '@/lib/costCalculator'
 import type { AddonFeature } from '@/api/types'
+import type { AddonConfig } from '@/types/project'
 
 // Features prioritaires à afficher en premier (par ordre de priorité)
 const PRIORITY_FEATURES = ['memory', 'max_db_size', 'disk', 'vcpus', 'cpu', 'storage', 'max_connection_limit']
@@ -25,14 +26,18 @@ function sortFeaturesByPriority(features: AddonFeature[]): AddonFeature[] {
 interface AddonFormProps {
   projectId: string
   onClose: () => void
+  editingAddon?: AddonConfig
 }
 
-export function AddonForm({ projectId, onClose }: AddonFormProps) {
+export function AddonForm({ projectId, onClose, editingAddon }: AddonFormProps) {
   const { data: addonProviders, isLoading } = useAddons()
   const addAddon = useProjectStore(state => state.addAddon)
+  const updateAddon = useProjectStore(state => state.updateAddon)
 
-  const [selectedProviderId, setSelectedProviderId] = useState('')
-  const [selectedPlanId, setSelectedPlanId] = useState('')
+  const isEditMode = !!editingAddon
+
+  const [selectedProviderId, setSelectedProviderId] = useState(editingAddon?.providerId ?? '')
+  const [selectedPlanId, setSelectedPlanId] = useState(editingAddon?.planId ?? '')
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredProviders = addonProviders
@@ -66,14 +71,22 @@ export function AddonForm({ projectId, onClose }: AddonFormProps) {
 
     if (!selectedProvider || !selectedPlan) return
 
-    addAddon(projectId, {
-      providerId: selectedProvider.id,
-      providerName: selectedProvider.name,
-      providerLogo: selectedProvider.logoUrl,
-      planId: selectedPlan.id,
-      planName: selectedPlan.name,
-      monthlyPrice: selectedPlan.price,
-    })
+    if (isEditMode && editingAddon) {
+      updateAddon(projectId, editingAddon.id, {
+        planId: selectedPlan.id,
+        planName: selectedPlan.name,
+        monthlyPrice: selectedPlan.price,
+      })
+    } else {
+      addAddon(projectId, {
+        providerId: selectedProvider.id,
+        providerName: selectedProvider.name,
+        providerLogo: selectedProvider.logoUrl,
+        planId: selectedPlan.id,
+        planName: selectedPlan.name,
+        monthlyPrice: selectedPlan.price,
+      })
+    }
 
     onClose()
   }
@@ -81,7 +94,9 @@ export function AddonForm({ projectId, onClose }: AddonFormProps) {
   return (
     <div className="modal modal-open">
       <div className="modal-box max-w-3xl">
-        <h3 className="font-bold text-lg mb-4">Ajouter un addon</h3>
+        <h3 className="font-bold text-lg mb-4">
+          {isEditMode ? 'Modifier l\'addon' : 'Ajouter un addon'}
+        </h3>
 
         {isLoading ? (
           <div className="flex justify-center py-8">
@@ -115,7 +130,7 @@ export function AddonForm({ projectId, onClose }: AddonFormProps) {
             </div>
 
             {/* Liste des providers */}
-            {!selectedProviderId ? (
+            {!selectedProviderId && !isEditMode ? (
               <div className="grid gap-3 max-h-96 overflow-y-auto">
                 {filteredProviders?.map(provider => (
                   <button
@@ -167,17 +182,19 @@ export function AddonForm({ projectId, onClose }: AddonFormProps) {
                       {selectedProvider?.shortDesc}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => {
-                      setSelectedProviderId('')
-                      setSelectedPlanId('')
-                      setSearchQuery('')
-                    }}
-                  >
-                    Changer
-                  </button>
+                  {!isEditMode && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => {
+                        setSelectedProviderId('')
+                        setSelectedPlanId('')
+                        setSearchQuery('')
+                      }}
+                    >
+                      Changer
+                    </button>
+                  )}
                 </div>
 
                 {/* Sélection du plan */}
@@ -230,7 +247,7 @@ export function AddonForm({ projectId, onClose }: AddonFormProps) {
                 className="btn btn-primary"
                 disabled={!selectedProviderId || !selectedPlanId}
               >
-                Ajouter
+                {isEditMode ? 'Enregistrer' : 'Ajouter'}
               </button>
             </div>
           </form>
