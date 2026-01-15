@@ -186,91 +186,78 @@ export function ProjectView() {
       {/* Onglets */}
       <div
         role="tablist"
-        className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-1 bg-base-200/50 rounded-2xl"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-1 p-1 bg-base-200/50 rounded-xl pb-8"
       >
         {/* Onglet Runtimes */}
         <button
           role="tab"
           aria-selected={activeTab === 'runtimes'}
-          className={`group relative flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-300 ease-out cursor-pointer
+          className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors duration-200 cursor-pointer
             ${activeTab === 'runtimes'
-              ? 'bg-base-100 shadow-lg shadow-primary/10 ring-2 ring-primary/20'
-              : 'hover:bg-base-100/50 hover:shadow-md'
+              ? 'bg-base-100 border-b-2 border-primary'
+              : 'bg-base-100 hover:bg-primary/10'
             }`}
           onClick={() => setActiveTab('runtimes')}
         >
-          <div className={`flex items-center gap-2 transition-transform duration-300 ${activeTab === 'runtimes' ? 'scale-110' : 'group-hover:scale-105'}`}>
-            <div className={`p-2 rounded-lg transition-colors duration-300 ${activeTab === 'runtimes' ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/70 group-hover:bg-primary/20 group-hover:text-primary'}`}>
-              <Icons.Server className="w-5 h-5" />
-            </div>
-            <span className={`font-semibold text-lg transition-colors duration-300 ${activeTab === 'runtimes' ? 'text-primary' : 'text-base-content/80 group-hover:text-base-content'}`}>
-              Runtimes
-            </span>
-            <span className={`badge badge-sm transition-all duration-300 ${activeTab === 'runtimes' ? 'badge-primary' : 'badge-ghost group-hover:badge-primary/50'}`}>
-              {activeProject.runtimes.length}
-            </span>
+          <div className={`p-1.5 rounded-md transition-colors duration-200 ${activeTab === 'runtimes' ? 'bg-primary/10 text-primary' : 'text-base-content/60 group-hover:text-primary'}`}>
+            <Icons.Server className="w-4 h-4" />
           </div>
-          {activeTab === 'runtimes' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary rounded-full" />
-          )}
+          <span className={`font-medium transition-colors duration-200 ${activeTab === 'runtimes' ? 'text-primary' : 'text-base-content/70 group-hover:text-base-content'}`}>
+            Runtimes
+          </span>
+          <span className={`badge badge-sm ${activeTab === 'runtimes' ? 'badge-primary' : 'badge-ghost'}`}>
+            {activeProject.runtimes.length}
+          </span>
         </button>
 
         {/* Onglet Addons */}
         <button
           role="tab"
           aria-selected={activeTab === 'addons'}
-          className={`group relative flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-300 ease-out cursor-pointer
+          className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors duration-200 cursor-pointer
             ${activeTab === 'addons'
-              ? 'bg-base-100 shadow-lg shadow-secondary/10 ring-2 ring-secondary/20'
-              : 'hover:bg-base-100/50 hover:shadow-md'
+              ? 'bg-base-100 border-b-2 border-secondary'
+              : 'bg-base-100 hover:bg-secondary/10'
             }`}
           onClick={() => setActiveTab('addons')}
         >
-          <div className={`flex items-center gap-2 transition-transform duration-300 ${activeTab === 'addons' ? 'scale-110' : 'group-hover:scale-105'}`}>
-            <div className={`p-2 rounded-lg transition-colors duration-300 ${activeTab === 'addons' ? 'bg-secondary text-secondary-content' : 'bg-base-300 text-base-content/70 group-hover:bg-secondary/20 group-hover:text-secondary'}`}>
-              <Icons.Puzzle className="w-5 h-5" />
-            </div>
-            <span className={`font-semibold text-lg transition-colors duration-300 ${activeTab === 'addons' ? 'text-secondary' : 'text-base-content/80 group-hover:text-base-content'}`}>
-              Addons
-            </span>
-            <span className={`badge badge-sm transition-all duration-300 ${activeTab === 'addons' ? 'badge-secondary' : 'badge-ghost group-hover:badge-secondary/50'}`}>
-              {activeProject.addons.length}
-            </span>
+          <div className={`p-1.5 rounded-md transition-colors duration-200 ${activeTab === 'addons' ? 'bg-secondary/10 text-secondary' : 'text-base-content/60 group-hover:text-secondary'}`}>
+            <Icons.Puzzle className="w-4 h-4" />
           </div>
-          {activeTab === 'addons' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-secondary rounded-full" />
-          )}
+          <span className={`font-medium transition-colors duration-200 ${activeTab === 'addons' ? 'text-secondary' : 'text-base-content/70 group-hover:text-base-content'}`}>
+            Addons
+          </span>
+          <span className={`badge badge-sm ${activeTab === 'addons' ? 'badge-secondary' : 'badge-ghost'}`}>
+            {activeProject.addons.length}
+          </span>
         </button>
 
         {/* Onglet Projection */}
         <button
           role="tab"
           aria-selected={activeTab === 'summary'}
-          className={`group relative flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-300 ease-out cursor-pointer
+          className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors duration-200 cursor-pointer
             ${activeTab === 'summary'
-              ? 'bg-base-100 shadow-lg shadow-accent/10 ring-2 ring-accent/20'
-              : 'hover:bg-base-100/50 hover:shadow-md'
+              ? 'bg-base-100 border-b-2 border-accent'
+              : 'bg-base-100 hover:bg-accent/10'
             }`}
           onClick={() => setActiveTab('summary')}
         >
-          <div className={`flex items-center gap-2 transition-transform duration-300 ${activeTab === 'summary' ? 'scale-110' : 'group-hover:scale-105'}`}>
-            <div className={`p-2 rounded-lg transition-colors duration-300 ${activeTab === 'summary' ? 'bg-accent text-accent-content' : 'bg-base-300 text-base-content/70 group-hover:bg-accent/20 group-hover:text-accent'}`}>
-              <Icons.TrendingUp className="w-5 h-5" />
-            </div>
-            <span className={`font-semibold text-lg transition-colors duration-300 ${activeTab === 'summary' ? 'text-accent' : 'text-base-content/80 group-hover:text-base-content'}`}>
-              Projection
-            </span>
+          <div className={`p-1.5 rounded-md transition-colors duration-200 ${activeTab === 'summary' ? 'bg-accent/10 text-accent' : 'text-base-content/60 group-hover:text-accent'}`}>
+            <Icons.TrendingUp className="w-4 h-4" />
           </div>
-          {activeTab === 'summary' && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-accent rounded-full" />
-          )}
+          <span className={`font-medium transition-colors duration-200 ${activeTab === 'summary' ? 'text-accent' : 'text-base-content/70 group-hover:text-base-content'}`}>
+            Projection
+          </span>
         </button>
       </div>
 
       {/* Contenu des onglets */}
-      {activeTab === 'runtimes' && <RuntimeList projectId={activeProject.id} />}
-      {activeTab === 'addons' && <AddonList projectId={activeProject.id} />}
-      {activeTab === 'summary' && cost && <CostSummary cost={cost} />}
+      <div className="mt-2">
+        {activeTab === 'runtimes' && <RuntimeList projectId={activeProject.id} />}
+        {activeTab === 'addons' && <AddonList projectId={activeProject.id} />}
+        {activeTab === 'summary' && cost && <CostSummary cost={cost} />}
+      </div>
 
       {/* Modal de confirmation de suppression */}
       <ConfirmDialog
