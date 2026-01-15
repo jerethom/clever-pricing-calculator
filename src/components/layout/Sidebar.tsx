@@ -61,7 +61,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                 <li key={project.id}>
                   <button
                     className={`
-                      group relative w-full text-left px-3 py-2.5
+                      group relative w-full text-left px-3 py-2.5 cursor-pointer
                       transition-all duration-150 ease-out
                       ${isActive
                         ? 'bg-[#5754aa] border-l-2 border-l-white'
@@ -113,7 +113,7 @@ export function Sidebar({ onClose }: SidebarProps) {
       <div className="px-3 pb-3">
         <button
           className="
-            w-full flex items-center justify-center gap-2
+            w-full flex items-center justify-center gap-2 cursor-pointer
             px-4 py-2.5 text-sm font-medium
             bg-[#5754aa] hover:bg-[#6563b8] active:bg-[#4a4899]
             text-white transition-colors duration-150

@@ -1,4 +1,5 @@
 import { useAllProjectsCosts } from '@/hooks/useCostCalculation'
+import { useProjectStore } from '@/store/projectStore'
 import { formatPrice } from '@/lib/costCalculator'
 import { Icons } from '@/components/ui'
 
@@ -8,11 +9,25 @@ interface HeaderProps {
 
 export function Header({ onToggleSidebar }: HeaderProps) {
   const projectCosts = useAllProjectsCosts()
+  const projects = useProjectStore(state => state.projects)
 
-  // Calcul du coût total de tous les projets
-  const totalCost = Array.from(projectCosts.values()).reduce(
-    (sum, cost) => sum + cost.totalMonthlyCost,
-    0
+  // Calcul des totaux de tous les projets
+  const totals = Array.from(projectCosts.values()).reduce(
+    (acc, cost) => ({
+      runtimes: acc.runtimes + cost.runtimesCost,
+      addons: acc.addons + cost.addonsCost,
+      total: acc.total + cost.totalMonthlyCost,
+    }),
+    { runtimes: 0, addons: 0, total: 0 }
+  )
+
+  // Comptage des runtimes et addons
+  const counts = projects.reduce(
+    (acc, project) => ({
+      runtimes: acc.runtimes + project.runtimes.length,
+      addons: acc.addons + project.addons.length,
+    }),
+    { runtimes: 0, addons: 0 }
   )
 
   return (
@@ -34,12 +49,53 @@ export function Header({ onToggleSidebar }: HeaderProps) {
       </div>
 
       <div className="flex-none">
-        <div className="bg-white/10 px-4 py-2 border border-white/20">
-          <div className="text-xs text-white/70 uppercase tracking-wide">
-            Total mensuel
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Statistiques detaillees - visibles sur desktop */}
+          <div className="hidden md:flex items-center gap-4 text-sm">
+            {/* Projets */}
+            <div className="flex items-center gap-2">
+              <Icons.Folder className="w-4 h-4 text-white/60" />
+              <span className="font-medium text-white tabular-nums">{projects.length}</span>
+              <span className="text-white/50">projet{projects.length !== 1 ? 's' : ''}</span>
+            </div>
+
+            <span className="text-white/20">|</span>
+
+            {/* Runtimes */}
+            <div className="flex items-center gap-2">
+              <Icons.Server className="w-4 h-4 text-primary" />
+              <span className="font-medium text-white tabular-nums">{counts.runtimes}</span>
+              <span className="text-white/50 hidden lg:inline">
+                runtime{counts.runtimes !== 1 ? 's' : ''}
+              </span>
+              <span className="text-white/40 tabular-nums">
+                ({formatPrice(totals.runtimes)})
+              </span>
+            </div>
+
+            <span className="text-white/20">|</span>
+
+            {/* Addons */}
+            <div className="flex items-center gap-2">
+              <Icons.Puzzle className="w-4 h-4 text-secondary" />
+              <span className="font-medium text-white tabular-nums">{counts.addons}</span>
+              <span className="text-white/50 hidden lg:inline">
+                addon{counts.addons !== 1 ? 's' : ''}
+              </span>
+              <span className="text-white/40 tabular-nums">
+                ({formatPrice(totals.addons)})
+              </span>
+            </div>
           </div>
-          <div className="text-xl font-bold text-white tabular-nums">
-            {formatPrice(totalCost)}
+
+          {/* Total - toujours visible */}
+          <div className="bg-white/10 px-3 sm:px-4 py-2 border border-white/20">
+            <div className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wide">
+              Total mensuel
+            </div>
+            <div className="text-lg sm:text-xl font-bold text-white tabular-nums">
+              {formatPrice(totals.total)}
+            </div>
           </div>
         </div>
       </div>
