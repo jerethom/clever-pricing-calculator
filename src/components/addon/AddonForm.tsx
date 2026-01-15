@@ -10,8 +10,8 @@ const PRIORITY_FEATURES = ['memory', 'max_db_size', 'disk', 'vcpus', 'cpu', 'sto
 // Trie les features par priorité pour un affichage cohérent
 function sortFeaturesByPriority(features: AddonFeature[]): AddonFeature[] {
   return [...features].sort((a, b) => {
-    const aIndex = PRIORITY_FEATURES.findIndex(p => a.name_code.toLowerCase().includes(p))
-    const bIndex = PRIORITY_FEATURES.findIndex(p => b.name_code.toLowerCase().includes(p))
+    const aIndex = PRIORITY_FEATURES.findIndex(p => a.name_code?.toLowerCase().includes(p))
+    const bIndex = PRIORITY_FEATURES.findIndex(p => b.name_code?.toLowerCase().includes(p))
     // Si les deux ont une priorité, trier par priorité
     if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
     // Les features prioritaires viennent en premier
