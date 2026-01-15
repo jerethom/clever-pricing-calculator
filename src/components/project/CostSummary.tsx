@@ -1,9 +1,59 @@
+import { useState } from 'react'
 import type { ProjectCostSummary, RuntimeCostDetail, AddonCostDetail } from '@/types'
 import { formatPrice, formatMonthlyPrice, formatHourlyPrice } from '@/lib/costCalculator'
 import { Icons } from '@/components/ui'
 
 interface CostSummaryProps {
   cost: ProjectCostSummary
+}
+
+interface DurationOption {
+  months: number
+  label: string
+  shortLabel: string
+}
+
+const DURATION_OPTIONS: DurationOption[] = [
+  { months: 1, label: '1 mois', shortLabel: '1m' },
+  { months: 3, label: '3 mois', shortLabel: '3m' },
+  { months: 6, label: '6 mois', shortLabel: '6m' },
+  { months: 12, label: '1 an', shortLabel: '1a' },
+  { months: 24, label: '2 ans', shortLabel: '2a' },
+  { months: 36, label: '3 ans', shortLabel: '3a' },
+]
+
+function DurationSelector({
+  selectedMonths,
+  onSelect,
+}: {
+  selectedMonths: number
+  onSelect: (months: number) => void
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex items-center gap-2 text-sm text-base-content/70">
+        <Icons.Clock className="w-4 h-4" />
+        <span className="font-medium">Periode de projection</span>
+      </div>
+      <div className="join join-horizontal flex-wrap">
+        {DURATION_OPTIONS.map((option) => (
+          <button
+            key={option.months}
+            type="button"
+            onClick={() => onSelect(option.months)}
+            className={`join-item btn btn-sm transition-all duration-200 ${
+              selectedMonths === option.months
+                ? 'btn-accent'
+                : 'btn-ghost hover:bg-accent/10'
+            }`}
+          >
+            <span className="hidden sm:inline">{option.label}</span>
+            <span className="sm:hidden">{option.shortLabel}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function CostBreakdownBar({ runtimesCost, addonsCost, total }: { runtimesCost: number; addonsCost: number; total: number }) {
@@ -160,17 +210,40 @@ function AddonCard({ addon }: { addon: AddonCostDetail }) {
   )
 }
 
+function formatDurationLabel(months: number): string {
+  if (months === 1) return '1 mois'
+  if (months < 12) return `${months} mois`
+  if (months === 12) return '1 an'
+  const years = months / 12
+  return `${years} an${years > 1 ? 's' : ''}`
+}
+
 export function CostSummary({ cost }: CostSummaryProps) {
+  const [selectedMonths, setSelectedMonths] = useState(12)
+
   const totalMinCost = cost.runtimesDetail.reduce((sum, r) => sum + r.minMonthlyCost, 0) + cost.addonsCost
   const totalMaxCost = cost.runtimesDetail.reduce((sum, r) => sum + r.maxMonthlyCost, 0) + cost.addonsCost
   const hasCostRange = totalMinCost !== totalMaxCost
-  const annualCost = cost.totalMonthlyCost * 12
+
+  const projectedCost = cost.totalMonthlyCost * selectedMonths
+  const projectedMinCost = totalMinCost * selectedMonths
+  const projectedMaxCost = totalMaxCost * selectedMonths
 
   return (
     <div className="space-y-6 animate-[fadeIn_0.5s_ease-out]">
-      {/* Section Projection - Cartes Mensuel et Annuel */}
+      {/* Selecteur de duree */}
+      <div className="card bg-base-100 border border-base-300">
+        <div className="card-body p-4">
+          <DurationSelector
+            selectedMonths={selectedMonths}
+            onSelect={setSelectedMonths}
+          />
+        </div>
+      </div>
+
+      {/* Section Projection - Cartes Mensuel et Projection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Carte Mensuel - Principale */}
+        {/* Carte Mensuel - Reference fixe */}
         <div className="card bg-gradient-to-br from-primary/15 via-primary/5 to-base-100 border-2 border-primary/30 shadow-xl shadow-primary/10 overflow-hidden relative group transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/50">
           {/* Badge Estime */}
           <div className="absolute top-3 right-3">
@@ -191,7 +264,7 @@ export function CostSummary({ cost }: CostSummaryProps) {
               </div>
               <div>
                 <span className="text-xs font-semibold text-primary uppercase tracking-wider">Cout mensuel</span>
-                <p className="text-xs text-base-content/50">Projection sur 1 mois</p>
+                <p className="text-xs text-base-content/50">Reference sur 1 mois</p>
               </div>
             </div>
 
@@ -217,7 +290,7 @@ export function CostSummary({ cost }: CostSummaryProps) {
           </div>
         </div>
 
-        {/* Carte Annuel - Secondaire */}
+        {/* Carte Projection - Dynamique selon la duree selectionnee */}
         <div className="card bg-gradient-to-br from-accent/15 via-accent/5 to-base-100 border-2 border-accent/30 shadow-xl shadow-accent/10 overflow-hidden relative group transition-all duration-300 hover:shadow-2xl hover:shadow-accent/20 hover:border-accent/50">
           {/* Badge Projection */}
           <div className="absolute top-3 right-3">
@@ -237,27 +310,30 @@ export function CostSummary({ cost }: CostSummaryProps) {
                 <Icons.CalendarYear className="w-6 h-6 text-accent" />
               </div>
               <div>
-                <span className="text-xs font-semibold text-accent uppercase tracking-wider">Cout annuel</span>
-                <p className="text-xs text-base-content/50">Projection sur 12 mois</p>
+                <span className="text-xs font-semibold text-accent uppercase tracking-wider">Cout total</span>
+                <p className="text-xs text-base-content/50">Projection sur {formatDurationLabel(selectedMonths)}</p>
               </div>
             </div>
 
             {/* Montant principal */}
             <div className="text-center py-4">
-              <div className="text-5xl md:text-6xl font-black text-accent tabular-nums tracking-tight animate-[scaleIn_0.3s_ease-out_0.1s_both]">
-                {formatPrice(annualCost)}
+              <div
+                key={selectedMonths}
+                className="text-5xl md:text-6xl font-black text-accent tabular-nums tracking-tight animate-[scaleIn_0.3s_ease-out]"
+              >
+                {formatPrice(projectedCost)}
               </div>
-              <div className="text-lg text-accent/70 font-medium mt-1">/an</div>
+              <div className="text-lg text-accent/70 font-medium mt-1">/{formatDurationLabel(selectedMonths)}</div>
             </div>
 
-            {/* Fourchette annuelle si applicable */}
+            {/* Fourchette projetee si applicable */}
             {hasCostRange && (
               <div className="mt-4 pt-4 border-t border-accent/20">
                 <div className="flex items-center justify-center gap-2 text-sm text-base-content/60">
                   <span>Fourchette:</span>
-                  <span className="font-semibold text-base-content">{formatPrice(totalMinCost * 12)}</span>
+                  <span className="font-semibold text-base-content">{formatPrice(projectedMinCost)}</span>
                   <span>-</span>
-                  <span className="font-semibold text-base-content">{formatPrice(totalMaxCost * 12)}</span>
+                  <span className="font-semibold text-base-content">{formatPrice(projectedMaxCost)}</span>
                 </div>
               </div>
             )}
