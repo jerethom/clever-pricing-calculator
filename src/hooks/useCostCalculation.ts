@@ -1,15 +1,21 @@
 import { useMemo } from 'react'
 import { useInstances } from './useInstances'
-import { useProjectStore } from '@/store/projectStore'
+import {
+  useSelector,
+  useSelectorWith,
+  selectActiveProject,
+  selectProjectById,
+  selectProjects,
+} from '@/store'
 import { calculateProjectCost } from '@/lib/costCalculator'
 import type { ProjectCostSummary } from '@/types'
 
 /**
- * Hook pour calculer les coûts du projet actif
+ * Hook pour calculer les couts du projet actif
  */
 export function useActiveProjectCost(): ProjectCostSummary | null {
   const { data: instances } = useInstances()
-  const activeProject = useProjectStore(state => state.getActiveProject())
+  const activeProject = useSelector(selectActiveProject)
 
   return useMemo(() => {
     if (!activeProject || !instances) return null
@@ -18,11 +24,11 @@ export function useActiveProjectCost(): ProjectCostSummary | null {
 }
 
 /**
- * Hook pour calculer les coûts d'un projet spécifique
+ * Hook pour calculer les couts d'un projet specifique
  */
 export function useProjectCost(projectId: string): ProjectCostSummary | null {
   const { data: instances } = useInstances()
-  const project = useProjectStore(state => state.getProject(projectId))
+  const project = useSelectorWith(selectProjectById, projectId)
 
   return useMemo(() => {
     if (!project || !instances) return null
@@ -31,11 +37,11 @@ export function useProjectCost(projectId: string): ProjectCostSummary | null {
 }
 
 /**
- * Hook pour calculer les coûts de tous les projets
+ * Hook pour calculer les couts de tous les projets
  */
 export function useAllProjectsCosts(): Map<string, ProjectCostSummary> {
   const { data: instances } = useInstances()
-  const projects = useProjectStore(state => state.projects)
+  const projects = useSelector(selectProjects)
 
   return useMemo(() => {
     const costsMap = new Map<string, ProjectCostSummary>()

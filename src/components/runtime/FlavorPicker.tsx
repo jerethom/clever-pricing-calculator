@@ -12,7 +12,7 @@ interface FlavorPickerProps {
   onSelect: (flavorName: string) => void
 }
 
-export function FlavorPicker({
+function FlavorPicker({
   isOpen,
   onClose,
   flavors,
@@ -109,3 +109,6 @@ export function FlavorPicker({
     </Portal>
   )
 }
+
+export { FlavorPicker }
+export default FlavorPicker

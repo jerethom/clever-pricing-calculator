@@ -1,14 +1,15 @@
-import { useState, useMemo } from 'react'
-import { useProjectStore } from '@/store/projectStore'
+import { useState, useMemo, useCallback, lazy, Suspense } from 'react'
+import { useSelectorWith, selectProjectById } from '@/store'
 import { useInstances } from '@/hooks/useInstances'
 import {
   calculateRuntimeCost,
   buildFlavorPriceMap,
   formatPrice,
 } from '@/lib/costCalculator'
-import { RuntimeCard } from './RuntimeCard'
-import { RuntimeForm } from './RuntimeForm'
+import { RuntimeCard } from './RuntimeCard/index'
 import { Icons } from '@/components/ui'
+
+const RuntimeForm = lazy(() => import('./RuntimeForm'))
 
 interface RuntimeListProps {
   projectId: string
@@ -18,7 +19,7 @@ type SortOption = 'name' | 'cost-asc' | 'cost-desc' | 'instances'
 type ViewMode = 'grid' | 'compact'
 
 export function RuntimeList({ projectId }: RuntimeListProps) {
-  const project = useProjectStore(state => state.getProject(projectId))
+  const project = useSelectorWith(selectProjectById, projectId)
   const { data: instances } = useInstances()
   const [showForm, setShowForm] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('name')
@@ -103,18 +104,66 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
     return result
   }, [runtimesWithCosts, filterType, searchQuery, sortBy])
 
-  if (!project) return null
-
-  const hasRuntimes = project.runtimes.length > 0
-  const showToolbar = hasRuntimes
-
-  // Calcul position jauge globale
-  const gaugePosition =
-    costSummary.max > costSummary.min
+  // Calcul position jauge globale (memoize)
+  const gaugePosition = useMemo(() => {
+    return costSummary.max > costSummary.min
       ? ((costSummary.total - costSummary.min) /
           (costSummary.max - costSummary.min)) *
         100
       : 0
+  }, [costSummary.total, costSummary.min, costSummary.max])
+
+  // Handlers de filtrage/tri (useCallback pour eviter re-renders des enfants)
+  const handleOpenForm = useCallback(() => {
+    setShowForm(true)
+  }, [])
+
+  const handleCloseForm = useCallback(() => {
+    setShowForm(false)
+  }, [])
+
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(e.target.value)
+    },
+    []
+  )
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('')
+  }, [])
+
+  const handleFilterTypeChange = useCallback((type: string) => {
+    setFilterType(type)
+  }, [])
+
+  const handleClearFilterType = useCallback(() => {
+    setFilterType('all')
+  }, [])
+
+  const handleSortChange = useCallback((sort: SortOption) => {
+    setSortBy(sort)
+  }, [])
+
+  const handleViewModeChange = useCallback((mode: ViewMode) => {
+    setViewMode(mode)
+  }, [])
+
+  const handleResetFilters = useCallback(() => {
+    setFilterType('all')
+    setSearchQuery('')
+    setSortBy('name')
+  }, [])
+
+  const handleResetSearchAndFilter = useCallback(() => {
+    setFilterType('all')
+    setSearchQuery('')
+  }, [])
+
+  if (!project) return null
+
+  const hasRuntimes = project.runtimes.length > 0
+  const showToolbar = hasRuntimes
 
   return (
     <div className="space-y-4">
@@ -130,7 +179,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
         </div>
         <button
           className="btn btn-primary btn-sm gap-2 group"
-          onClick={() => setShowForm(true)}
+          onClick={handleOpenForm}
         >
           <Icons.Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
           <span>Ajouter un runtime</span>
@@ -215,13 +264,13 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
                       className="grow bg-transparent"
                       placeholder="Rechercher un runtime..."
                       value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
+                      onChange={handleSearchChange}
                     />
                   </label>
                 {searchQuery && (
                   <button
                     className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs p-0 h-5 w-5 min-h-0 hover:bg-base-300"
-                    onClick={() => setSearchQuery('')}
+                    onClick={handleClearSearch}
                     aria-label="Effacer la recherche"
                   >
                     <Icons.X className="w-3 h-3" />
@@ -272,7 +321,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
                     <li>
                       <button
                         className={`cursor-pointer ${filterType === 'all' ? 'active' : ''}`}
-                        onClick={() => setFilterType('all')}
+                        onClick={handleClearFilterType}
                       >
                         <Icons.Check
                           className={`w-4 h-4 ${filterType === 'all' ? 'opacity-100' : 'opacity-0'}`}
@@ -294,7 +343,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
                         <li key={type}>
                           <button
                             className={`cursor-pointer ${filterType === type ? 'active' : ''}`}
-                            onClick={() => setFilterType(type)}
+                            onClick={() => handleFilterTypeChange(type)}
                           >
                             <Icons.Check
                               className={`w-4 h-4 ${filterType === type ? 'opacity-100' : 'opacity-0'}`}
@@ -350,7 +399,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
                   <li>
                     <button
                       className={`cursor-pointer ${sortBy === 'name' ? 'active' : ''}`}
-                      onClick={() => setSortBy('name')}
+                      onClick={() => handleSortChange('name')}
                     >
                       <Icons.Check
                         className={`w-4 h-4 ${sortBy === 'name' ? 'opacity-100' : 'opacity-0'}`}
@@ -361,7 +410,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
                   <li>
                     <button
                       className={`cursor-pointer ${sortBy === 'cost-desc' ? 'active' : ''}`}
-                      onClick={() => setSortBy('cost-desc')}
+                      onClick={() => handleSortChange('cost-desc')}
                     >
                       <Icons.Check
                         className={`w-4 h-4 ${sortBy === 'cost-desc' ? 'opacity-100' : 'opacity-0'}`}
@@ -372,7 +421,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
                   <li>
                     <button
                       className={`cursor-pointer ${sortBy === 'cost-asc' ? 'active' : ''}`}
-                      onClick={() => setSortBy('cost-asc')}
+                      onClick={() => handleSortChange('cost-asc')}
                     >
                       <Icons.Check
                         className={`w-4 h-4 ${sortBy === 'cost-asc' ? 'opacity-100' : 'opacity-0'}`}
@@ -383,7 +432,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
                   <li>
                     <button
                       className={`cursor-pointer ${sortBy === 'instances' ? 'active' : ''}`}
-                      onClick={() => setSortBy('instances')}
+                      onClick={() => handleSortChange('instances')}
                     >
                       <Icons.Check
                         className={`w-4 h-4 ${sortBy === 'instances' ? 'opacity-100' : 'opacity-0'}`}
@@ -398,11 +447,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
               {(filterType !== 'all' || searchQuery || sortBy !== 'name') && (
                 <button
                   className="btn btn-sm btn-ghost text-base-content/60 hover:text-error gap-1 cursor-pointer"
-                  onClick={() => {
-                    setFilterType('all')
-                    setSearchQuery('')
-                    setSortBy('name')
-                  }}
+                  onClick={handleResetFilters}
                   aria-label="Réinitialiser tous les filtres"
                 >
                   <Icons.X className="w-4 h-4" />
@@ -441,7 +486,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
                         ? 'bg-primary text-primary-content hover:bg-primary/90'
                         : 'bg-base-100 hover:bg-base-200'
                     }`}
-                    onClick={() => setViewMode('grid')}
+                    onClick={() => handleViewModeChange('grid')}
                     aria-label="Vue grille"
                     aria-pressed={viewMode === 'grid'}
                   >
@@ -468,7 +513,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
                         ? 'bg-primary text-primary-content hover:bg-primary/90'
                         : 'bg-base-100 hover:bg-base-200'
                     }`}
-                    onClick={() => setViewMode('compact')}
+                    onClick={() => handleViewModeChange('compact')}
                     aria-label="Vue liste"
                     aria-pressed={viewMode === 'compact'}
                   >
@@ -490,7 +535,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
                   Recherche: "{searchQuery}"
                   <button
                     className="hover:text-error cursor-pointer"
-                    onClick={() => setSearchQuery('')}
+                    onClick={handleClearSearch}
                     aria-label="Supprimer le filtre de recherche"
                   >
                     <Icons.X className="w-3 h-3" />
@@ -502,7 +547,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
                   Type: {filterType}
                   <button
                     className="hover:text-error cursor-pointer"
-                    onClick={() => setFilterType('all')}
+                    onClick={handleClearFilterType}
                     aria-label="Supprimer le filtre de type"
                   >
                     <Icons.X className="w-3 h-3" />
@@ -539,7 +584,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
             <div className="card-actions mt-6">
               <button
                 className="btn btn-primary gap-2"
-                onClick={() => setShowForm(true)}
+                onClick={handleOpenForm}
               >
                 <Icons.Plus className="w-5 h-5" />
                 Ajouter votre premier runtime
@@ -583,10 +628,7 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
             </p>
             <button
               className="btn btn-ghost btn-sm mt-2"
-              onClick={() => {
-                setFilterType('all')
-                setSearchQuery('')
-              }}
+              onClick={handleResetSearchAndFilter}
             >
               Reinitialiser les filtres
             </button>
@@ -630,7 +672,9 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
 
       {/* Modal d'ajout de runtime */}
       {showForm && (
-        <RuntimeForm projectId={projectId} onClose={() => setShowForm(false)} />
+        <Suspense fallback={null}>
+          <RuntimeForm projectId={projectId} onClose={handleCloseForm} />
+        </Suspense>
       )}
     </div>
   )

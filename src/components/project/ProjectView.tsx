@@ -1,16 +1,20 @@
-import { useState } from 'react'
-import { useProjectStore } from '@/store/projectStore'
+import { useState, lazy, Suspense } from 'react'
+import {
+  useSelector,
+  useProjectActions,
+  selectActiveProject,
+} from '@/store'
 import { useActiveProjectCost } from '@/hooks/useCostCalculation'
 import { formatPrice } from '@/lib/costCalculator'
 import { RuntimeList } from '@/components/runtime/RuntimeList'
 import { AddonList } from '@/components/addon/AddonList'
-import { CostSummary } from '@/components/project/CostSummary'
-import { Icons, ConfirmDialog } from '@/components/ui'
+import { Icons, ConfirmDialog, CostSummarySkeleton } from '@/components/ui'
+
+const CostSummary = lazy(() => import('@/components/project/CostSummary'))
 
 export function ProjectView() {
-  const activeProject = useProjectStore(state => state.getActiveProject())
-  const updateProject = useProjectStore(state => state.updateProject)
-  const deleteProject = useProjectStore(state => state.deleteProject)
+  const activeProject = useSelector(selectActiveProject)
+  const { updateProject, deleteProject } = useProjectActions()
   const cost = useActiveProjectCost()
 
   const [isEditing, setIsEditing] = useState(false)
@@ -256,7 +260,11 @@ export function ProjectView() {
       <div className="mt-2">
         {activeTab === 'runtimes' && <RuntimeList projectId={activeProject.id} />}
         {activeTab === 'addons' && <AddonList projectId={activeProject.id} />}
-        {activeTab === 'summary' && cost && <CostSummary cost={cost} />}
+        {activeTab === 'summary' && cost && (
+          <Suspense fallback={<CostSummarySkeleton />}>
+            <CostSummary cost={cost} />
+          </Suspense>
+        )}
       </div>
 
       {/* Modal de confirmation de suppression */}

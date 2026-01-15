@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { RuntimeConfig, WeeklySchedule } from '@/types'
 import { createEmptySchedule } from '@/types'
-import { useProjectStore } from '@/store/projectStore'
+import { useProjectAction } from '@/store'
 import { WeeklyCalendar } from './WeeklyCalendar'
 import { PaintToolbar } from './PaintToolbar'
 import { SchedulePresets } from './SchedulePresets'
@@ -19,13 +19,13 @@ interface TimeSlotEditorProps {
   instance?: Instance
 }
 
-export function TimeSlotEditor({
+function TimeSlotEditor({
   projectId,
   runtimeId,
   runtime,
   instance,
 }: TimeSlotEditorProps) {
-  const updateRuntime = useProjectStore(state => state.updateRuntime)
+  const updateRuntime = useProjectAction('updateRuntime')
   const [showPresets, setShowPresets] = useState(false)
   const [paintValue, setPaintValue] = useState(1)
 
@@ -223,3 +223,6 @@ export function TimeSlotEditor({
     </div>
   )
 }
+
+export { TimeSlotEditor }
+export default TimeSlotEditor

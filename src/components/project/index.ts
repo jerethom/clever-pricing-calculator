@@ -1,2 +1,2 @@
 export { ProjectView } from './ProjectView'
-export { CostSummary } from './CostSummary'
+// CostSummary est chargé en lazy dans ProjectView pour le code splitting

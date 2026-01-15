@@ -117,4 +117,52 @@
       min-height: 44px;
     }
   }
+
+  /* Animations pour CostSummary */
+  .animate-cost-fade-in {
+    animation: costFadeIn 0.5s ease-out;
+  }
+
+  .animate-cost-scale-in {
+    animation: costScaleIn 0.3s ease-out;
+  }
+
+  .animate-cost-slide-up {
+    animation: costSlideUp 0.4s ease-out both;
+  }
+
+  .animate-cost-item-fade-in {
+    animation: costFadeIn 0.3s ease-out both;
+  }
+
+  @keyframes costFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes costScaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes costSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

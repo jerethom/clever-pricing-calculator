@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
-import { useProjectStore } from '@/store/projectStore'
+import { useState, useMemo, lazy, Suspense } from 'react'
+import { useSelectorWith, selectProjectById } from '@/store'
 import { formatPrice } from '@/lib/costCalculator'
 import { AddonCard } from './AddonCard'
-import { AddonForm } from './AddonForm'
 import { Icons } from '@/components/ui'
+
+const AddonForm = lazy(() => import('./AddonForm'))
 
 interface AddonListProps {
   projectId: string
@@ -13,7 +14,7 @@ type SortOption = 'name' | 'cost-asc' | 'cost-desc'
 type ViewMode = 'grid' | 'compact'
 
 export function AddonList({ projectId }: AddonListProps) {
-  const project = useProjectStore(state => state.getProject(projectId))
+  const project = useSelectorWith(selectProjectById, projectId)
   const [showForm, setShowForm] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('name')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -562,7 +563,9 @@ export function AddonList({ projectId }: AddonListProps) {
 
       {/* Modal d'ajout d'addon */}
       {showForm && (
-        <AddonForm projectId={projectId} onClose={() => setShowForm(false)} />
+        <Suspense fallback={null}>
+          <AddonForm projectId={projectId} onClose={() => setShowForm(false)} />
+        </Suspense>
       )}
     </div>
   )

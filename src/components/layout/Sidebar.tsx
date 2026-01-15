@@ -1,4 +1,9 @@
-import { useProjectStore } from '@/store/projectStore'
+import {
+  useSelector,
+  useProjectActions,
+  selectProjects,
+  selectActiveProjectId,
+} from '@/store'
 import { useAllProjectsCosts } from '@/hooks/useCostCalculation'
 import { formatPrice } from '@/lib/costCalculator'
 import { Icons } from '@/components/ui'
@@ -8,10 +13,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onClose }: SidebarProps) {
-  const projects = useProjectStore(state => state.projects)
-  const activeProjectId = useProjectStore(state => state.activeProjectId)
-  const setActiveProject = useProjectStore(state => state.setActiveProject)
-  const createProject = useProjectStore(state => state.createProject)
+  const projects = useSelector(selectProjects)
+  const activeProjectId = useSelector(selectActiveProjectId)
+  const { setActiveProject, createProject } = useProjectActions()
   const projectCosts = useAllProjectsCosts()
 
   const handleCreateProject = () => {

@@ -1,14 +1,13 @@
-import { useState } from 'react'
+import { useState, useCallback, useMemo, memo, lazy, Suspense } from 'react'
 import type { AddonConfig } from '@/types'
 import type { AddonFeature } from '@/api/types'
-import { useProjectStore } from '@/store/projectStore'
+import { useProjectActions } from '@/store'
 import { useAddons } from '@/hooks/useAddons'
 import { formatMonthlyPrice } from '@/lib/costCalculator'
+import { PRIORITY_FEATURES } from '@/constants'
 import { Icons, ConfirmDialog } from '@/components/ui'
-import { AddonForm } from './AddonForm'
 
-// Features prioritaires a afficher en premier (par ordre de priorite)
-const PRIORITY_FEATURES = ['memory', 'max_db_size', 'disk', 'vcpus', 'cpu', 'storage', 'max_connection_limit']
+const AddonForm = lazy(() => import('./AddonForm'))
 
 // Trie les features par priorite pour un affichage coherent
 function sortFeaturesByPriority(features: AddonFeature[]): AddonFeature[] {
@@ -27,53 +26,78 @@ interface AddonCardProps {
   addon: AddonConfig
 }
 
-export function AddonCard({ projectId, addon }: AddonCardProps) {
+export const AddonCard = memo(function AddonCard({ projectId, addon }: AddonCardProps) {
   const { data: addonProviders } = useAddons()
-  const removeAddon = useProjectStore(state => state.removeAddon)
-  const updateAddon = useProjectStore(state => state.updateAddon)
+  const { removeAddon, updateAddon } = useProjectActions()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
   const [isEditingName, setIsEditingName] = useState(false)
   const [editName, setEditName] = useState('')
 
-  const handleStartEditName = () => {
+  // Memo: provider (recherche dans addonProviders)
+  const provider = useMemo(
+    () => addonProviders?.find(p => p.id === addon.providerId),
+    [addonProviders, addon.providerId]
+  )
+
+  // Memo: defaultName et isNameModified
+  const defaultName = useMemo(
+    () => provider?.name ?? addon.providerId,
+    [provider?.name, addon.providerId]
+  )
+
+  // Memo: plan et features (recherche et tri)
+  const plan = useMemo(
+    () => provider?.plans.find(p => p.id === addon.planId),
+    [provider?.plans, addon.planId]
+  )
+
+  const features = useMemo(
+    () => (plan?.features ? sortFeaturesByPriority(plan.features) : []),
+    [plan]
+  )
+
+  // Memo: mainFeatures et mainFeatureText
+  const mainFeatures = useMemo(() => features.slice(0, 2), [features])
+
+  const mainFeatureText = useMemo(
+    () => mainFeatures.map(f => f.value).join(' - '),
+    [mainFeatures]
+  )
+
+  // Memo: isFree
+  const isFree = useMemo(() => addon.monthlyPrice === 0, [addon.monthlyPrice])
+
+  // Callback: handleStartEditName
+  const handleStartEditName = useCallback(() => {
     setEditName(addon.providerName)
     setIsEditingName(true)
-  }
+  }, [addon.providerName])
 
-  const handleSaveEditName = () => {
+  // Callback: handleSaveEditName
+  const handleSaveEditName = useCallback(() => {
     if (editName.trim()) {
       updateAddon(projectId, addon.id, { providerName: editName.trim() })
     }
     setIsEditingName(false)
-  }
+  }, [editName, updateAddon, projectId, addon.id])
 
-  const handleCancelEditName = () => {
+  // Callback: handleCancelEditName
+  const handleCancelEditName = useCallback(() => {
     setIsEditingName(false)
-  }
+  }, [])
 
-  // Recuperer les infos du provider et du plan
-  const provider = addonProviders?.find(p => p.id === addon.providerId)
-  const defaultName = provider?.name ?? addon.providerId
-  const isNameModified = addon.providerName !== defaultName
-
-  const handleResetName = () => {
+  // Callback: handleResetName
+  const handleResetName = useCallback(() => {
     updateAddon(projectId, addon.id, { providerName: defaultName })
     setIsEditingName(false)
-  }
-  const plan = provider?.plans.find(p => p.id === addon.planId)
-  const features = plan?.features ? sortFeaturesByPriority(plan.features) : []
+  }, [updateAddon, projectId, addon.id, defaultName])
 
-  // Extraire les features principales pour le bouton de configuration
-  const mainFeatures = features.slice(0, 2)
-  const mainFeatureText = mainFeatures.map(f => f.value).join(' - ')
-
-  const handleDelete = () => {
+  // Callback: handleDelete
+  const handleDelete = useCallback(() => {
     removeAddon(projectId, addon.id)
     setShowDeleteConfirm(false)
-  }
-
-  const isFree = addon.monthlyPrice === 0
+  }, [removeAddon, projectId, addon.id])
 
   return (
     <div className="card bg-base-100 border border-base-300 hover:border-primary/30 transition-all hover:shadow-lg hover:shadow-primary/5">
@@ -266,11 +290,13 @@ export function AddonCard({ projectId, addon }: AddonCardProps) {
 
       {/* Modal d'edition */}
       {showEditForm && (
-        <AddonForm
-          projectId={projectId}
-          onClose={() => setShowEditForm(false)}
-          editingAddon={addon}
-        />
+        <Suspense fallback={null}>
+          <AddonForm
+            projectId={projectId}
+            onClose={() => setShowEditForm(false)}
+            editingAddon={addon}
+          />
+        </Suspense>
       )}
 
       {/* Modal de confirmation de suppression */}
@@ -286,4 +312,4 @@ export function AddonCard({ projectId, addon }: AddonCardProps) {
       />
     </div>
   )
-}
+})

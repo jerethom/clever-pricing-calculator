@@ -1,9 +1,7 @@
 import type { RuntimeConfig, Project, RuntimeCostDetail, AddonCostDetail, ProjectCostSummary } from '@/types'
 import { DAYS_OF_WEEK, createEmptySchedule } from '@/types'
 import type { Instance } from '@/api/types'
-
-// Constantes pour les calculs
-const WEEKS_PER_MONTH = 4.33 // Moyenne de semaines par mois
+import { WEEKS_PER_MONTH } from '@/constants'
 
 /**
  * Calcule le coût total pour un runtime basé sur son planning hebdomadaire

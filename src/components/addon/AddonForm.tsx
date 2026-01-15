@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAddons } from '@/hooks/useAddons'
-import { useProjectStore } from '@/store/projectStore'
+import { useProjectActions } from '@/store'
 import { formatMonthlyPrice } from '@/lib/costCalculator'
 import { Portal } from '@/components/ui'
 import type { AddonFeature } from '@/api/types'
@@ -30,10 +30,9 @@ interface AddonFormProps {
   editingAddon?: AddonConfig
 }
 
-export function AddonForm({ projectId, onClose, editingAddon }: AddonFormProps) {
+function AddonForm({ projectId, onClose, editingAddon }: AddonFormProps) {
   const { data: addonProviders, isLoading } = useAddons()
-  const addAddon = useProjectStore(state => state.addAddon)
-  const updateAddon = useProjectStore(state => state.updateAddon)
+  const { addAddon, updateAddon } = useProjectActions()
 
   const isEditMode = !!editingAddon
 
@@ -285,3 +284,6 @@ export function AddonForm({ projectId, onClose, editingAddon }: AddonFormProps) 
     </Portal>
   )
 }
+
+export { AddonForm }
+export default AddonForm

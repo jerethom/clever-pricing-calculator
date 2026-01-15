@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useInstances } from '@/hooks/useInstances'
-import { useProjectStore } from '@/store/projectStore'
+import { useProjectAction } from '@/store'
 import { formatMonthlyPrice, formatHourlyPrice } from '@/lib/costCalculator'
 import { Icons, NumberInput } from '@/components/ui'
 import { createEmptySchedule } from '@/types'
@@ -21,9 +21,9 @@ const STEPS: { id: Step; label: string; shortLabel: string }[] = [
   { id: 'scaling', label: 'Definir le scaling', shortLabel: 'Scaling' },
 ]
 
-export function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
+function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
   const { data: instances, isLoading } = useInstances()
-  const addRuntime = useProjectStore(state => state.addRuntime)
+  const addRuntime = useProjectAction('addRuntime')
 
   const [currentStep, setCurrentStep] = useState<Step>('runtime')
   const [selectedVariantId, setSelectedVariantId] = useState('')
@@ -629,3 +629,6 @@ function FlavorCard({ flavor, isSelected, isDefault, maxCpus, onClick }: FlavorC
     </button>
   )
 }
+
+export { RuntimeForm }
+export default RuntimeForm

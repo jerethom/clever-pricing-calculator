@@ -1,5 +1,5 @@
 import { useAllProjectsCosts } from '@/hooks/useCostCalculation'
-import { useProjectStore } from '@/store/projectStore'
+import { useSelector, selectProjects } from '@/store'
 import { formatPrice } from '@/lib/costCalculator'
 import { Icons } from '@/components/ui'
 
@@ -9,7 +9,7 @@ interface HeaderProps {
 
 export function Header({ onToggleSidebar }: HeaderProps) {
   const projectCosts = useAllProjectsCosts()
-  const projects = useProjectStore(state => state.projects)
+  const projects = useSelector(selectProjects)
 
   // Calcul des totaux de tous les projets
   const totals = Array.from(projectCosts.values()).reduce(
