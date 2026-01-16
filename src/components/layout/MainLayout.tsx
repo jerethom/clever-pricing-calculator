@@ -24,7 +24,9 @@ export function MainLayout({ children }: MainLayoutProps) {
         <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
         <main className="flex-1 bg-[#f9f9fb] p-4 lg:p-6">
-          {children}
+          <div className="max-w-screen-2xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
 

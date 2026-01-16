@@ -164,7 +164,7 @@ function TimeSlotEditor({
               <div className="flex items-center gap-2">
                 <label className="text-sm text-base-content/70 whitespace-nowrap">Profil :</label>
                 <select
-                  className="select select-sm select-bordered"
+                  className="select select-sm select-bordered w-40"
                   value={selectedProfileId}
                   onChange={e => setSelectedProfileId(e.target.value)}
                 >
