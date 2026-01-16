@@ -1,14 +1,11 @@
 import { memo, useMemo, lazy, Suspense } from 'react'
 import { ConfirmDialog } from '@/components/ui'
 
-const TimeSlotEditor = lazy(() => import('@/components/timeSlot/TimeSlotEditor'))
 const FlavorPicker = lazy(() => import('../FlavorPicker'))
 import { RuntimeCardContext } from './RuntimeCardContext'
-import { RuntimeCardHeader } from './RuntimeCardHeader'
-import { RuntimeCardConfig } from './RuntimeCardConfig'
-import { RuntimeCardScaling } from './RuntimeCardScaling'
-import { RuntimeCardSchedule } from './RuntimeCardSchedule'
-import { RuntimeCardCosts } from './RuntimeCardCosts'
+import { RuntimeCardIdentity } from './RuntimeCardIdentity'
+import { RuntimeCardQuickConfig } from './RuntimeCardQuickConfig'
+import { RuntimeCardAdvanced } from './RuntimeCardAdvanced'
 import { useRuntimeCard } from './useRuntimeCard'
 import type { RuntimeCardProps, RuntimeCardContextValue } from './types'
 
@@ -151,34 +148,14 @@ export const RuntimeCard = memo(function RuntimeCard({
     <RuntimeCardContext.Provider value={contextValue}>
       <div className="card bg-base-100 border border-base-300 hover:border-primary/30 transition-all hover:shadow-lg hover:shadow-primary/5">
         <div className="card-body p-4 sm:p-6">
-          {/* Header avec logo, nom editable, badges */}
-          <RuntimeCardHeader />
+          {/* Zone Identity: Logo, nom editable, cout principal, badge mode */}
+          <RuntimeCardIdentity />
 
-          {/* Configuration du flavor */}
-          <RuntimeCardConfig className="mt-4" />
+          {/* Zone Quick Config: Configuration rapide (collapse ouvert) */}
+          <RuntimeCardQuickConfig className="mt-4" />
 
-          {/* Configuration de la scalabilite */}
-          <RuntimeCardScaling className="mt-4" />
-
-          {/* Planning hebdomadaire */}
-          <RuntimeCardSchedule className="mt-4" />
-
-          {/* Editeur de planning (conditionnel) */}
-          {showTimeSlots && (
-            <div className="mt-4 p-4 bg-base-200 animate-in fade-in slide-in-from-top-2 duration-200">
-              <Suspense fallback={null}>
-                <TimeSlotEditor
-                  projectId={projectId}
-                  runtimeId={runtime.id}
-                  runtime={runtime}
-                  instance={instance}
-                />
-              </Suspense>
-            </div>
-          )}
-
-          {/* Section couts */}
-          <RuntimeCardCosts className="mt-4" />
+          {/* Zone Advanced: Options avancees (collapse ferme) */}
+          <RuntimeCardAdvanced className="mt-4" />
         </div>
 
         {/* Modal FlavorPicker */}
@@ -208,10 +185,17 @@ export const RuntimeCard = memo(function RuntimeCard({
   )
 })
 
-// Re-export des sous-composants pour une utilisation individuelle si necessaire
-export { RuntimeCardHeader } from './RuntimeCardHeader'
-export { RuntimeCardConfig } from './RuntimeCardConfig'
+// Re-export des nouveaux composants de la hierarchie reorganisee
+export { RuntimeCardIdentity } from './RuntimeCardIdentity'
+export { RuntimeCardQuickConfig } from './RuntimeCardQuickConfig'
+export { RuntimeCardAdvanced } from './RuntimeCardAdvanced'
+
+// Re-export des sous-composants internes (pour usage dans RuntimeCardAdvanced)
 export { RuntimeCardScaling } from './RuntimeCardScaling'
 export { RuntimeCardSchedule } from './RuntimeCardSchedule'
+
+// Re-export des anciens composants (pour compatibilite ou usage externe)
+export { RuntimeCardHeader } from './RuntimeCardHeader'
+export { RuntimeCardConfig } from './RuntimeCardConfig'
 export { RuntimeCardCosts } from './RuntimeCardCosts'
 export type * from './types'

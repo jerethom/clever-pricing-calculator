@@ -72,39 +72,54 @@ export function calculateTotalScalingSteps(
  * Calcule l'état de scaling pour un niveau de charge donné
  *
  * Le scaling vertical est appliqué en priorité, puis l'horizontal.
+ *
+ * Niveau 0 = configuration minimum du profil (minInstances × minFlavor)
+ * Niveaux 1-5 = scaling progressif jusqu'à maxInstances × maxFlavor
  */
 export function calculateScalingAtLevel(
   profile: ScalingProfile,
   loadLevel: LoadLevel,
   availableFlavors: InstanceFlavor[],
-  baseFlavorName: string,
-  baseInstances: number
+  _baseFlavorName?: string,
+  _baseInstances?: number
 ): ScalingState {
-  // Niveau 0 = baseline, pas de scaling
-  if (loadLevel === 0 || !profile.enabled) {
-    const baseFlavor = availableFlavors.find(f => f.name === baseFlavorName)
+  // Profil désactivé : retourner la config minimum du profil
+  if (!profile.enabled) {
+    const minFlavor = availableFlavors.find(f => f.name === profile.minFlavorName)
     return {
-      flavorName: baseFlavorName,
+      flavorName: profile.minFlavorName,
       flavorIndex: 0,
-      instances: baseInstances,
-      hourlyCost: (baseFlavor?.price ?? 0) * baseInstances,
+      instances: profile.minInstances,
+      hourlyCost: (minFlavor?.price ?? 0) * profile.minInstances,
+    }
+  }
+
+  // Niveau 0 = configuration minimum du profil (pas de scaling actif)
+  if (loadLevel === 0) {
+    const minFlavor = availableFlavors.find(f => f.name === profile.minFlavorName)
+    return {
+      flavorName: profile.minFlavorName,
+      flavorIndex: 0,
+      instances: profile.minInstances,
+      hourlyCost: (minFlavor?.price ?? 0) * profile.minInstances,
     }
   }
 
   // Obtenir la plage de flavors du profil
   const flavorRange = getFlavorRange(
     availableFlavors,
-    profile.minFlavorName || baseFlavorName,
-    profile.maxFlavorName || baseFlavorName
+    profile.minFlavorName,
+    profile.maxFlavorName
   )
 
   if (flavorRange.length === 0) {
-    const baseFlavor = availableFlavors.find(f => f.name === baseFlavorName)
+    // Fallback : utiliser la config minimum du profil
+    const minFlavor = availableFlavors.find(f => f.name === profile.minFlavorName)
     return {
-      flavorName: baseFlavorName,
+      flavorName: profile.minFlavorName,
       flavorIndex: 0,
-      instances: baseInstances,
-      hourlyCost: (baseFlavor?.price ?? 0) * baseInstances,
+      instances: profile.minInstances,
+      hourlyCost: (minFlavor?.price ?? 0) * profile.minInstances,
     }
   }
 

@@ -110,78 +110,6 @@ function TimeSlotEditor({
         )}
       </div>
 
-      {/* Sélection du profil et niveau de charge */}
-      {hasScaling && (
-        <div className="p-4 border border-base-300 bg-base-100 space-y-4">
-          {/* Sélecteur de profil */}
-          {scalingProfiles.length > 1 && (
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <div className="text-sm font-medium">Profil de scaling</div>
-                <div className="text-xs text-base-content/60">
-                  Configuration utilisée pour les créneaux sélectionnés
-                </div>
-              </div>
-              <select
-                className="select select-bordered select-sm w-48"
-                value={selectedProfileId}
-                onChange={e => setSelectedProfileId(e.target.value)}
-              >
-                {scalingProfiles.map(profile => (
-                  <option key={profile.id} value={profile.id}>
-                    {profile.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Sélecteur de niveau de charge */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <div className="text-sm font-medium">Niveau de charge</div>
-                <div className="text-xs text-base-content/60">
-                  Intensité du scaling attendu sur les créneaux sélectionnés
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                {LOAD_LEVELS.map(level => (
-                  <button
-                    key={level}
-                    type="button"
-                    onClick={() => setLoadLevel(level)}
-                    className={`
-                      w-10 h-10 flex flex-col items-center justify-center text-xs font-medium
-                      border transition-all rounded
-                      ${loadLevel === level
-                        ? 'bg-primary text-primary-content border-primary ring-2 ring-primary/30'
-                        : 'bg-base-100 border-base-300 hover:border-primary hover:bg-base-200'}
-                    `}
-                    title={`${LOAD_LEVEL_LABELS[level]} - ${LOAD_LEVEL_DESCRIPTIONS[level]}`}
-                  >
-                    <span className="font-bold">{level}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Explication détaillée du niveau sélectionné */}
-            <div className={`p-3 rounded border ${loadLevel === 0 ? 'bg-base-200 border-base-300' : 'bg-primary/10 border-primary/30'}`}>
-              <div className="flex items-center gap-2">
-                <span className={`w-8 h-8 flex items-center justify-center rounded font-bold ${loadLevel === 0 ? 'bg-base-300 text-base-content' : 'bg-primary text-primary-content'}`}>
-                  {loadLevel}
-                </span>
-                <div>
-                  <div className="font-medium text-sm">{LOAD_LEVEL_LABELS[loadLevel]}</div>
-                  <div className="text-xs text-base-content/70">{LOAD_LEVEL_DESCRIPTIONS[loadLevel]}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Presets toggle */}
       {hasScaling && (
         <div>
@@ -213,6 +141,7 @@ function TimeSlotEditor({
               <SchedulePresets
                 profileId={selectedProfileId}
                 loadLevel={loadLevel}
+                scalingProfiles={scalingProfiles}
                 onApply={handleScheduleChange}
               />
             </div>
@@ -220,31 +149,83 @@ function TimeSlotEditor({
         </div>
       )}
 
-      {/* Barre d'outils - Mode peinture */}
+      {/* Toolbar sticky compacte */}
       {hasScaling && (
-        <div className={`flex items-center justify-between gap-4 p-3 rounded border-2 ${loadLevel === 0 ? 'bg-base-200 border-base-300' : 'bg-primary/5 border-primary/50'}`}>
-          <div className="flex items-center gap-3">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded ${loadLevel === 0 ? 'bg-base-300' : 'bg-primary text-primary-content'}`}>
-              <Icons.Edit className="w-4 h-4" />
-              <span className="font-semibold text-sm">
-                {loadLevel === 0 ? 'Baseline' : `Niveau ${loadLevel}`}
+        <div className="sticky top-0 z-10 bg-base-100 border border-base-300 shadow-sm rounded-lg p-3">
+          <div className="flex items-center gap-4 flex-wrap">
+            {/* Sélecteur de profil */}
+            {scalingProfiles.length > 1 && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-base-content/70 whitespace-nowrap">Profil :</label>
+                <select
+                  className="select select-sm select-bordered"
+                  value={selectedProfileId}
+                  onChange={e => setSelectedProfileId(e.target.value)}
+                >
+                  {scalingProfiles.map(profile => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Séparateur */}
+            {scalingProfiles.length > 1 && (
+              <div className="w-px h-6 bg-base-300 hidden sm:block" />
+            )}
+
+            {/* Boutons de niveau de charge */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-base-content/70 whitespace-nowrap">Niveau :</span>
+              <div className="flex items-center gap-0.5">
+                {LOAD_LEVELS.map(level => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setLoadLevel(level)}
+                    className={`
+                      btn btn-sm w-8 h-8 min-h-0 p-0
+                      ${loadLevel === level
+                        ? 'btn-primary'
+                        : 'btn-ghost border border-base-300'}
+                    `}
+                    title={`${LOAD_LEVEL_LABELS[level]} - ${LOAD_LEVEL_DESCRIPTIONS[level]}`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Séparateur */}
+            <div className="w-px h-6 bg-base-300 hidden sm:block" />
+
+            {/* Indicateur du mode actuel */}
+            <div className="flex items-center gap-2">
+              <span className={`badge ${loadLevel === 0 ? 'badge-ghost' : 'badge-primary'} gap-1`}>
+                <Icons.Edit className="w-3 h-3" />
+                {loadLevel}
+              </span>
+              <span className="text-sm font-medium">
+                {LOAD_LEVEL_LABELS[loadLevel]}
               </span>
             </div>
-            <div className="text-sm text-base-content/70 hidden sm:block">
-              {selectedProfile?.name && loadLevel > 0 && (
-                <span>Profil : <strong>{selectedProfile.name}</strong></span>
-              )}
-              {loadLevel === 0 && <span>Retour à la configuration de base</span>}
-            </div>
+
+            {/* Spacer pour pousser le bouton Reset à droite */}
+            <div className="flex-1" />
+
+            {/* Bouton Reset */}
+            <button
+              type="button"
+              onClick={handleReset}
+              className="btn btn-ghost btn-sm text-error gap-1"
+            >
+              <Icons.Refresh className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Reset</span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleReset}
-            className="btn btn-ghost btn-sm text-error gap-1"
-          >
-            <Icons.Refresh className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Réinitialiser</span>
-          </button>
         </div>
       )}
 

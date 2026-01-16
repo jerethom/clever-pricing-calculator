@@ -19,21 +19,7 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
     onRemoveScalingProfile,
   } = useRuntimeCardContext()
 
-  // Ne pas afficher si le scaling n'est pas activé
-  if (!runtime.scalingEnabled) {
-    return null
-  }
-
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null)
-
-  // Au montage, ouvrir le profil 'default' en édition s'il existe
-  useEffect(() => {
-    const defaultProfile = activeScalingProfiles.find(p => p.id === 'default')
-    if (defaultProfile && editingProfileId === null) {
-      setEditingProfileId('default')
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Exécuté uniquement au montage
 
   // Trouver l'index du flavor de base
   const baseFlavorIndex = availableFlavors.findIndex(
@@ -44,6 +30,16 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
   const scalingFlavors = availableFlavors.filter(
     (_, index) => index >= baseFlavorIndex
   )
+
+  // Au montage, ouvrir le profil 'default' en edition s'il existe
+  useEffect(() => {
+    if (!runtime.scalingEnabled) return
+    const defaultProfile = activeScalingProfiles.find(p => p.id === 'default')
+    if (defaultProfile && editingProfileId === null) {
+      setEditingProfileId('default')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runtime.scalingEnabled]) // Execute uniquement quand le scaling est active
 
   const handleAddProfile = useCallback(() => {
     const newId = crypto.randomUUID()
@@ -57,9 +53,14 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
       enabled: true,
     }
     onAddScalingProfile(newProfile)
-    // Passer directement en mode édition du nouveau profil
+    // Passer directement en mode edition du nouveau profil
     setEditingProfileId(newId)
   }, [activeScalingProfiles.length, baseConfig.instances, baseConfig.flavorName, instance?.maxInstances, scalingFlavors, onAddScalingProfile])
+
+  // Ne pas afficher si le scaling n'est pas active
+  if (!runtime.scalingEnabled) {
+    return null
+  }
 
   return (
     <div className={`space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 ${className}`}>

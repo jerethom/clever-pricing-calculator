@@ -98,3 +98,24 @@ export interface RuntimeCardScheduleProps {
 export interface RuntimeCardCostsProps {
   className?: string
 }
+
+/**
+ * Props pour RuntimeCardIdentity
+ */
+export interface RuntimeCardIdentityProps {
+  className?: string
+}
+
+/**
+ * Props pour RuntimeCardQuickConfig
+ */
+export interface RuntimeCardQuickConfigProps {
+  className?: string
+}
+
+/**
+ * Props pour RuntimeCardAdvanced
+ */
+export interface RuntimeCardAdvancedProps {
+  className?: string
+}
