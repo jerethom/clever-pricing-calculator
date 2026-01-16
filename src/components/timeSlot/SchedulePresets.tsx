@@ -1,11 +1,14 @@
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import type { WeeklySchedule, DayOfWeek, LoadLevel } from '@/types'
 import { DAYS_OF_WEEK, createFilledSchedule, createHourlyConfig } from '@/types'
 import { toast } from '@/store/toastStore'
+import { PROFILE_COLORS, LOAD_LEVEL_OPACITIES, hexToRgba } from '@/constants'
 
 interface SchedulePresetsProps {
   profileId: string
   loadLevel: LoadLevel
+  profileColorIndex: number
   onApply: (schedule: WeeklySchedule) => void
 }
 
@@ -14,10 +17,88 @@ interface Preset {
   label: string
   shortLabel: string
   description: string
+  /** Nombre d'heures de scaling par semaine (precalcule) */
+  weeklyHours: number
   generate: (profileId: string, loadLevel: LoadLevel) => WeeklySchedule
 }
 
 const WEEKDAYS: DayOfWeek[] = ['mon', 'tue', 'wed', 'thu', 'fri']
+
+// Composant tooltip avec Portal - rendu directement dans document.body
+const PresetTooltip = memo(function PresetTooltip({
+  schedule,
+  anchorRect,
+  profileColorIndex,
+}: {
+  schedule: WeeklySchedule
+  anchorRect: DOMRect
+  profileColorIndex: number
+}) {
+  const color = PROFILE_COLORS[profileColorIndex % PROFILE_COLORS.length]
+
+  const style: React.CSSProperties = {
+    position: 'fixed',
+    left: anchorRect.left + anchorRect.width / 2,
+    top: anchorRect.bottom + 8,
+    transform: 'translateX(-50%)',
+    zIndex: 9999,
+  }
+
+  // Dimensions fixes pour les cellules
+  const cellWidth = 30 // pixels
+  const cellHeight = 5 // pixels
+  const gap = 1 // pixels
+
+  const content = (
+    <div
+      className="bg-base-100 border border-base-300 rounded-lg shadow-xl p-3 pointer-events-none"
+      style={style}
+    >
+      <div className="text-xs font-medium mb-2 text-center">Apercu</div>
+
+      {/* Grille 7 colonnes (jours) x 25 lignes (labels + 24 heures) */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(7, ${cellWidth}px)`,
+          gridTemplateRows: `auto repeat(24, ${cellHeight}px)`,
+          gap: `${gap}px`,
+        }}
+      >
+        {/* Labels des jours en haut */}
+        {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
+          <div
+            key={`label-${i}`}
+            className="text-[9px] text-base-content/60 text-center font-medium"
+          >
+            {d}
+          </div>
+        ))}
+        {/* Cellules de la grille */}
+        {Array.from({ length: 24 }, (_, hour) =>
+          DAYS_OF_WEEK.map(day => {
+            const config = schedule[day][hour]
+            const hasLoad = config.loadLevel > 0
+            const bgColor = hasLoad
+              ? hexToRgba(color.hex, LOAD_LEVEL_OPACITIES[config.loadLevel])
+              : undefined
+
+            return (
+              <div
+                key={`${day}-${hour}`}
+                className={hasLoad ? '' : 'bg-base-200'}
+                style={{ backgroundColor: bgColor }}
+              />
+            )
+          })
+        )}
+      </div>
+    </div>
+  )
+
+  // Utiliser createPortal pour rendre dans document.body
+  return createPortal(content, document.body)
+})
 
 const presets: Preset[] = [
   {
@@ -25,6 +106,7 @@ const presets: Preset[] = [
     label: 'Heures de bureau',
     shortLabel: 'Bureau',
     description: 'Lun-Ven, 9h-18h',
+    weeklyHours: 45, // 5 jours x 9 heures (9h-18h)
     generate: (profileId, loadLevel) => {
       const schedule = createFilledSchedule(profileId, 0)
       for (const day of WEEKDAYS) {
@@ -40,6 +122,7 @@ const presets: Preset[] = [
     label: 'Heures etendues',
     shortLabel: 'Etendues',
     description: 'Lun-Ven, 8h-20h',
+    weeklyHours: 60, // 5 jours x 12 heures (8h-20h)
     generate: (profileId, loadLevel) => {
       const schedule = createFilledSchedule(profileId, 0)
       for (const day of WEEKDAYS) {
@@ -55,6 +138,7 @@ const presets: Preset[] = [
     label: 'Pics de trafic',
     shortLabel: 'Pics',
     description: 'Lun-Ven, 10h-12h et 14h-17h',
+    weeklyHours: 25, // 5 jours x (2 + 3) heures
     generate: (profileId, loadLevel) => {
       const schedule = createFilledSchedule(profileId, 0)
       for (const day of WEEKDAYS) {
@@ -75,6 +159,7 @@ const presets: Preset[] = [
     label: 'Week-end reduit',
     shortLabel: 'WE off',
     description: 'Lun-Ven max, Sam-Dim minimum',
+    weeklyHours: 120, // 5 jours x 24 heures
     generate: (profileId, loadLevel) => {
       const schedule = createFilledSchedule(profileId, 0)
       for (const day of WEEKDAYS) {
@@ -91,6 +176,7 @@ const presets: Preset[] = [
     label: 'Toujours maximum',
     shortLabel: '24/7',
     description: '24h/7j au maximum',
+    weeklyHours: 168, // 7 jours x 24 heures
     generate: (profileId, loadLevel) => {
       const schedule = createFilledSchedule(profileId, 0)
       for (const day of DAYS_OF_WEEK) {
@@ -108,6 +194,7 @@ interface CompactPresetButtonProps {
   preset: Preset
   profileId: string
   loadLevel: LoadLevel
+  profileColorIndex: number
   onApply: (schedule: WeeklySchedule) => void
 }
 
@@ -115,28 +202,61 @@ const CompactPresetButton = memo(function CompactPresetButton({
   preset,
   profileId,
   loadLevel,
+  profileColorIndex,
   onApply,
 }: CompactPresetButtonProps) {
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const [isHovered, setIsHovered] = useState(false)
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null)
+  const [hoveredSchedule, setHoveredSchedule] = useState<WeeklySchedule | null>(null)
+
   const handleClick = useCallback(() => {
     onApply(preset.generate(profileId, loadLevel))
     toast.success(`Configuration "${preset.label}" appliquee`)
   }, [preset, profileId, loadLevel, onApply])
 
+  const handleMouseEnter = useCallback(() => {
+    if (buttonRef.current) {
+      setAnchorRect(buttonRef.current.getBoundingClientRect())
+      setHoveredSchedule(preset.generate(profileId, loadLevel))
+      setIsHovered(true)
+    }
+  }, [preset, profileId, loadLevel])
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovered(false)
+    setAnchorRect(null)
+    setHoveredSchedule(null)
+  }, [])
+
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="btn btn-sm btn-ghost border border-base-300 hover:border-primary hover:bg-primary/10 whitespace-nowrap"
-      title={`${preset.label} - ${preset.description}`}
-    >
-      {preset.shortLabel}
-    </button>
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="btn btn-sm btn-ghost border border-base-300 hover:border-primary hover:bg-primary/10 flex flex-col items-start py-1.5 h-auto"
+      >
+        <span className="text-xs font-medium">{preset.shortLabel}</span>
+        <span className="text-[10px] text-base-content/50">{preset.description}</span>
+      </button>
+      {isHovered && anchorRect && hoveredSchedule && (
+        <PresetTooltip
+          schedule={hoveredSchedule}
+          anchorRect={anchorRect}
+          profileColorIndex={profileColorIndex}
+        />
+      )}
+    </>
   )
 })
 
 export const SchedulePresets = memo(function SchedulePresets({
   profileId,
   loadLevel,
+  profileColorIndex,
   onApply,
 }: SchedulePresetsProps) {
   return (
@@ -147,6 +267,7 @@ export const SchedulePresets = memo(function SchedulePresets({
           preset={preset}
           profileId={profileId}
           loadLevel={loadLevel}
+          profileColorIndex={profileColorIndex}
           onApply={onApply}
         />
       ))}

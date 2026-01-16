@@ -59,7 +59,7 @@ const getCellBackgroundStyle = (
   config: HourlyConfig,
   profileColorIndex: number | null
 ): React.CSSProperties => {
-  if (!config || config.profileId === BASELINE_PROFILE_ID || config.loadLevel === 0 || profileColorIndex === null) {
+  if (!config || config.profileId === BASELINE_PROFILE_ID || profileColorIndex === null) {
     return {}
   }
 
@@ -79,7 +79,7 @@ const getTextColorClass = (
   config: HourlyConfig,
   profileColorIndex: number | null
 ): string => {
-  if (!config || config.profileId === BASELINE_PROFILE_ID || config.loadLevel === 0 || profileColorIndex === null) {
+  if (!config || config.profileId === BASELINE_PROFILE_ID || profileColorIndex === null) {
     return 'text-base-content'
   }
 
@@ -250,7 +250,7 @@ export function WeeklyCalendar({
 
         // Calculer le style de fond et la classe de texte
         const bgStyle = getCellBackgroundStyle(config, profileColorIndex)
-        const bgClass = displayLevel === 0 || profileColorIndex === null ? 'bg-base-200' : ''
+        const bgClass = profileColorIndex === null ? 'bg-base-200' : ''
         const textColorClass = getTextColorClass(config, profileColorIndex)
 
         info[day][hour] = {

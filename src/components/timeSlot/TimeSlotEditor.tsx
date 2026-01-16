@@ -7,7 +7,7 @@ import { SchedulePresets } from './SchedulePresets'
 import { ScheduleLegend } from './ScheduleLegend'
 import type { Instance } from '@/api/types'
 import { Icons } from '@/components/ui'
-import { PROFILE_COLORS, shouldUseWhiteText } from '@/constants'
+import { PROFILE_COLORS, LOAD_LEVEL_OPACITIES, hexToRgba, shouldUseWhiteText } from '@/constants'
 
 interface TimeSlotEditorProps {
   projectId: string
@@ -30,26 +30,35 @@ const LoadLevelButtons = memo(function LoadLevelButtons({
 }: LoadLevelButtonsProps) {
   return (
     <div className="flex items-center gap-0.5">
-      {LOAD_LEVELS.map(level => (
-        <button
-          key={level}
-          type="button"
-          onClick={() => onLoadLevelChange(level)}
-          className={`
-            btn btn-sm w-8 h-8 min-h-0 p-0
-            ${loadLevel === level
-              ? ''
-              : 'btn-ghost border border-base-300'}
-          `}
-          style={loadLevel === level ? {
-            backgroundColor: profileColor,
-            color: shouldUseWhiteText(profileColor, 1) ? '#fff' : '#000'
-          } : undefined}
-          title={`${LOAD_LEVEL_LABELS[level]} - ${LOAD_LEVEL_DESCRIPTIONS[level]}`}
-        >
-          {level}
-        </button>
-      ))}
+      {LOAD_LEVELS.map(level => {
+        // Tous les niveaux utilisent la couleur du profil avec l'opacite correspondante
+        const opacity = LOAD_LEVEL_OPACITIES[level]
+        const bgColor = hexToRgba(profileColor, opacity)
+        const useWhiteText = shouldUseWhiteText(profileColor, opacity)
+
+        return (
+          <div
+            key={level}
+            className="tooltip tooltip-bottom"
+            data-tip={`${LOAD_LEVEL_LABELS[level]} - ${LOAD_LEVEL_DESCRIPTIONS[level]}`}
+          >
+            <button
+              type="button"
+              onClick={() => onLoadLevelChange(level)}
+              className={`
+                btn btn-sm w-8 h-8 min-h-0 p-0 border border-base-300
+                ${loadLevel === level ? 'ring-2 ring-primary ring-offset-1' : ''}
+              `}
+              style={{
+                backgroundColor: bgColor,
+                color: useWhiteText ? '#fff' : '#000'
+              }}
+            >
+              {level}
+            </button>
+          </div>
+        )
+      })}
     </div>
   )
 })
@@ -118,11 +127,14 @@ function TimeSlotEditor({
 
   const hasScaling = scalingProfiles.length > 0
 
-  // Couleur du profil selectionne - memoise pour eviter recalcul a chaque render
-  const selectedProfileColor = useMemo(() => {
-    const index = Math.max(0, scalingProfiles.findIndex(p => p.id === selectedProfileId))
-    return PROFILE_COLORS[index % PROFILE_COLORS.length].hex
+  // Index et couleur du profil selectionne - memoise pour eviter recalcul a chaque render
+  const selectedProfileColorIndex = useMemo(() => {
+    return Math.max(0, scalingProfiles.findIndex(p => p.id === selectedProfileId))
   }, [scalingProfiles, selectedProfileId])
+
+  const selectedProfileColor = useMemo(() => {
+    return PROFILE_COLORS[selectedProfileColorIndex % PROFILE_COLORS.length].hex
+  }, [selectedProfileColorIndex])
 
   return (
     <div className="space-y-4">
@@ -180,16 +192,10 @@ function TimeSlotEditor({
               />
             </div>
 
-            {/* Indicateur du mode actuel */}
-            <div className="flex items-center gap-2">
-              <span className={`badge ${loadLevel === 0 ? 'badge-ghost' : 'badge-primary'} gap-1`}>
-                <Icons.Edit className="w-3 h-3" />
-                {loadLevel}
-              </span>
-              <span className="text-sm font-medium hidden sm:inline">
-                {LOAD_LEVEL_LABELS[loadLevel]}
-              </span>
-            </div>
+            {/* Description du niveau de charge actuel */}
+            <span className="text-sm text-base-content/70">
+              {LOAD_LEVEL_DESCRIPTIONS[loadLevel]}
+            </span>
           </div>
 
           {/* Ligne 2 : Presets et Reset */}
@@ -199,6 +205,7 @@ function TimeSlotEditor({
               <SchedulePresets
                 profileId={selectedProfileId}
                 loadLevel={loadLevel}
+                profileColorIndex={selectedProfileColorIndex}
                 onApply={handleScheduleChange}
               />
             </div>

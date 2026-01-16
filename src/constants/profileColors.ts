@@ -9,61 +9,33 @@ export interface ProfileColorConfig {
   name: string
   /** Couleur hex pour les styles inline */
   hex: string
-  /** Classes Tailwind pour le fond (sans opacité) */
-  bgClass: string
 }
 
 /**
  * Palette de 8 couleurs distinctes pour les profils
  */
 export const PROFILE_COLORS: ProfileColorConfig[] = [
-  { name: 'blue', hex: '#3b82f6', bgClass: 'bg-blue-500' },
-  { name: 'emerald', hex: '#10b981', bgClass: 'bg-emerald-500' },
-  { name: 'amber', hex: '#f59e0b', bgClass: 'bg-amber-500' },
-  { name: 'rose', hex: '#f43f5e', bgClass: 'bg-rose-500' },
-  { name: 'cyan', hex: '#06b6d4', bgClass: 'bg-cyan-500' },
-  { name: 'violet', hex: '#8b5cf6', bgClass: 'bg-violet-500' },
-  { name: 'lime', hex: '#84cc16', bgClass: 'bg-lime-500' },
-  { name: 'fuchsia', hex: '#d946ef', bgClass: 'bg-fuchsia-500' },
+  { name: 'blue', hex: '#3b82f6' },
+  { name: 'emerald', hex: '#10b981' },
+  { name: 'amber', hex: '#f59e0b' },
+  { name: 'rose', hex: '#f43f5e' },
+  { name: 'cyan', hex: '#06b6d4' },
+  { name: 'violet', hex: '#8b5cf6' },
+  { name: 'lime', hex: '#84cc16' },
+  { name: 'fuchsia', hex: '#d946ef' },
 ]
 
 /**
  * Opacités par niveau de charge
- * Niveau 0 = pas de couleur (gris neutre)
+ * Niveau 0 = couleur tres claire pour indiquer baseline
  */
 export const LOAD_LEVEL_OPACITIES: Record<number, number> = {
-  0: 0, // Pas utilisé (bg-base-200)
+  0: 0.1,
   1: 0.3,
   2: 0.5,
   3: 0.65,
   4: 0.8,
   5: 1.0,
-}
-
-/**
- * Récupère la couleur d'un profil par son index
- */
-export function getProfileColorByIndex(index: number): ProfileColorConfig {
-  return PROFILE_COLORS[index % PROFILE_COLORS.length]
-}
-
-/**
- * Génère le style CSS inline pour une cellule avec couleur de profil et opacité de niveau
- */
-export function getProfileCellStyle(
-  profileColorIndex: number,
-  loadLevel: number
-): React.CSSProperties {
-  if (loadLevel === 0) {
-    return {}
-  }
-
-  const color = PROFILE_COLORS[profileColorIndex % PROFILE_COLORS.length]
-  const opacity = LOAD_LEVEL_OPACITIES[loadLevel] ?? 1
-
-  return {
-    backgroundColor: hexToRgba(color.hex, opacity),
-  }
 }
 
 /**

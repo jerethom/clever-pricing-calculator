@@ -50,7 +50,7 @@
     @apply outline-2 outline-offset-2 outline-primary;
   }
 
-  button {
+  button, option, select {
     @apply cursor-pointer;
   }
 }
