@@ -3,6 +3,7 @@
 .fastembed_cache/
 .playwright-mcp/
 .codegraphcontext/
+.tanstack/
 CLAUDE.md
 .mcp.json
 

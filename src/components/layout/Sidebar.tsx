@@ -1,10 +1,9 @@
 import { useState, useCallback, useMemo } from 'react'
+import { Link, useParams } from '@tanstack/react-router'
 import {
   useSelector,
   useProjectActions,
   selectOrganizations,
-  selectActiveOrganizationId,
-  selectActiveProjectId,
   selectProjects,
 } from '@/store'
 import { useAllProjectsCosts } from '@/hooks/useCostCalculation'
@@ -22,8 +21,7 @@ interface OrganizationItemProps {
   isActive: boolean
   isExpanded: boolean
   onToggleExpand: () => void
-  onSelectOrganization: () => void
-  onSelectProject: (projectId: string) => void
+  onClose?: () => void
   activeProjectId: string | null
   projectCosts: Map<string, ProjectCostSummary>
 }
@@ -34,8 +32,7 @@ function OrganizationItem({
   isActive,
   isExpanded,
   onToggleExpand,
-  onSelectOrganization,
-  onSelectProject,
+  onClose,
   activeProjectId,
   projectCosts,
 }: OrganizationItemProps) {
@@ -60,6 +57,7 @@ function OrganizationItem({
         `}
       >
         <button
+          type="button"
           className="p-1 hover:bg-white/10 rounded transition-colors"
           onClick={onToggleExpand}
           aria-label={isExpanded ? 'Replier' : 'Deplier'}
@@ -68,9 +66,11 @@ function OrganizationItem({
             className={`w-3 h-3 text-white/50 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
           />
         </button>
-        <button
+        <Link
+          to="/org/$orgId"
+          params={{ orgId: organization.id }}
           className="flex-1 flex items-center justify-between gap-2 min-w-0"
-          onClick={onSelectOrganization}
+          onClick={onClose}
         >
           <div className="flex items-center gap-2 min-w-0">
             <Icons.Building className="w-4 h-4 text-white/60 flex-shrink-0" />
@@ -86,7 +86,7 @@ function OrganizationItem({
           >
             {formatPrice(totalCost)}
           </span>
-        </button>
+        </Link>
       </div>
 
       {/* Liste des projets de l'organisation */}
@@ -98,15 +98,17 @@ function OrganizationItem({
 
             return (
               <li key={project.id}>
-                <button
+                <Link
+                  to="/org/$orgId/project/$projectId/runtimes"
+                  params={{ orgId: organization.id, projectId: project.id }}
                   className={`
-                    w-full text-left px-3 py-2 cursor-pointer transition-all duration-150
+                    block w-full text-left px-3 py-2 cursor-pointer transition-all duration-150
                     ${isProjectActive
                       ? 'bg-[#5754aa] border-l-2 border-l-white'
                       : 'border-l-2 border-l-transparent hover:bg-white/5 hover:border-l-white/30'
                     }
                   `}
-                  onClick={() => onSelectProject(project.id)}
+                  onClick={onClose}
                   aria-current={isProjectActive ? 'page' : undefined}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -126,7 +128,7 @@ function OrganizationItem({
                       {cost ? formatPrice(cost.totalMonthlyCost) : '...'}
                     </span>
                   </div>
-                </button>
+                </Link>
               </li>
             )
           })}
@@ -139,14 +141,12 @@ function OrganizationItem({
 export function Sidebar({ onClose }: SidebarProps) {
   const organizations = useSelector(selectOrganizations)
   const allProjects = useSelector(selectProjects)
-  const activeOrgId = useSelector(selectActiveOrganizationId)
-  const activeProjectId = useSelector(selectActiveProjectId)
-  const {
-    setActiveOrganization,
-    setActiveProject,
-    createProject,
-    createOrganization,
-  } = useProjectActions()
+  const { createProject, createOrganization } = useProjectActions()
+
+  // Obtenir les IDs actifs depuis l'URL
+  const params = useParams({ strict: false })
+  const activeOrgId = params.orgId ?? null
+  const activeProjectId = params.projectId ?? null
 
   // Couts de tous les projets
   const projectCosts = useAllProjectsCosts()
@@ -177,38 +177,18 @@ export function Sidebar({ onClose }: SidebarProps) {
     })
   }, [])
 
-  const handleSelectOrganization = useCallback((orgId: string) => {
-    setActiveOrganization(orgId)
-    setExpandedOrgs(prev => new Set(prev).add(orgId))
-    onClose?.()
-  }, [setActiveOrganization, onClose])
-
-  const handleSelectProject = useCallback((projectId: string) => {
-    // Trouver le projet pour obtenir son organisation
-    const project = allProjects.find(p => p.id === projectId)
-    if (project && project.organizationId !== activeOrgId) {
-      // Changer l'organisation active si le projet appartient à une autre org
-      setActiveOrganization(project.organizationId)
-      setExpandedOrgs(prev => new Set(prev).add(project.organizationId))
-    }
-    setActiveProject(projectId)
-    onClose?.()
-  }, [allProjects, activeOrgId, setActiveOrganization, setActiveProject, onClose])
-
   const handleCreateOrganization = useCallback(() => {
     const name = `Organisation ${organizations.length + 1}`
     const newOrgId = createOrganization(name)
     setExpandedOrgs(prev => new Set(prev).add(newOrgId))
-    onClose?.()
-  }, [organizations.length, createOrganization, onClose])
+  }, [organizations.length, createOrganization])
 
   const handleCreateProject = useCallback(() => {
     if (!activeOrgId) return
     const orgProjects = projectsByOrg.get(activeOrgId) ?? []
     const name = `Projet ${orgProjects.length + 1}`
     createProject(activeOrgId, name)
-    onClose?.()
-  }, [activeOrgId, projectsByOrg, createProject, onClose])
+  }, [activeOrgId, projectsByOrg, createProject])
 
   return (
     <div className="h-full bg-[#13172e] w-80 flex flex-col">
@@ -246,8 +226,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                 isActive={org.id === activeOrgId}
                 isExpanded={expandedOrgs.has(org.id)}
                 onToggleExpand={() => toggleOrgExpansion(org.id)}
-                onSelectOrganization={() => handleSelectOrganization(org.id)}
-                onSelectProject={handleSelectProject}
+                onClose={onClose}
                 activeProjectId={activeProjectId}
                 projectCosts={projectCosts}
               />
@@ -259,6 +238,7 @@ export function Sidebar({ onClose }: SidebarProps) {
       {/* Boutons d'action */}
       <div className="px-3 pb-3 space-y-2">
         <button
+          type="button"
           className="
             w-full flex items-center justify-center gap-2 cursor-pointer
             px-4 py-2.5 text-sm font-medium
@@ -273,6 +253,7 @@ export function Sidebar({ onClose }: SidebarProps) {
         </button>
         {activeOrgId && (
           <button
+            type="button"
             className="
               w-full flex items-center justify-center gap-2 cursor-pointer
               px-4 py-2 text-sm font-medium

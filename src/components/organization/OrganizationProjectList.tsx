@@ -1,4 +1,5 @@
-import { memo, useCallback, useMemo, useState } from 'react'
+import { memo, useState, useMemo } from 'react'
+import { Link } from '@tanstack/react-router'
 import { formatPrice } from '@/lib/costCalculator'
 import { Icons } from '@/components/ui'
 import type { Project, ProjectCostSummary } from '@/types'
@@ -50,40 +51,26 @@ const CostBreakdownBar = memo(function CostBreakdownBar({
 interface ProjectItemProps {
   project: Project
   cost: ProjectCostSummary | undefined
-  onSelect: (projectId: string) => void
+  orgId: string
 }
 
 const ProjectItem = memo(function ProjectItem({
   project,
   cost,
-  onSelect,
+  orgId,
 }: ProjectItemProps) {
-  const handleClick = useCallback(() => {
-    onSelect(project.id)
-  }, [onSelect, project.id])
-
-  const runtimesCount = project.runtimes.length
-  const addonsCount = project.addons.length
-
-  const costDetails = useMemo(() => {
-    if (!cost) return null
-    return {
-      runtimesCost: cost.runtimesCost,
-      addonsCost: cost.addonsCost,
-      total: cost.totalMonthlyCost,
-    }
-  }, [cost])
+  const { runtimes, addons } = project
+  const hasCost = cost && cost.totalMonthlyCost > 0
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="w-full text-left card bg-base-100 border border-base-300 hover:border-primary/50 hover:shadow-md transition-all group focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 cursor-pointer"
+    <Link
+      to="/org/$orgId/project/$projectId/runtimes"
+      params={{ orgId, projectId: project.id }}
+      className="block w-full text-left card bg-base-100 border border-base-300 hover:border-primary/50 hover:shadow-md transition-all group focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 cursor-pointer"
       aria-label={`Ouvrir le projet ${project.name}`}
     >
       <div className="card-body p-4">
         <div className="flex items-center justify-between gap-3">
-          {/* Info projet */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
               <Icons.Folder className="w-5 h-5 text-primary" />
@@ -95,17 +82,16 @@ const ProjectItem = memo(function ProjectItem({
               <div className="flex items-center gap-3 mt-1">
                 <span className="text-xs text-base-content/60 flex items-center gap-1">
                   <Icons.Server className="w-3 h-3" />
-                  {runtimesCount} runtime{runtimesCount !== 1 ? 's' : ''}
+                  {runtimes.length} runtime{runtimes.length !== 1 ? 's' : ''}
                 </span>
                 <span className="text-xs text-base-content/60 flex items-center gap-1">
                   <Icons.Puzzle className="w-3 h-3" />
-                  {addonsCount} addon{addonsCount !== 1 ? 's' : ''}
+                  {addons.length} addon{addons.length !== 1 ? 's' : ''}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Cout et fleche */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="text-right">
               <p className="font-bold text-primary tabular-nums">
@@ -117,46 +103,45 @@ const ProjectItem = memo(function ProjectItem({
           </div>
         </div>
 
-        {/* Barre de repartition et details des couts */}
-        {costDetails && costDetails.total > 0 && (
+        {hasCost && (
           <div className="mt-3 pt-3 border-t border-base-200">
             <CostBreakdownBar
-              runtimesCost={costDetails.runtimesCost}
-              addonsCost={costDetails.addonsCost}
-              total={costDetails.total}
+              runtimesCost={cost.runtimesCost}
+              addonsCost={cost.addonsCost}
+              total={cost.totalMonthlyCost}
             />
             <div className="flex items-center justify-between mt-2 text-xs">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-primary" aria-hidden="true" />
                   <span className="text-base-content/60">Runtimes:</span>
-                  <span className="font-medium text-primary">{formatPrice(costDetails.runtimesCost)}</span>
+                  <span className="font-medium text-primary">{formatPrice(cost.runtimesCost)}</span>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-secondary" aria-hidden="true" />
                   <span className="text-base-content/60">Addons:</span>
-                  <span className="font-medium text-secondary">{formatPrice(costDetails.addonsCost)}</span>
+                  <span className="font-medium text-secondary">{formatPrice(cost.addonsCost)}</span>
                 </span>
               </div>
             </div>
           </div>
         )}
       </div>
-    </button>
+    </Link>
   )
 })
 
 interface OrganizationProjectListProps {
   projects: Project[]
   projectCosts: Map<string, ProjectCostSummary>
-  onSelectProject: (projectId: string) => void
+  orgId: string
   onCreateProject: () => void
 }
 
 export const OrganizationProjectList = memo(function OrganizationProjectList({
   projects,
   projectCosts,
-  onSelectProject,
+  orgId,
   onCreateProject,
 }: OrganizationProjectListProps) {
   const [searchQuery, setSearchQuery] = useState('')
@@ -263,7 +248,7 @@ export const OrganizationProjectList = memo(function OrganizationProjectList({
               key={project.id}
               project={project}
               cost={projectCosts.get(project.id)}
-              onSelect={onSelectProject}
+              orgId={orgId}
             />
           ))}
         </div>
