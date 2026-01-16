@@ -2,27 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAddons } from '@/hooks/useAddons'
 import { useProjectActions } from '@/store'
 import { formatMonthlyPrice } from '@/lib/costCalculator'
+import { sortFeaturesByPriority } from '@/lib/addonUtils'
 import { Portal } from '@/components/ui'
-import type { AddonFeature } from '@/api/types'
 import type { AddonConfig } from '@/types/project'
-
-// Features prioritaires à afficher en premier (par ordre de priorité)
-const PRIORITY_FEATURES = ['memory', 'max_db_size', 'disk', 'vcpus', 'cpu', 'storage', 'max_connection_limit']
-
-// Trie les features par priorité pour un affichage cohérent
-function sortFeaturesByPriority(features: AddonFeature[]): AddonFeature[] {
-  return [...features].sort((a, b) => {
-    const aIndex = PRIORITY_FEATURES.findIndex(p => a.name_code?.toLowerCase().includes(p))
-    const bIndex = PRIORITY_FEATURES.findIndex(p => b.name_code?.toLowerCase().includes(p))
-    // Si les deux ont une priorité, trier par priorité
-    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
-    // Les features prioritaires viennent en premier
-    if (aIndex !== -1) return -1
-    if (bIndex !== -1) return 1
-    // Sinon garder l'ordre original
-    return 0
-  })
-}
 
 interface AddonFormProps {
   projectId: string

@@ -1,25 +1,12 @@
 import { useState, useCallback, useMemo, memo, lazy, Suspense } from 'react'
 import type { AddonConfig } from '@/types'
-import type { AddonFeature } from '@/api/types'
 import { useProjectActions } from '@/store'
 import { useAddons } from '@/hooks/useAddons'
 import { formatMonthlyPrice } from '@/lib/costCalculator'
-import { PRIORITY_FEATURES } from '@/constants'
+import { sortFeaturesByPriority } from '@/lib/addonUtils'
 import { Icons, ConfirmDialog } from '@/components/ui'
 
 const AddonForm = lazy(() => import('./AddonForm'))
-
-// Trie les features par priorite pour un affichage coherent
-function sortFeaturesByPriority(features: AddonFeature[]): AddonFeature[] {
-  return [...features].sort((a, b) => {
-    const aIndex = PRIORITY_FEATURES.findIndex(p => a.name_code?.toLowerCase().includes(p))
-    const bIndex = PRIORITY_FEATURES.findIndex(p => b.name_code?.toLowerCase().includes(p))
-    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
-    if (aIndex !== -1) return -1
-    if (bIndex !== -1) return 1
-    return 0
-  })
-}
 
 interface AddonCardProps {
   projectId: string
