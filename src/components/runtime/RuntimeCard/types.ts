@@ -1,4 +1,4 @@
-import type { RuntimeConfig, RuntimeCostDetail } from '@/types'
+import type { RuntimeConfig, RuntimeCostDetail, ScalingProfile } from '@/types'
 import type { Instance, InstanceFlavor } from '@/api/types'
 
 /**
@@ -21,6 +21,12 @@ export interface RuntimeCardContextValue {
   cost: RuntimeCostDetail
   gaugePosition: number
   defaultName: string
+  hasScaling: boolean
+  activeScalingProfiles: ScalingProfile[]
+  availableFlavors: InstanceFlavor[]
+  // Configuration de base (depuis baseline profile)
+  baselineProfile: ScalingProfile
+  baseConfig: { instances: number; flavorName: string }
 
   // Etat d'édition du nom
   isEditingName: boolean
@@ -39,9 +45,16 @@ export interface RuntimeCardContextValue {
   onOpenFlavorPicker: () => void
   onFlavorChange: (flavorName: string) => void
 
-  // Handlers scaling
-  onMinInstancesChange: (value: number) => void
-  onMaxInstancesChange: (value: number) => void
+  // Handler base instances
+  onBaseInstancesChange: (value: number) => void
+
+  // Handler scaling mode
+  onToggleScaling: (enabled: boolean) => void
+
+  // Handlers profils de scaling
+  onUpdateScalingProfile: (profileId: string, updates: Partial<ScalingProfile>) => void
+  onAddScalingProfile: (profile: ScalingProfile) => void
+  onRemoveScalingProfile: (profileId: string) => void
 
   // Handlers planning
   showTimeSlots: boolean
@@ -84,12 +97,4 @@ export interface RuntimeCardScheduleProps {
  */
 export interface RuntimeCardCostsProps {
   className?: string
-}
-
-/**
- * Changement de scaling en attente de confirmation
- */
-export interface PendingScalingChange {
-  min: number
-  max: number
 }

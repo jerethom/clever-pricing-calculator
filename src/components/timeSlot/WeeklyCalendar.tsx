@@ -1,37 +1,42 @@
 import { useState, useCallback, useRef } from 'react'
-import type { WeeklySchedule, DayOfWeek } from '@/types'
-import { DAYS_OF_WEEK, DAY_LABELS } from '@/types'
+import type { WeeklySchedule, DayOfWeek, HourlyConfig, LoadLevel } from '@/types'
+import { DAYS_OF_WEEK, DAY_LABELS, createHourlyConfig, createBaselineConfig, BASELINE_PROFILE_ID } from '@/types'
 import { SelectionIndicator } from './SelectionIndicator'
 
 interface WeeklyCalendarProps {
   schedule: WeeklySchedule
   onChange: (schedule: WeeklySchedule) => void
-  maxExtraInstances: number
-  paintValue: number
+  profileId: string
+  loadLevel: LoadLevel
 }
 
-// Couleurs pour les différents niveaux d'instances (style Clever Cloud)
-const getInstanceColor = (extra: number, max: number): string => {
-  if (extra === 0) return 'bg-base-200'
-  const intensity = Math.min(extra / max, 1)
-  if (intensity <= 0.33) return 'bg-[#5754aa]/40'
-  if (intensity <= 0.66) return 'bg-[#5754aa]/70'
+// Couleurs pour les différents niveaux de charge (style Clever Cloud)
+const getLoadLevelColor = (config: HourlyConfig): string => {
+  if (!config || config.profileId === BASELINE_PROFILE_ID || config.loadLevel === 0) {
+    return 'bg-base-200'
+  }
+  const level = config.loadLevel
+  if (level === 1) return 'bg-[#5754aa]/20'
+  if (level === 2) return 'bg-[#5754aa]/40'
+  if (level === 3) return 'bg-[#5754aa]/60'
+  if (level === 4) return 'bg-[#5754aa]/80'
   return 'bg-[#5754aa]'
 }
 
 // Couleur du texte selon le fond pour assurer le contraste
-const getTextColor = (extra: number, max: number): string => {
-  if (extra === 0) return 'text-base-content'
-  const intensity = Math.min(extra / max, 1)
-  if (intensity <= 0.33) return 'text-[#1c2045]'
+const getTextColor = (config: HourlyConfig): string => {
+  if (!config || config.profileId === BASELINE_PROFILE_ID || config.loadLevel === 0) {
+    return 'text-base-content'
+  }
+  if (config.loadLevel <= 2) return 'text-[#1c2045]'
   return 'text-white'
 }
 
 export function WeeklyCalendar({
   schedule,
   onChange,
-  maxExtraInstances,
-  paintValue,
+  profileId,
+  loadLevel,
 }: WeeklyCalendarProps) {
   const [isPainting, setIsPainting] = useState(false)
   const [selectionStart, setSelectionStart] = useState<{
@@ -43,6 +48,11 @@ export function WeeklyCalendar({
     hour: number
   } | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Crée la config à peindre selon le loadLevel actuel
+  const paintConfig: HourlyConfig = loadLevel === 0
+    ? createBaselineConfig()
+    : createHourlyConfig(profileId, loadLevel)
 
   // Vérifie si une cellule est dans la sélection actuelle
   const isInSelection = useCallback(
@@ -87,12 +97,12 @@ export function WeeklyCalendar({
     for (let d = minDay; d <= maxDay; d++) {
       const day = DAYS_OF_WEEK[d]
       for (let h = minHour; h <= maxHour; h++) {
-        newSchedule[day][h] = paintValue
+        newSchedule[day][h] = { ...paintConfig }
       }
     }
 
     onChange(newSchedule)
-  }, [selectionStart, selectionEnd, paintValue, schedule, onChange])
+  }, [selectionStart, selectionEnd, paintConfig, schedule, onChange])
 
   // Début de la sélection (souris)
   const handleMouseDown = (day: DayOfWeek, hour: number) => {
@@ -161,7 +171,7 @@ export function WeeklyCalendar({
     for (const d of DAYS_OF_WEEK) {
       newSchedule[d] = [...schedule[d]]
     }
-    newSchedule[day] = Array(24).fill(paintValue)
+    newSchedule[day] = Array(24).fill(null).map(() => ({ ...paintConfig }))
     onChange(newSchedule)
   }
 
@@ -170,7 +180,7 @@ export function WeeklyCalendar({
     const newSchedule = { ...schedule }
     for (const day of DAYS_OF_WEEK) {
       newSchedule[day] = [...schedule[day]]
-      newSchedule[day][hour] = paintValue
+      newSchedule[day][hour] = { ...paintConfig }
     }
     onChange(newSchedule)
   }
@@ -181,7 +191,7 @@ export function WeeklyCalendar({
       <SelectionIndicator
         start={selectionStart}
         end={selectionEnd}
-        paintValue={paintValue}
+        paintValue={loadLevel}
         isVisible={isPainting}
       />
 
@@ -205,7 +215,7 @@ export function WeeklyCalendar({
                   key={day}
                   className="text-center bg-base-200 px-1 cursor-pointer hover:bg-primary/10 transition-colors"
                   onClick={() => handleDayClick(day)}
-                  title={`Cliquez pour remplir tout ${DAY_LABELS[day]} avec +${paintValue}`}
+                  title={`Cliquez pour remplir tout ${DAY_LABELS[day]} avec niveau ${loadLevel}`}
                 >
                   <span className="text-xs sm:text-sm">{DAY_LABELS[day]}</span>
                 </th>
@@ -218,13 +228,14 @@ export function WeeklyCalendar({
                 <td
                   className="text-center text-xs bg-base-200 font-mono cursor-pointer hover:bg-primary/10 transition-colors"
                   onClick={() => handleHourClick(hour)}
-                  title={`Cliquez pour remplir ${hour}h tous les jours avec +${paintValue}`}
+                  title={`Cliquez pour remplir ${hour}h tous les jours avec niveau ${loadLevel}`}
                 >
                   {hour.toString().padStart(2, '0')}h
                 </td>
                 {DAYS_OF_WEEK.map(day => {
-                  const extra = schedule[day][hour]
+                  const config = schedule[day][hour]
                   const inSelection = isInSelection(day, hour)
+                  const displayLevel = config?.loadLevel ?? 0
                   return (
                     <td
                       key={`${day}-${hour}`}
@@ -232,16 +243,16 @@ export function WeeklyCalendar({
                       data-hour={hour}
                       className={`
                         p-0 border border-base-300 cursor-pointer transition-colors
-                        ${getInstanceColor(extra, maxExtraInstances)}
+                        ${getLoadLevelColor(config)}
                         ${inSelection ? 'ring-2 ring-secondary ring-inset' : ''}
                         touch-none
                       `}
                       onMouseDown={() => handleMouseDown(day, hour)}
                       onMouseEnter={() => handleMouseEnter(day, hour)}
                       onTouchStart={handleTouchStart(day, hour)}
-                      title={`${DAY_LABELS[day]} ${hour}h : +${extra} instance(s)`}
+                      title={`${DAY_LABELS[day]} ${hour}h : niveau ${displayLevel}`}
                       role="gridcell"
-                      aria-label={`${DAY_LABELS[day]} ${hour}h, ${extra} instances supplémentaires`}
+                      aria-label={`${DAY_LABELS[day]} ${hour}h, niveau de charge ${displayLevel}`}
                     >
                       <div
                         className={`
@@ -249,12 +260,12 @@ export function WeeklyCalendar({
                           sm:w-10 sm:h-7
                           md:w-8 md:h-6
                           flex items-center justify-center text-xs
-                          ${getTextColor(extra, maxExtraInstances)}
+                          ${getTextColor(config)}
                         `}
                       >
-                        {extra > 0 && (
+                        {displayLevel > 0 && (
                           <span className="font-bold text-[10px] sm:text-xs">
-                            {extra}
+                            {displayLevel}
                           </span>
                         )}
                       </div>

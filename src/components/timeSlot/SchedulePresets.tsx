@@ -1,8 +1,9 @@
-import type { WeeklySchedule, DayOfWeek } from '@/types'
-import { DAYS_OF_WEEK, createEmptySchedule } from '@/types'
+import type { WeeklySchedule, DayOfWeek, LoadLevel } from '@/types'
+import { DAYS_OF_WEEK, createEmptySchedule, createHourlyConfig } from '@/types'
 
 interface SchedulePresetsProps {
-  maxExtraInstances: number
+  profileId: string
+  loadLevel: LoadLevel
   onApply: (schedule: WeeklySchedule) => void
 }
 
@@ -11,7 +12,7 @@ interface Preset {
   label: string
   description: string
   icon: string
-  generate: (max: number) => WeeklySchedule
+  generate: (profileId: string, loadLevel: LoadLevel) => WeeklySchedule
 }
 
 const WEEKDAYS: DayOfWeek[] = ['mon', 'tue', 'wed', 'thu', 'fri']
@@ -22,11 +23,11 @@ const presets: Preset[] = [
     label: 'Heures de bureau',
     description: 'Lun-Ven, 9h-18h',
     icon: '🏢',
-    generate: max => {
+    generate: (profileId, loadLevel) => {
       const schedule = createEmptySchedule()
       for (const day of WEEKDAYS) {
         for (let h = 9; h < 18; h++) {
-          schedule[day][h] = max
+          schedule[day][h] = createHourlyConfig(profileId, loadLevel)
         }
       }
       return schedule
@@ -37,11 +38,11 @@ const presets: Preset[] = [
     label: 'Heures étendues',
     description: 'Lun-Ven, 8h-20h',
     icon: '📊',
-    generate: max => {
+    generate: (profileId, loadLevel) => {
       const schedule = createEmptySchedule()
       for (const day of WEEKDAYS) {
         for (let h = 8; h < 20; h++) {
-          schedule[day][h] = max
+          schedule[day][h] = createHourlyConfig(profileId, loadLevel)
         }
       }
       return schedule
@@ -52,16 +53,16 @@ const presets: Preset[] = [
     label: 'Pics de trafic',
     description: 'Lun-Ven, 10h-12h et 14h-17h',
     icon: '📈',
-    generate: max => {
+    generate: (profileId, loadLevel) => {
       const schedule = createEmptySchedule()
       for (const day of WEEKDAYS) {
         // Pic du matin
         for (let h = 10; h < 12; h++) {
-          schedule[day][h] = max
+          schedule[day][h] = createHourlyConfig(profileId, loadLevel)
         }
         // Pic après-midi
         for (let h = 14; h < 17; h++) {
-          schedule[day][h] = max
+          schedule[day][h] = createHourlyConfig(profileId, loadLevel)
         }
       }
       return schedule
@@ -72,11 +73,11 @@ const presets: Preset[] = [
     label: 'Réduction nocturne',
     description: 'Boost 6h-22h tous les jours',
     icon: '🌙',
-    generate: max => {
+    generate: (profileId, loadLevel) => {
       const schedule = createEmptySchedule()
       for (const day of DAYS_OF_WEEK) {
         for (let h = 6; h < 22; h++) {
-          schedule[day][h] = max
+          schedule[day][h] = createHourlyConfig(profileId, loadLevel)
         }
       }
       return schedule
@@ -87,14 +88,14 @@ const presets: Preset[] = [
     label: 'Week-end réduit',
     description: 'Lun-Ven max, Sam-Dim minimum',
     icon: '🏖️',
-    generate: max => {
+    generate: (profileId, loadLevel) => {
       const schedule = createEmptySchedule()
       for (const day of WEEKDAYS) {
         for (let h = 0; h < 24; h++) {
-          schedule[day][h] = max
+          schedule[day][h] = createHourlyConfig(profileId, loadLevel)
         }
       }
-      // Weekend reste à 0
+      // Weekend reste en baseline
       return schedule
     },
   },
@@ -103,11 +104,11 @@ const presets: Preset[] = [
     label: 'Toujours maximum',
     description: '24h/7j au maximum',
     icon: '🚀',
-    generate: max => {
+    generate: (profileId, loadLevel) => {
       const schedule = createEmptySchedule()
       for (const day of DAYS_OF_WEEK) {
         for (let h = 0; h < 24; h++) {
-          schedule[day][h] = max
+          schedule[day][h] = createHourlyConfig(profileId, loadLevel)
         }
       }
       return schedule
@@ -116,10 +117,11 @@ const presets: Preset[] = [
 ]
 
 export function SchedulePresets({
-  maxExtraInstances,
+  profileId,
+  loadLevel,
   onApply,
 }: SchedulePresetsProps) {
-  if (maxExtraInstances === 0) return null
+  if (loadLevel === 0) return null
 
   return (
     <div className="space-y-2">
@@ -131,7 +133,7 @@ export function SchedulePresets({
           <button
             key={preset.id}
             type="button"
-            onClick={() => onApply(preset.generate(maxExtraInstances))}
+            onClick={() => onApply(preset.generate(profileId, loadLevel))}
             className="
               group flex items-center gap-2 px-3 py-2
               bg-base-100 border border-base-300

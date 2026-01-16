@@ -23,6 +23,11 @@ export const RuntimeCard = memo(function RuntimeCard({
     currentFlavor,
     cost,
     gaugePosition,
+    hasScaling,
+    activeScalingProfiles,
+    availableFlavors,
+    baselineProfile,
+    baseConfig,
 
     // Etat d'édition du nom
     isEditingName,
@@ -43,12 +48,16 @@ export const RuntimeCard = memo(function RuntimeCard({
     onOpenFlavorPicker,
     onCloseFlavorPicker,
 
-    // Handlers scaling
-    onMinInstancesChange,
-    onMaxInstancesChange,
-    pendingScalingChange,
-    onConfirmScalingChange,
-    onCancelScalingChange,
+    // Handler base instances
+    onBaseInstancesChange,
+
+    // Handler scaling mode
+    onToggleScaling,
+
+    // Handlers profils
+    onUpdateScalingProfile,
+    onAddScalingProfile,
+    onRemoveScalingProfile,
 
     // Handler suppression
     onDelete,
@@ -71,6 +80,11 @@ export const RuntimeCard = memo(function RuntimeCard({
       cost,
       gaugePosition,
       defaultName,
+      hasScaling,
+      activeScalingProfiles,
+      availableFlavors,
+      baselineProfile,
+      baseConfig,
 
       isEditingName,
       editName,
@@ -86,8 +100,12 @@ export const RuntimeCard = memo(function RuntimeCard({
       onOpenFlavorPicker,
       onFlavorChange,
 
-      onMinInstancesChange,
-      onMaxInstancesChange,
+      onBaseInstancesChange,
+      onToggleScaling,
+
+      onUpdateScalingProfile,
+      onAddScalingProfile,
+      onRemoveScalingProfile,
 
       showTimeSlots,
       onToggleTimeSlots,
@@ -102,6 +120,11 @@ export const RuntimeCard = memo(function RuntimeCard({
       cost,
       gaugePosition,
       defaultName,
+      hasScaling,
+      activeScalingProfiles,
+      availableFlavors,
+      baselineProfile,
+      baseConfig,
       isEditingName,
       editName,
       setEditName,
@@ -113,8 +136,11 @@ export const RuntimeCard = memo(function RuntimeCard({
       onEditNameKeyDown,
       onOpenFlavorPicker,
       onFlavorChange,
-      onMinInstancesChange,
-      onMaxInstancesChange,
+      onBaseInstancesChange,
+      onToggleScaling,
+      onUpdateScalingProfile,
+      onAddScalingProfile,
+      onRemoveScalingProfile,
       showTimeSlots,
       onToggleTimeSlots,
       onOpenDeleteConfirm,
@@ -161,7 +187,7 @@ export const RuntimeCard = memo(function RuntimeCard({
             isOpen={showFlavorPicker}
             onClose={onCloseFlavorPicker}
             flavors={instance?.flavors ?? []}
-            selectedFlavor={runtime.defaultFlavorName}
+            selectedFlavor={baseConfig.flavorName}
             onSelect={onFlavorChange}
           />
         </Suspense>
@@ -176,18 +202,6 @@ export const RuntimeCard = memo(function RuntimeCard({
           variant="error"
           onConfirm={onDelete}
           onCancel={onCloseDeleteConfirm}
-        />
-
-        {/* Modal de confirmation de modification du scaling */}
-        <ConfirmDialog
-          isOpen={pendingScalingChange !== null}
-          title="Modifier le planning"
-          message="Cette modification va reduire certaines valeurs du planning hebdomadaire qui depassent le nouveau maximum d'instances supplementaires. Voulez-vous continuer ?"
-          confirmLabel="Confirmer"
-          cancelLabel="Annuler"
-          variant="warning"
-          onConfirm={onConfirmScalingChange}
-          onCancel={onCancelScalingChange}
         />
       </div>
     </RuntimeCardContext.Provider>

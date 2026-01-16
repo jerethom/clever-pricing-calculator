@@ -3,7 +3,7 @@ import { useInstances } from '@/hooks/useInstances'
 import { useProjectAction } from '@/store'
 import { formatMonthlyPrice, formatHourlyPrice } from '@/lib/costCalculator'
 import { Icons, NumberInput } from '@/components/ui'
-import { createEmptySchedule } from '@/types'
+import { createBaselineProfile } from '@/types'
 import type { Instance, InstanceFlavor } from '@/api/types'
 
 const HOURS_PER_MONTH = 730 // ~24h x 30.4j
@@ -18,7 +18,7 @@ type Step = 'runtime' | 'flavor' | 'scaling'
 const STEPS: { id: Step; label: string; shortLabel: string }[] = [
   { id: 'runtime', label: 'Choisir le runtime', shortLabel: 'Runtime' },
   { id: 'flavor', label: 'Configurer la taille', shortLabel: 'Taille' },
-  { id: 'scaling', label: 'Definir le scaling', shortLabel: 'Scaling' },
+  { id: 'scaling', label: 'Nombre d\'instances', shortLabel: 'Instances' },
 ]
 
 function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
@@ -28,8 +28,7 @@ function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
   const [currentStep, setCurrentStep] = useState<Step>('runtime')
   const [selectedVariantId, setSelectedVariantId] = useState('')
   const [selectedFlavor, setSelectedFlavor] = useState('')
-  const [minInstances, setMinInstances] = useState(1)
-  const [maxInstances, setMaxInstances] = useState(1)
+  const [instanceCount, setInstanceCount] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
 
   const selectedInstance = instances?.find(i => i.variant.id === selectedVariantId)
@@ -93,7 +92,6 @@ function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
     const instance = instances?.find(i => i.variant.id === variantId)
     if (instance) {
       setSelectedFlavor(instance.defaultFlavor.name)
-      setMaxInstances(Math.min(instance.maxInstances, maxInstances || 1))
     }
     setCurrentStep('flavor')
   }
@@ -106,14 +104,22 @@ function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
   const handleSubmit = () => {
     if (!selectedInstance) return
 
+    // Créer le profil baseline avec la configuration choisie
+    const baselineProfile = createBaselineProfile()
+    baselineProfile.minInstances = instanceCount
+    baselineProfile.maxInstances = instanceCount
+    baselineProfile.minFlavorName = selectedFlavor
+    baselineProfile.maxFlavorName = selectedFlavor
+    baselineProfile.enabled = true
+
+    // Créer en mode fixe (sans scaling) - le scaling sera configuré après
     addRuntime(projectId, {
       instanceType: selectedInstance.type,
       instanceName: selectedInstance.name,
       variantLogo: selectedInstance.variant.logo,
-      defaultFlavorName: selectedFlavor,
-      defaultMinInstances: minInstances,
-      defaultMaxInstances: maxInstances,
-      weeklySchedule: createEmptySchedule(),
+      scalingEnabled: false,
+      scalingProfiles: [baselineProfile],
+      weeklySchedule: undefined,
     })
 
     onClose()
@@ -148,10 +154,7 @@ function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
 
   // Calcul du cout estimatif
   const estimatedCost = selectedFlavorData
-    ? {
-        baseMonthly: selectedFlavorData.price * HOURS_PER_MONTH * minInstances,
-        maxMonthly: selectedFlavorData.price * HOURS_PER_MONTH * maxInstances,
-      }
+    ? selectedFlavorData.price * HOURS_PER_MONTH * instanceCount
     : null
 
   const currentStepIndex = STEPS.findIndex(s => s.id === currentStep)
@@ -327,7 +330,7 @@ function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
                 </div>
               )}
 
-              {/* Step 3: Scaling Configuration */}
+              {/* Step 3: Instance Count */}
               {currentStep === 'scaling' && selectedInstance && selectedFlavorData && (
                 <div className="space-y-6">
                   {/* Selected Runtime + Flavor Preview */}
@@ -353,135 +356,62 @@ function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
                     </button>
                   </div>
 
-                  {/* Scaling Configuration */}
+                  {/* Instance Count Configuration */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider">
-                      Configuration du scaling
+                      Nombre d'instances
                     </h3>
 
                     {/* Visual Instance Representation */}
                     <div className="p-4 bg-base-200 border border-base-300">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium">Instances</span>
-                        <span className="text-sm text-base-content/60">
-                          {minInstances} - {maxInstances} instances
-                        </span>
-                      </div>
-
                       {/* Instance Blocks Visualization */}
                       <div className="flex items-center gap-1 mb-4">
-                        {Array.from({ length: Math.min(maxInstances, 12) }).map((_, i) => (
+                        {Array.from({ length: Math.min(instanceCount, 12) }).map((_, i) => (
                           <div
                             key={i}
-                            className={`flex-1 h-8 transition-all duration-200 flex items-center justify-center text-xs font-bold ${
-                              i < minInstances
-                                ? 'bg-primary text-primary-content'
-                                : 'bg-primary/20 border border-dashed border-primary/40 text-primary/60'
-                            }`}
+                            className="flex-1 h-10 bg-primary text-primary-content transition-all duration-200 flex items-center justify-center text-sm font-bold"
                           >
                             {i + 1}
                           </div>
                         ))}
-                        {maxInstances > 12 && (
-                          <span className="text-xs text-base-content/50 ml-2">
-                            +{maxInstances - 12}
+                        {instanceCount > 12 && (
+                          <span className="text-sm text-base-content/50 ml-2">
+                            +{instanceCount - 12}
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-4 text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 bg-primary"></div>
-                          <span>Base (toujours actives)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 bg-primary/20 border border-dashed border-primary/40"></div>
-                          <span>Scaling (a la demande)</span>
-                        </div>
+                      {/* Instance Count Control */}
+                      <div className="flex items-center justify-center">
+                        <NumberInput
+                          label=""
+                          value={instanceCount}
+                          onChange={setInstanceCount}
+                          min={1}
+                          max={selectedInstance.maxInstances}
+                          size="lg"
+                        />
                       </div>
                     </div>
 
-                    {/* Min/Max Controls */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="p-4 border border-base-300 bg-base-100">
-                        <NumberInput
-                          label="Instances minimum (base)"
-                          labelPosition="top"
-                          value={minInstances}
-                          onChange={value => {
-                            setMinInstances(value)
-                            if (value > maxInstances) setMaxInstances(value)
-                          }}
-                          min={1}
-                          max={selectedInstance.maxInstances}
-                        />
-                        <p className="text-xs text-base-content/50 mt-2">
-                          Toujours en execution, facturation 24/7
-                        </p>
-                      </div>
-                      <div className="p-4 border border-base-300 bg-base-100">
-                        <NumberInput
-                          label="Instances maximum (scaling)"
-                          labelPosition="top"
-                          value={maxInstances}
-                          onChange={value => {
-                            setMaxInstances(value)
-                            if (value < minInstances) setMinInstances(value)
-                          }}
-                          min={1}
-                          max={selectedInstance.maxInstances}
-                        />
-                        <p className="text-xs text-base-content/50 mt-2">
-                          Activees selon la charge, facturation a l'usage
-                        </p>
-                      </div>
-                    </div>
+                    <p className="text-sm text-base-content/60 text-center">
+                      Vous pourrez activer le scaling automatique après la création du runtime.
+                    </p>
                   </div>
 
                   {/* Cost Estimation */}
-                  {estimatedCost && (
+                  {estimatedCost !== null && (
                     <div className="p-4 bg-primary/5 border border-primary/20">
                       <h3 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">
                         Estimation mensuelle
                       </h3>
-                      <div className="flex items-end justify-between">
-                        <div>
-                          <p className="text-3xl font-bold text-primary">
-                            {formatMonthlyPrice(estimatedCost.baseMonthly)}
-                          </p>
-                          <p className="text-sm text-base-content/60 mt-1">
-                            Cout de base ({minInstances} inst. x 730h)
-                          </p>
-                        </div>
-                        {maxInstances > minInstances && (
-                          <div className="text-right">
-                            <p className="text-lg font-semibold text-base-content/80">
-                              jusqu'a {formatMonthlyPrice(estimatedCost.maxMonthly)}
-                            </p>
-                            <p className="text-xs text-base-content/50">
-                              si scaling 24/7
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Cost Gauge */}
-                      <div className="mt-4">
-                        <div className="flex justify-between text-xs text-base-content/50 mb-1">
-                          <span>Base</span>
-                          <span>Maximum</span>
-                        </div>
-                        <div className="h-2 bg-base-300 overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all duration-300"
-                            style={{
-                              width:
-                                maxInstances > minInstances
-                                  ? `${(minInstances / maxInstances) * 100}%`
-                                  : '100%',
-                            }}
-                          />
-                        </div>
+                      <div>
+                        <p className="text-3xl font-bold text-primary">
+                          {formatMonthlyPrice(estimatedCost)}
+                        </p>
+                        <p className="text-sm text-base-content/60 mt-1">
+                          {instanceCount} instance{instanceCount > 1 ? 's' : ''} × {formatHourlyPrice(selectedFlavorData.price)}/h × 730h
+                        </p>
                       </div>
                     </div>
                   )}

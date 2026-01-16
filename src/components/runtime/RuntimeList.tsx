@@ -4,6 +4,7 @@ import { useInstances } from '@/hooks/useInstances'
 import {
   calculateRuntimeCost,
   buildFlavorPriceMap,
+  getAvailableFlavors,
   formatPrice,
 } from '@/lib/costCalculator'
 import { RuntimeCard } from './RuntimeCard/index'
@@ -33,7 +34,8 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
 
     return project.runtimes.map(runtime => {
       const flavorPrices = buildFlavorPriceMap(instances, runtime.instanceType)
-      const cost = calculateRuntimeCost(runtime, flavorPrices)
+      const availableFlavors = getAvailableFlavors(instances, runtime.instanceType)
+      const cost = calculateRuntimeCost(runtime, flavorPrices, availableFlavors)
       return { runtime, cost }
     })
   }, [project, instances])
@@ -45,11 +47,11 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
     }
 
     return runtimesWithCosts.reduce(
-      (acc, { runtime, cost }) => ({
-        total: acc.total + cost.totalMonthlyCost,
+      (acc, { cost }) => ({
+        total: acc.total + cost.estimatedTotalCost,
         min: acc.min + cost.minMonthlyCost,
         max: acc.max + cost.maxMonthlyCost,
-        instances: acc.instances + runtime.defaultMaxInstances,
+        instances: acc.instances + cost.baseInstances,
       }),
       { total: 0, min: 0, max: 0, instances: 0 }
     )
@@ -89,14 +91,14 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
         )
         break
       case 'cost-asc':
-        result.sort((a, b) => a.cost.totalMonthlyCost - b.cost.totalMonthlyCost)
+        result.sort((a, b) => a.cost.estimatedTotalCost - b.cost.estimatedTotalCost)
         break
       case 'cost-desc':
-        result.sort((a, b) => b.cost.totalMonthlyCost - a.cost.totalMonthlyCost)
+        result.sort((a, b) => b.cost.estimatedTotalCost - a.cost.estimatedTotalCost)
         break
       case 'instances':
         result.sort(
-          (a, b) => b.runtime.defaultMaxInstances - a.runtime.defaultMaxInstances
+          (a, b) => b.cost.baseInstances - a.cost.baseInstances
         )
         break
     }

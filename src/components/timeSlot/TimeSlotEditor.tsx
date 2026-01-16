@@ -1,16 +1,12 @@
 import { useState } from 'react'
-import type { RuntimeConfig, WeeklySchedule } from '@/types'
-import { createEmptySchedule } from '@/types'
+import type { RuntimeConfig, WeeklySchedule, LoadLevel } from '@/types'
+import { createEmptySchedule, LOAD_LEVELS, LOAD_LEVEL_LABELS, BASELINE_PROFILE_ID } from '@/types'
 import { useProjectAction } from '@/store'
 import { WeeklyCalendar } from './WeeklyCalendar'
-import { PaintToolbar } from './PaintToolbar'
 import { SchedulePresets } from './SchedulePresets'
 import { ScheduleLegend } from './ScheduleLegend'
-import { formatMonthlyPrice } from '@/lib/costCalculator'
 import type { Instance } from '@/api/types'
 import { Icons } from '@/components/ui'
-
-const HOURS_PER_MONTH = 730
 
 interface TimeSlotEditorProps {
   projectId: string
@@ -23,39 +19,35 @@ function TimeSlotEditor({
   projectId,
   runtimeId,
   runtime,
-  instance,
+  instance: _instance,
 }: TimeSlotEditorProps) {
   const updateRuntime = useProjectAction('updateRuntime')
   const [showPresets, setShowPresets] = useState(false)
-  const [paintValue, setPaintValue] = useState(1)
+  const [selectedProfileId, setSelectedProfileId] = useState<string>(
+    (runtime.scalingProfiles ?? []).find(p => p.enabled && p.id !== BASELINE_PROFILE_ID)?.id ?? 'default'
+  )
+  const [loadLevel, setLoadLevel] = useState<LoadLevel>(3)
 
   const handleScheduleChange = (newSchedule: WeeklySchedule) => {
     updateRuntime(projectId, runtimeId, { weeklySchedule: newSchedule })
-  }
-
-  const handleScalingFlavorChange = (flavorName: string) => {
-    updateRuntime(projectId, runtimeId, { scalingFlavorName: flavorName })
   }
 
   const handleReset = () => {
     handleScheduleChange(createEmptySchedule())
   }
 
-  const maxExtraInstances =
-    runtime.defaultMaxInstances - runtime.defaultMinInstances
+  // Profils de scaling disponibles (sans baseline)
+  const scalingProfiles = (runtime.scalingProfiles ?? []).filter(p => p.enabled && p.id !== BASELINE_PROFILE_ID)
+  const selectedProfile = scalingProfiles.find(p => p.id === selectedProfileId) ?? scalingProfiles[0]
+
   const schedule = runtime.weeklySchedule ?? createEmptySchedule()
 
-  const baseFlavorPrice =
-    instance?.flavors.find(f => f.name === runtime.defaultFlavorName)?.price ??
-    0
-  const scalingFlavors =
-    instance?.flavors?.filter(f => f.available && f.price >= baseFlavorPrice) ??
-    []
-  const currentScalingFlavor =
-    runtime.scalingFlavorName ?? runtime.defaultFlavorName
-  const currentFlavorData = scalingFlavors.find(
-    f => f.name === currentScalingFlavor
-  )
+  // Calcul du nombre d'heures de scaling configurées
+  const scalingHoursCount = Object.values(schedule).reduce((total, day) => {
+    return total + day.filter(config => config.loadLevel > 0).length
+  }, 0)
+
+  const hasScaling = scalingProfiles.length > 0
 
   return (
     <div className="space-y-4">
@@ -67,15 +59,12 @@ function TimeSlotEditor({
             Planning hebdomadaire
           </h4>
           <p className="text-sm text-base-content/60 mt-1">
-            Définissez quand ajouter des instances supplémentaires
+            Définissez quand et comment le scaling doit s'activer
           </p>
         </div>
 
         {/* Légende contextuelle */}
-        <ScheduleLegend
-          maxExtraInstances={maxExtraInstances}
-          baseInstances={runtime.defaultMinInstances}
-        />
+        <ScheduleLegend />
       </div>
 
       {/* Info baseline */}
@@ -83,74 +72,92 @@ function TimeSlotEditor({
         <div className="flex items-center gap-2">
           <span className="text-base-content/60">Baseline :</span>
           <span className="font-semibold">
-            {runtime.defaultMinInstances} instance(s)
-          </span>
-          <span className="text-base-content/50">
-            ({runtime.defaultFlavorName})
+            Configuration de base
           </span>
         </div>
-        <div className="w-px h-4 bg-base-300 hidden sm:block" />
-        <div className="flex items-center gap-2">
-          <span className="text-base-content/60">Max :</span>
-          <span className="font-semibold">
-            {runtime.defaultMaxInstances} instance(s)
-          </span>
-        </div>
-        {maxExtraInstances > 0 && (
+        {hasScaling && selectedProfile && (
           <>
             <div className="w-px h-4 bg-base-300 hidden sm:block" />
+            <div className="flex items-center gap-2">
+              <span className="text-base-content/60">Profil :</span>
+              <span className="font-semibold">{selectedProfile.name}</span>
+            </div>
+            <div className="w-px h-4 bg-base-300 hidden sm:block" />
             <div className="flex items-center gap-2 text-primary">
-              <span>+{maxExtraInstances} disponible(s)</span>
+              <span>
+                {selectedProfile.minInstances}-{selectedProfile.maxInstances} instances,{' '}
+                {selectedProfile.minFlavorName}-{selectedProfile.maxFlavorName}
+              </span>
             </div>
           </>
         )}
       </div>
 
-      {/* Sélecteur du flavor de scaling amélioré */}
-      {maxExtraInstances > 0 && scalingFlavors.length > 0 && (
-        <div className="p-4 border border-base-300 bg-base-100">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <div className="text-sm font-medium">
-                Flavor des instances de scaling
-              </div>
-              <div className="text-xs text-base-content/60">
-                Configuration utilisée pour les instances supplémentaires
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Aperçu du flavor actuel */}
-              {currentFlavorData && (
-                <div className="text-right hidden sm:block">
-                  <div className="font-semibold">{currentFlavorData.name}</div>
-                  <div className="text-xs text-base-content/60">
-                    {currentFlavorData.memory.formatted} /{' '}
-                    {currentFlavorData.cpus} CPU
-                  </div>
+      {/* Sélection du profil et niveau de charge */}
+      {hasScaling && (
+        <div className="p-4 border border-base-300 bg-base-100 space-y-4">
+          {/* Sélecteur de profil */}
+          {scalingProfiles.length > 1 && (
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <div className="text-sm font-medium">Profil de scaling</div>
+                <div className="text-xs text-base-content/60">
+                  Configuration utilisée pour les créneaux sélectionnés
                 </div>
-              )}
-
+              </div>
               <select
                 className="select select-bordered select-sm w-48"
-                value={currentScalingFlavor}
-                onChange={e => handleScalingFlavorChange(e.target.value)}
+                value={selectedProfileId}
+                onChange={e => setSelectedProfileId(e.target.value)}
               >
-                {scalingFlavors.map(flavor => (
-                  <option key={flavor.name} value={flavor.name}>
-                    {flavor.name} -{' '}
-                    {formatMonthlyPrice(flavor.price * HOURS_PER_MONTH)}
-                    {flavor.name === runtime.defaultFlavorName && ' (base)'}
+                {scalingProfiles.map(profile => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.name}
                   </option>
                 ))}
               </select>
             </div>
+          )}
+
+          {/* Sélecteur de niveau de charge */}
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <div className="text-sm font-medium">Niveau de charge</div>
+              <div className="text-xs text-base-content/60">
+                Niveau de scaling attendu (vertical puis horizontal)
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {LOAD_LEVELS.map(level => (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setLoadLevel(level)}
+                  className={`
+                    w-10 h-10 flex items-center justify-center text-sm font-medium
+                    border transition-all
+                    ${loadLevel === level
+                      ? 'bg-primary text-primary-content border-primary'
+                      : 'bg-base-100 border-base-300 hover:border-primary'}
+                  `}
+                  title={LOAD_LEVEL_LABELS[level]}
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Explication du niveau sélectionné */}
+          <div className="text-sm text-base-content/70 bg-base-200 p-2">
+            <strong>Niveau {loadLevel} :</strong> {LOAD_LEVEL_LABELS[loadLevel]}
+            {loadLevel === 0 && ' (pas de scaling, reste sur baseline)'}
           </div>
         </div>
       )}
 
       {/* Presets toggle */}
-      {maxExtraInstances > 0 && (
+      {hasScaling && loadLevel > 0 && (
         <div>
           <button
             type="button"
@@ -178,7 +185,8 @@ function TimeSlotEditor({
           {showPresets && (
             <div className="mt-2 animate-in">
               <SchedulePresets
-                maxExtraInstances={maxExtraInstances}
+                profileId={selectedProfileId}
+                loadLevel={loadLevel}
                 onApply={handleScheduleChange}
               />
             </div>
@@ -186,35 +194,56 @@ function TimeSlotEditor({
         </div>
       )}
 
-      {/* Barre d'outils de peinture */}
-      {maxExtraInstances > 0 && (
-        <PaintToolbar
-          paintValue={paintValue}
-          onChange={setPaintValue}
-          maxValue={maxExtraInstances}
-          onReset={handleReset}
-        />
+      {/* Barre d'outils */}
+      {hasScaling && (
+        <div className="flex items-center justify-between gap-4 p-3 bg-base-100 border border-base-300">
+          <div className="text-sm">
+            <span className="text-base-content/60">Peinture :</span>{' '}
+            <span className="font-semibold">
+              {loadLevel === 0 ? 'Baseline' : `Niveau ${loadLevel}`}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="btn btn-ghost btn-sm text-error"
+          >
+            Réinitialiser
+          </button>
+        </div>
       )}
 
       {/* Calendrier */}
       <WeeklyCalendar
         schedule={schedule}
         onChange={handleScheduleChange}
-        maxExtraInstances={maxExtraInstances}
-        paintValue={paintValue}
+        profileId={selectedProfileId}
+        loadLevel={loadLevel}
       />
 
+      {/* Résumé */}
+      {hasScaling && (
+        <div className="text-sm text-base-content/60">
+          {scalingHoursCount > 0 ? (
+            <span>
+              {scalingHoursCount} heure(s) de scaling configurée(s) par semaine
+            </span>
+          ) : (
+            <span>Aucune heure de scaling configurée (baseline 24/7)</span>
+          )}
+        </div>
+      )}
+
       {/* Message si pas de scaling possible */}
-      {maxExtraInstances === 0 && (
+      {!hasScaling && (
         <div className="p-4 bg-warning/10 border border-warning/30 text-sm">
           <div className="flex items-start gap-3">
             <Icons.Warning className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
             <div>
               <div className="font-medium">Scaling non disponible</div>
               <div className="text-base-content/70 mt-1">
-                Le nombre minimum et maximum d'instances sont identiques (
-                {runtime.defaultMinInstances}). Augmentez le maximum pour
-                activer le planning de scaling.
+                Aucun profil de scaling n'est configuré pour ce runtime.
+                Ajoutez un profil de scaling pour activer le planning.
               </div>
             </div>
           </div>

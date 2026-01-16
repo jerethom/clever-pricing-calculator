@@ -11,6 +11,11 @@ export const RuntimeCardSchedule = memo(function RuntimeCardSchedule({
   const { runtime, cost, showTimeSlots, onToggleTimeSlots } =
     useRuntimeCardContext()
 
+  // Ne pas afficher si le scaling n'est pas activé
+  if (!runtime.scalingEnabled) {
+    return null
+  }
+
   return (
     <div className={className}>
       <button
@@ -30,7 +35,7 @@ export const RuntimeCardSchedule = memo(function RuntimeCardSchedule({
           <div className="hidden sm:flex gap-0.5">
             {DAYS_OF_WEEK.map((dayKey, i) => {
               const hasScaling =
-                runtime.weeklySchedule?.[dayKey]?.some(h => h > 0) ?? false
+                runtime.weeklySchedule?.[dayKey]?.some(h => h.loadLevel > 0) ?? false
               return (
                 <div
                   key={dayKey}

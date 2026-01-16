@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import type { Project, RuntimeConfig, AddonConfig, Organization } from '@/types'
 import { DEFAULT_ORGANIZATION_ID, DEFAULT_ORGANIZATION_NAME } from '@/types'
+import { ensureMigratedRuntime } from '@/lib/migration'
 
 function generateId(): string {
   return crypto.randomUUID()
@@ -251,10 +252,13 @@ export const useProjectStore = create<ProjectStore>()(
     })),
     {
       name: 'clever-pricing-projects',
-      version: 2,
+      version: 3,
       migrate: (persistedState: unknown, version: number) => {
+        let state = persistedState as ProjectState
+
+        // Migration v1 -> v2 : Ajout des organisations
         if (version === 1) {
-          const state = persistedState as V1State
+          const v1State = persistedState as V1State
           const timestamp = now()
 
           // Creer l'organisation par defaut
@@ -266,19 +270,28 @@ export const useProjectStore = create<ProjectStore>()(
           }
 
           // Migrer les projets existants vers l'org par defaut
-          const migratedProjects: Project[] = state.projects.map(project => ({
+          const migratedProjects: Project[] = v1State.projects.map(project => ({
             ...project,
             organizationId: DEFAULT_ORGANIZATION_ID,
           }))
 
-          return {
+          state = {
             organizations: [defaultOrg],
             projects: migratedProjects,
             activeOrganizationId: DEFAULT_ORGANIZATION_ID,
-            activeProjectId: state.activeProjectId,
+            activeProjectId: v1State.activeProjectId,
           }
         }
-        return persistedState
+
+        // Migration v2 -> v3 : Nouveau format RuntimeConfig avec scalingEnabled
+        if (version <= 2) {
+          state.projects = state.projects.map(project => ({
+            ...project,
+            runtimes: project.runtimes.map(runtime => ensureMigratedRuntime(runtime)),
+          }))
+        }
+
+        return state
       },
     }
   )

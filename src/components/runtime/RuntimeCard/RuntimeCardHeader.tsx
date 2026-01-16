@@ -10,6 +10,7 @@ export const RuntimeCardHeader = memo(function RuntimeCardHeader({
     runtime,
     cost,
     defaultName,
+    baseConfig,
     isEditingName,
     editName,
     onStartEditName,
@@ -34,12 +35,12 @@ export const RuntimeCardHeader = memo(function RuntimeCardHeader({
             {/* Indicateur de statut */}
             <span
               className={`absolute -bottom-1 -right-1 w-3 h-3 border-2 border-base-100 ${
-                cost.scalingHours > 0
+                cost.averageLoadLevel > 0
                   ? 'bg-warning animate-pulse'
                   : 'bg-success'
               }`}
               title={
-                cost.scalingHours > 0 ? 'Scaling actif' : 'Baseline 24/7'
+                cost.averageLoadLevel > 0 ? 'Scaling actif' : 'Baseline 24/7'
               }
             />
           </div>
@@ -105,9 +106,17 @@ export const RuntimeCardHeader = memo(function RuntimeCardHeader({
               {runtime.instanceType}
             </span>
             <span className="badge badge-sm badge-outline">
-              {runtime.defaultMinInstances}-{runtime.defaultMaxInstances}{' '}
-              inst.
+              {baseConfig.instances} inst.
             </span>
+            {runtime.scalingEnabled ? (
+              <span className="badge badge-sm badge-primary">
+                Scaling
+              </span>
+            ) : (
+              <span className="badge badge-sm badge-neutral">
+                Fixe
+              </span>
+            )}
           </div>
         </div>
       </div>

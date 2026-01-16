@@ -9,6 +9,9 @@ export const RuntimeCardCosts = memo(function RuntimeCardCosts({
 }: RuntimeCardCostsProps) {
   const { runtime, cost, gaugePosition } = useRuntimeCardContext()
 
+  // En mode fixe, affichage simplifié
+  const isFixedMode = !runtime.scalingEnabled
+
   return (
     <div className={`overflow-hidden border border-base-300 ${className}`}>
       {/* Cout principal mis en evidence */}
@@ -19,7 +22,7 @@ export const RuntimeCardCosts = memo(function RuntimeCardCosts({
               Estimation mensuelle
             </p>
             <p className="text-2xl font-bold text-primary">
-              {formatPrice(cost.totalMonthlyCost)}
+              {formatPrice(cost.estimatedTotalCost)}
             </p>
           </div>
           {cost.scalingHours > 0 && (
@@ -30,29 +33,31 @@ export const RuntimeCardCosts = memo(function RuntimeCardCosts({
           )}
         </div>
 
-        {/* Jauge min-actuel-max */}
-        <div className="mt-4">
-          <div className="flex justify-between text-xs text-base-content/60 mb-1">
-            <span>{formatPrice(cost.minMonthlyCost)}</span>
-            <span>{formatPrice(cost.maxMonthlyCost)}</span>
+        {/* Jauge min-actuel-max (seulement en mode scaling) */}
+        {!isFixedMode && (
+          <div className="mt-4">
+            <div className="flex justify-between text-xs text-base-content/60 mb-1">
+              <span>{formatPrice(cost.minMonthlyCost)}</span>
+              <span>{formatPrice(cost.maxMonthlyCost)}</span>
+            </div>
+            <div className="h-2 bg-base-300 overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${Math.min(100, gaugePosition)}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs mt-1">
+              <span className="text-base-content/50">Base seule</span>
+              <span className="text-base-content/50">Scaling max</span>
+            </div>
           </div>
-          <div className="h-2 bg-base-300 overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-300"
-              style={{ width: `${Math.min(100, gaugePosition)}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-xs mt-1">
-            <span className="text-base-content/50">Base seule</span>
-            <span className="text-base-content/50">Scaling 24/7</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Detail collapse */}
       <details className="group">
         <summary className="px-4 py-2 bg-base-200 cursor-pointer flex items-center justify-between hover:bg-base-300 transition-colors list-none">
-          <span className="text-sm font-medium">Voir le detail</span>
+          <span className="text-sm font-medium">Voir le détail</span>
           <svg
             className="w-4 h-4 transition-transform group-open:rotate-180"
             fill="none"
@@ -72,10 +77,9 @@ export const RuntimeCardCosts = memo(function RuntimeCardCosts({
           {/* Cout de base */}
           <div className="flex justify-between items-start">
             <div>
-              <span className="font-medium">Base</span>
+              <span className="font-medium">{isFixedMode ? 'Configuration fixe' : 'Base (24/7)'}</span>
               <span className="text-base-content/60 text-xs block">
-                {runtime.defaultMinInstances} inst. x {cost.baselineHours}h
-                x {formatHourlyPrice(cost.baseHourlyPrice)} x 4,33
+                {cost.baseInstances} inst. × {cost.baseFlavorName} × {formatHourlyPrice(cost.baseHourlyPrice)}
               </span>
             </div>
             <span className="font-mono tabular-nums">
@@ -83,26 +87,30 @@ export const RuntimeCardCosts = memo(function RuntimeCardCosts({
             </span>
           </div>
 
-          {/* Cout scaling */}
-          {cost.scalingHours > 0 && (
+          {/* Cout scaling estimé */}
+          {cost.estimatedScalingCost > 0 && (
             <div className="flex justify-between items-start">
               <div>
-                <span className="font-medium">Scaling</span>
-                {cost.scalingFlavorName !== cost.baseFlavorName && (
-                  <span className="badge badge-xs badge-info ml-2">
-                    {cost.scalingFlavorName}
-                  </span>
-                )}
+                <span className="font-medium">Scaling estimé</span>
                 <span className="text-base-content/60 text-xs block">
-                  {cost.scalingInstanceHours} inst-h x{' '}
-                  {formatHourlyPrice(cost.scalingHourlyPrice)} x 4,33
+                  {cost.scalingHours}h × niveau moyen {cost.averageLoadLevel.toFixed(1)}
                 </span>
               </div>
               <span className="font-mono tabular-nums">
-                {formatPrice(cost.scalingMonthlyCost)}
+                +{formatPrice(cost.estimatedScalingCost)}
               </span>
             </div>
           )}
+
+          {/* Séparateur */}
+          <div className="border-t border-base-300 pt-2">
+            <div className="flex justify-between items-center font-medium">
+              <span>Total estimé</span>
+              <span className="font-mono tabular-nums text-primary">
+                {formatPrice(cost.estimatedTotalCost)}
+              </span>
+            </div>
+          </div>
         </div>
       </details>
     </div>

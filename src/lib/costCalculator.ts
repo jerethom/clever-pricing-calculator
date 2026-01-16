@@ -1,84 +1,170 @@
 import type { RuntimeConfig, Project, RuntimeCostDetail, AddonCostDetail, ProjectCostSummary } from '@/types'
-import { DAYS_OF_WEEK, createEmptySchedule } from '@/types'
-import type { Instance } from '@/api/types'
+import { DAYS_OF_WEEK, createEmptySchedule, BASELINE_PROFILE_ID, getBaselineProfile } from '@/types'
+import type { Instance, InstanceFlavor } from '@/api/types'
 import { WEEKS_PER_MONTH } from '@/constants'
+import {
+  calculateScalingAtLevel,
+  calculateMaxScalingCost,
+} from './scalingCalculator'
+
+const HOURS_PER_MONTH = 730 // ~24h × 30.4j
 
 /**
  * Calcule le coût total pour un runtime basé sur son planning hebdomadaire
  *
- * Sépare le calcul entre :
- * - Coût de base : minInstances × baseHourlyPrice × 168h × 4.33 sem/mois
- * - Coût de scaling : extraInstances × scalingHourlyPrice × heures × 4.33 sem/mois
+ * Utilise l'algorithme de scaling Clever Cloud :
+ * - Coût de base : baseInstances × baseFlavorPrice × 24/7
+ * - Coût de scaling : calculé selon le niveau de charge de chaque créneau
  */
 export function calculateRuntimeCost(
   runtime: RuntimeConfig,
-  flavorPrices: Map<string, number>
+  flavorPrices: Map<string, number>,
+  availableFlavors?: InstanceFlavor[]
 ): RuntimeCostDetail {
-  // Prix des flavors
-  const baseHourlyPrice = flavorPrices.get(runtime.defaultFlavorName) ?? 0
-  const scalingFlavorName = runtime.scalingFlavorName ?? runtime.defaultFlavorName
-  const scalingHourlyPrice = flavorPrices.get(scalingFlavorName) ?? baseHourlyPrice
+  // Extraire la config baseline depuis le profil
+  const baseline = getBaselineProfile(runtime.scalingProfiles ?? [])
+  const baseFlavorName = baseline.minFlavorName
+  const baseInstances = baseline.minInstances
 
-  // Fallback pour les anciens runtimes sans weeklySchedule
+  // Prix du flavor de base
+  const baseHourlyPrice = flavorPrices.get(baseFlavorName) ?? 0
+
+  // Coût de base : baseInstances tournent 24/7
+  const baseMonthlyCost = baseInstances * baseHourlyPrice * HOURS_PER_MONTH
+
+  // Mode fixe : pas de scaling, coût constant
+  if (!runtime.scalingEnabled) {
+    return {
+      runtimeId: runtime.id,
+      runtimeName: runtime.instanceName,
+      instanceType: runtime.instanceType,
+      baseFlavorName,
+      baseInstances,
+      baseHourlyPrice,
+      baseMonthlyCost: Math.round(baseMonthlyCost * 100) / 100,
+      estimatedScalingCost: 0,
+      estimatedTotalCost: Math.round(baseMonthlyCost * 100) / 100,
+      minMonthlyCost: Math.round(baseMonthlyCost * 100) / 100,
+      maxMonthlyCost: Math.round(baseMonthlyCost * 100) / 100,
+      scalingHours: 0,
+      averageLoadLevel: 0,
+      scalingHoursByProfile: {},
+    }
+  }
+
+  // Mode scaling : calcul complet avec planning
   const schedule = runtime.weeklySchedule ?? createEmptySchedule()
 
-  // Constantes
-  const baselineHours = 168 // 24h × 7j
-
-  // Calculer les instance-heures de scaling par semaine
-  let scalingInstanceHoursPerWeek = 0
+  // Statistiques de scaling
   let scalingHours = 0
+  let totalLoadLevel = 0
+  const scalingHoursByProfile: Record<string, number> = {}
+  let estimatedScalingCostPerWeek = 0
 
+  // Parcourir chaque cellule de la grille
   for (const day of DAYS_OF_WEEK) {
     for (let hour = 0; hour < 24; hour++) {
-      const extraInstances = schedule[day][hour]
-      if (extraInstances > 0) {
-        scalingInstanceHoursPerWeek += extraInstances
-        scalingHours++
+      const config = schedule[day][hour]
+
+      // Ignorer les cellules baseline
+      if (!config || config.profileId === BASELINE_PROFILE_ID || config.loadLevel === 0) {
+        continue
+      }
+
+      // Trouver le profil correspondant
+      const profile = runtime.scalingProfiles?.find(p => p.id === config.profileId)
+      if (!profile || !profile.enabled) {
+        continue
+      }
+
+      scalingHours++
+      totalLoadLevel += config.loadLevel
+      scalingHoursByProfile[config.profileId] = (scalingHoursByProfile[config.profileId] || 0) + 1
+
+      // Calculer le coût de scaling pour cette heure
+      if (availableFlavors && availableFlavors.length > 0) {
+        const scalingState = calculateScalingAtLevel(
+          profile,
+          config.loadLevel,
+          availableFlavors,
+          baseFlavorName,
+          baseInstances
+        )
+
+        // Coût supplémentaire = coût du scaling - coût baseline
+        const baselineCost = baseHourlyPrice * baseInstances
+        const extraCost = Math.max(0, scalingState.hourlyCost - baselineCost)
+        estimatedScalingCostPerWeek += extraCost
+      } else {
+        // Fallback : estimation simple basée sur le niveau de charge
+        const maxExtraFromProfile = profile.maxInstances - profile.minInstances
+        const estimatedExtraInstances = (config.loadLevel / 5) * maxExtraFromProfile
+
+        // Utiliser le prix du flavor max du profil s'il existe
+        const scalingFlavorPrice = flavorPrices.get(profile.maxFlavorName) ?? baseHourlyPrice
+        estimatedScalingCostPerWeek += estimatedExtraInstances * scalingFlavorPrice
       }
     }
   }
 
-  // Coût de base : minInstances tournent 24/7
-  const baseInstanceHours = runtime.defaultMinInstances * baselineHours
-  const baseMonthlyCost = baseInstanceHours * baseHourlyPrice * WEEKS_PER_MONTH
+  // Convertir en coût mensuel
+  const estimatedScalingCost = estimatedScalingCostPerWeek * WEEKS_PER_MONTH
+  const estimatedTotalCost = baseMonthlyCost + estimatedScalingCost
 
-  // Coût de scaling : instances supplémentaires selon le planning
-  const scalingInstanceHours = scalingInstanceHoursPerWeek
-  const scalingMonthlyCost = scalingInstanceHours * scalingHourlyPrice * WEEKS_PER_MONTH
+  // Calculer le niveau de charge moyen
+  const averageLoadLevel = scalingHours > 0 ? totalLoadLevel / scalingHours : 0
 
-  const totalMonthlyCost = baseMonthlyCost + scalingMonthlyCost
-
-  // Coût min = base seulement (pas de scaling)
+  // Coût minimum = baseline seulement
   const minMonthlyCost = baseMonthlyCost
 
-  // Coût max = base + scaling max 24/7
-  const maxExtraInstances = runtime.defaultMaxInstances - runtime.defaultMinInstances
-  const maxScalingInstanceHours = maxExtraInstances * baselineHours
-  const maxScalingMonthlyCost = maxScalingInstanceHours * scalingHourlyPrice * WEEKS_PER_MONTH
-  const maxMonthlyCost = baseMonthlyCost + maxScalingMonthlyCost
+  // Coût maximum = trouver le profil avec le coût max et l'appliquer 24/7
+  let maxScalingHourlyCost = 0
+  const profiles = runtime.scalingProfiles ?? []
+  if (availableFlavors && availableFlavors.length > 0) {
+    for (const profile of profiles) {
+      if (profile.enabled) {
+        const profileMaxCost = calculateMaxScalingCost(
+          profile,
+          availableFlavors,
+          baseFlavorName
+        )
+        maxScalingHourlyCost = Math.max(maxScalingHourlyCost, profileMaxCost)
+      }
+    }
+  } else {
+    // Fallback : estimer le coût max à partir des profils
+    for (const profile of profiles) {
+      if (profile.enabled) {
+        const profileFlavorPrice = flavorPrices.get(profile.maxFlavorName) ?? baseHourlyPrice
+        const profileMaxCost = profile.maxInstances * profileFlavorPrice
+        maxScalingHourlyCost = Math.max(maxScalingHourlyCost, profileMaxCost)
+      }
+    }
+  }
+
+  const maxMonthlyCost = maxScalingHourlyCost > 0
+    ? maxScalingHourlyCost * HOURS_PER_MONTH
+    : baseMonthlyCost
 
   return {
     runtimeId: runtime.id,
     runtimeName: runtime.instanceName,
     instanceType: runtime.instanceType,
     // Base
-    baseFlavorName: runtime.defaultFlavorName,
+    baseFlavorName,
+    baseInstances,
     baseHourlyPrice,
-    baseInstanceHours,
     baseMonthlyCost: Math.round(baseMonthlyCost * 100) / 100,
-    // Scaling
-    scalingFlavorName,
-    scalingHourlyPrice,
-    scalingInstanceHours,
-    scalingMonthlyCost: Math.round(scalingMonthlyCost * 100) / 100,
-    // Stats
-    baselineHours,
-    scalingHours,
-    // Coûts
+    // Scaling estimé
+    estimatedScalingCost: Math.round(estimatedScalingCost * 100) / 100,
+    estimatedTotalCost: Math.round(estimatedTotalCost * 100) / 100,
+    // Plage de coûts
     minMonthlyCost: Math.round(minMonthlyCost * 100) / 100,
     maxMonthlyCost: Math.round(maxMonthlyCost * 100) / 100,
-    totalMonthlyCost: Math.round(totalMonthlyCost * 100) / 100,
+    // Stats
+    scalingHours,
+    averageLoadLevel: Math.round(averageLoadLevel * 10) / 10,
+    scalingHoursByProfile,
   }
 }
 
@@ -99,6 +185,14 @@ export function buildFlavorPriceMap(instances: Instance[], instanceType: string)
 }
 
 /**
+ * Obtient les flavors disponibles pour un type d'instance
+ */
+export function getAvailableFlavors(instances: Instance[], instanceType: string): InstanceFlavor[] {
+  const instance = instances.find(i => i.type === instanceType)
+  return instance?.flavors.filter(f => f.available) ?? []
+}
+
+/**
  * Calcule le résumé complet des coûts pour un projet
  */
 export function calculateProjectCost(
@@ -108,10 +202,11 @@ export function calculateProjectCost(
   // Calculer les coûts des runtimes
   const runtimesDetail = project.runtimes.map(runtime => {
     const flavorPrices = buildFlavorPriceMap(instances, runtime.instanceType)
-    return calculateRuntimeCost(runtime, flavorPrices)
+    const availableFlavors = getAvailableFlavors(instances, runtime.instanceType)
+    return calculateRuntimeCost(runtime, flavorPrices, availableFlavors)
   })
 
-  const runtimesCost = runtimesDetail.reduce((sum, r) => sum + r.totalMonthlyCost, 0)
+  const runtimesCost = runtimesDetail.reduce((sum, r) => sum + r.estimatedTotalCost, 0)
 
   // Calculer les coûts des addons (prix mensuel fixe)
   const addonsDetail: AddonCostDetail[] = project.addons.map(addon => ({

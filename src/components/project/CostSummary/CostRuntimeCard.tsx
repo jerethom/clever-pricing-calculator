@@ -24,7 +24,7 @@ export const CostRuntimeCard = memo(function CostRuntimeCard({
           </div>
           <div className="text-right">
             <div className="font-bold text-primary text-lg">
-              {formatPrice(runtime.totalMonthlyCost)}
+              {formatPrice(runtime.estimatedTotalCost)}
             </div>
             <div className="text-xs text-base-content/60">/mois</div>
           </div>
@@ -37,12 +37,14 @@ export const CostRuntimeCard = memo(function CostRuntimeCard({
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <span className="badge badge-primary badge-sm">{runtime.baseFlavorName}</span>
-              <span className="text-base-content/60">base</span>
+              <span className="text-base-content/60">
+                {runtime.baseInstances} inst. base
+              </span>
             </div>
             <span className="font-medium">{formatPrice(runtime.baseMonthlyCost)}</span>
           </div>
           <div className="flex items-center justify-between text-xs text-base-content/60">
-            <span>{runtime.baseInstanceHours} inst-h/sem</span>
+            <span>24/7 (730h/mois)</span>
             <span>{formatHourlyPrice(runtime.baseHourlyPrice)}</span>
           </div>
         </div>
@@ -54,14 +56,13 @@ export const CostRuntimeCard = memo(function CostRuntimeCard({
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="badge badge-outline badge-sm">{runtime.scalingFlavorName}</span>
-                  <span className="text-base-content/60">scaling</span>
+                  <span className="badge badge-outline badge-sm">Scaling</span>
+                  <span className="text-base-content/60">niveau moyen {runtime.averageLoadLevel.toFixed(1)}</span>
                 </div>
-                <span className="font-medium">{formatPrice(runtime.scalingMonthlyCost)}</span>
+                <span className="font-medium">+{formatPrice(runtime.estimatedScalingCost)}</span>
               </div>
               <div className="flex items-center justify-between text-xs text-base-content/60">
-                <span>{runtime.scalingInstanceHours} inst-h/sem ({runtime.scalingHours}h actives)</span>
-                <span>{formatHourlyPrice(runtime.scalingHourlyPrice)}</span>
+                <span>{runtime.scalingHours}h/sem avec scaling</span>
               </div>
             </div>
           </>
