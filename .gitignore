@@ -2,6 +2,7 @@
 .demongrep.db/
 .fastembed_cache/
 .playwright-mcp/
+.codegraphcontext/
 CLAUDE.md
 .mcp.json
 

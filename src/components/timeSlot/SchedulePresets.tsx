@@ -44,54 +44,78 @@ const PresetTooltip = memo(function PresetTooltip({
     zIndex: 9999,
   }
 
-  // Dimensions fixes pour les cellules
-  const cellWidth = 30 // pixels
-  const cellHeight = 5 // pixels
-  const gap = 1 // pixels
+  // Vue simplifiée : 7 jours x 4 blocs de 6h
+  const cellSize = 24 // pixels
+
+  // Calculer le niveau dominant pour un bloc de 6 heures
+  const getBlockLevel = (day: DayOfWeek, startHour: number): number => {
+    let maxLevel = 0
+    for (let h = startHour; h < startHour + 6; h++) {
+      const level = schedule[day][h]?.loadLevel ?? 0
+      if (level > maxLevel) maxLevel = level
+    }
+    return maxLevel
+  }
 
   const content = (
     <div
       className="bg-base-100 border border-base-300 rounded-lg shadow-xl p-3 pointer-events-none"
       style={style}
     >
-      <div className="text-xs font-medium mb-2 text-center">Apercu</div>
+      <div className="text-xs font-medium mb-2 text-center">Aperçu</div>
 
-      {/* Grille 7 colonnes (jours) x 25 lignes (labels + 24 heures) */}
+      {/* Grille simplifiée : 7 colonnes x 5 lignes (labels + 4 blocs de 6h) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(7, ${cellWidth}px)`,
-          gridTemplateRows: `auto repeat(24, ${cellHeight}px)`,
-          gap: `${gap}px`,
+          gridTemplateColumns: `auto repeat(7, ${cellSize}px)`,
+          gridTemplateRows: `auto repeat(4, ${cellSize}px)`,
+          gap: '2px',
         }}
       >
-        {/* Labels des jours en haut */}
+        {/* Coin vide */}
+        <div />
+        {/* Labels des jours */}
         {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
           <div
             key={`label-${i}`}
-            className="text-[9px] text-base-content/60 text-center font-medium"
+            className="text-[10px] text-base-content/60 text-center font-medium"
           >
             {d}
           </div>
         ))}
-        {/* Cellules de la grille */}
-        {Array.from({ length: 24 }, (_, hour) =>
-          DAYS_OF_WEEK.map(day => {
-            const config = schedule[day][hour]
-            const hasLoad = config.loadLevel > 0
-            const bgColor = hasLoad
-              ? hexToRgba(color.hex, LOAD_LEVEL_OPACITIES[config.loadLevel])
-              : undefined
 
-            return (
-              <div
-                key={`${day}-${hour}`}
-                className={hasLoad ? '' : 'bg-base-200'}
-                style={{ backgroundColor: bgColor }}
-              />
-            )
-          })
-        )}
+        {/* 4 blocs de 6 heures */}
+        {[0, 6, 12, 18].map(startHour => (
+          <>
+            {/* Label horaire */}
+            <div
+              key={`hour-${startHour}`}
+              className="text-[9px] text-base-content/50 text-right pr-1 flex items-center justify-end"
+            >
+              {startHour}h
+            </div>
+            {/* Cellules pour chaque jour */}
+            {DAYS_OF_WEEK.map(day => {
+              const level = getBlockLevel(day, startHour)
+              const hasLoad = level > 0
+              const bgColor = hasLoad
+                ? hexToRgba(color.hex, LOAD_LEVEL_OPACITIES[level])
+                : undefined
+
+              return (
+                <div
+                  key={`${day}-${startHour}`}
+                  className={`rounded-sm ${hasLoad ? '' : 'bg-base-200'}`}
+                  style={{
+                    backgroundColor: bgColor,
+                    border: '1px solid oklch(var(--bc) / 0.2)',
+                  }}
+                />
+              )
+            })}
+          </>
+        ))}
       </div>
     </div>
   )

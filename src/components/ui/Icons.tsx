@@ -123,4 +123,38 @@ export const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
     </svg>
   ),
+
+  Logo: ({ className = 'w-6 h-6' }: IconProps) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      {/* Face gauche du cube */}
+      <path
+        d="M2 8l10 6v10L2 18V8z"
+        fill="url(#logo-gradient-left)"
+      />
+      {/* Face droite du cube */}
+      <path
+        d="M22 8L12 14v10l10-6V8z"
+        fill="url(#logo-gradient-right)"
+      />
+      {/* Face superieure du cube */}
+      <path
+        d="M12 0L2 6l10 6 10-6L12 0z"
+        fill="url(#logo-gradient-top)"
+      />
+      <defs>
+        <linearGradient id="logo-gradient-left" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#e04d36" />
+          <stop offset="100%" stopColor="#c43d28" />
+        </linearGradient>
+        <linearGradient id="logo-gradient-right" x1="100%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#f5a623" />
+          <stop offset="100%" stopColor="#e04d36" />
+        </linearGradient>
+        <linearGradient id="logo-gradient-top" x1="50%" y1="0%" x2="50%" y2="100%">
+          <stop offset="0%" stopColor="#f5a623" />
+          <stop offset="100%" stopColor="#e88a1a" />
+        </linearGradient>
+      </defs>
+    </svg>
+  ),
 }
