@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
-import type { WeeklySchedule, DayOfWeek, HourlyConfig, LoadLevel } from '@/types'
-import { DAYS_OF_WEEK, DAY_LABELS, createHourlyConfig, createBaselineConfig, BASELINE_PROFILE_ID } from '@/types'
+import type { WeeklySchedule, DayOfWeek, HourlyConfig, LoadLevel, ScalingProfile } from '@/types'
+import { DAYS_OF_WEEK, DAY_LABELS, createHourlyConfig, BASELINE_PROFILE_ID } from '@/types'
 import { SelectionIndicator } from './SelectionIndicator'
 
 interface WeeklyCalendarProps {
@@ -8,7 +8,20 @@ interface WeeklyCalendarProps {
   onChange: (schedule: WeeklySchedule) => void
   profileId: string
   loadLevel: LoadLevel
+  scalingProfiles: ScalingProfile[]
 }
+
+// Palette de couleurs pour les profils de scaling
+const PROFILE_COLORS = [
+  { bg: 'bg-blue-500', text: 'text-white' },
+  { bg: 'bg-emerald-500', text: 'text-white' },
+  { bg: 'bg-amber-500', text: 'text-white' },
+  { bg: 'bg-rose-500', text: 'text-white' },
+  { bg: 'bg-violet-500', text: 'text-white' },
+  { bg: 'bg-cyan-500', text: 'text-white' },
+  { bg: 'bg-orange-500', text: 'text-white' },
+  { bg: 'bg-pink-500', text: 'text-white' },
+]
 
 // Couleurs pour les différents niveaux de charge (style Clever Cloud)
 const getLoadLevelColor = (config: HourlyConfig): string => {
@@ -37,7 +50,22 @@ export function WeeklyCalendar({
   onChange,
   profileId,
   loadLevel,
+  scalingProfiles,
 }: WeeklyCalendarProps) {
+  // Récupérer les infos d'affichage d'un profil (initiale + couleur)
+  const getProfileDisplayInfo = useCallback(
+    (pId: string): { initial: string; colorIndex: number } | null => {
+      if (pId === BASELINE_PROFILE_ID) return null
+      const profileIndex = scalingProfiles.findIndex(p => p.id === pId)
+      if (profileIndex === -1) return null
+      const profile = scalingProfiles[profileIndex]
+      return {
+        initial: profile.name.charAt(0).toUpperCase(),
+        colorIndex: profileIndex % PROFILE_COLORS.length,
+      }
+    },
+    [scalingProfiles]
+  )
   const [isPainting, setIsPainting] = useState(false)
   const [selectionStart, setSelectionStart] = useState<{
     day: DayOfWeek
@@ -49,10 +77,8 @@ export function WeeklyCalendar({
   } | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Crée la config à peindre selon le loadLevel actuel
-  const paintConfig: HourlyConfig = loadLevel === 0
-    ? createBaselineConfig()
-    : createHourlyConfig(profileId, loadLevel)
+  // Crée la config à peindre (toujours associée au profil sélectionné)
+  const paintConfig: HourlyConfig = createHourlyConfig(profileId, loadLevel)
 
   // Vérifie si une cellule est dans la sélection actuelle
   const isInSelection = useCallback(
@@ -236,6 +262,8 @@ export function WeeklyCalendar({
                   const config = schedule[day][hour]
                   const inSelection = isInSelection(day, hour)
                   const displayLevel = config?.loadLevel ?? 0
+                  const profileInfo = config ? getProfileDisplayInfo(config.profileId) : null
+                  const badgeColor = profileInfo ? PROFILE_COLORS[profileInfo.colorIndex] : null
                   return (
                     <td
                       key={`${day}-${hour}`}
@@ -256,6 +284,7 @@ export function WeeklyCalendar({
                     >
                       <div
                         className={`
+                          relative
                           w-8 h-6
                           sm:w-10 sm:h-7
                           md:w-8 md:h-6
@@ -263,11 +292,16 @@ export function WeeklyCalendar({
                           ${getTextColor(config)}
                         `}
                       >
-                        {displayLevel > 0 && (
-                          <span className="font-bold text-[10px] sm:text-xs">
-                            {displayLevel}
+                        {/* Badge du profil en haut à gauche avec couleur unique */}
+                        {profileInfo && badgeColor && (
+                          <span className={`absolute -top-0.5 -left-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 flex items-center justify-center ${badgeColor.bg} ${badgeColor.text} text-[8px] sm:text-[9px] font-bold rounded-full shadow-sm`}>
+                            {profileInfo.initial}
                           </span>
                         )}
+                        {/* Niveau de charge au centre */}
+                        <span className={`font-bold text-[10px] sm:text-xs ${displayLevel === 0 ? 'opacity-30' : ''}`}>
+                          {displayLevel}
+                        </span>
                       </div>
                     </td>
                   )

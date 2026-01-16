@@ -1,5 +1,5 @@
 import type { WeeklySchedule, DayOfWeek, LoadLevel } from '@/types'
-import { DAYS_OF_WEEK, createEmptySchedule, createHourlyConfig } from '@/types'
+import { DAYS_OF_WEEK, createFilledSchedule, createHourlyConfig } from '@/types'
 
 interface SchedulePresetsProps {
   profileId: string
@@ -24,7 +24,7 @@ const presets: Preset[] = [
     description: 'Lun-Ven, 9h-18h',
     icon: '🏢',
     generate: (profileId, loadLevel) => {
-      const schedule = createEmptySchedule()
+      const schedule = createFilledSchedule(profileId, 0)
       for (const day of WEEKDAYS) {
         for (let h = 9; h < 18; h++) {
           schedule[day][h] = createHourlyConfig(profileId, loadLevel)
@@ -39,7 +39,7 @@ const presets: Preset[] = [
     description: 'Lun-Ven, 8h-20h',
     icon: '📊',
     generate: (profileId, loadLevel) => {
-      const schedule = createEmptySchedule()
+      const schedule = createFilledSchedule(profileId, 0)
       for (const day of WEEKDAYS) {
         for (let h = 8; h < 20; h++) {
           schedule[day][h] = createHourlyConfig(profileId, loadLevel)
@@ -54,7 +54,7 @@ const presets: Preset[] = [
     description: 'Lun-Ven, 10h-12h et 14h-17h',
     icon: '📈',
     generate: (profileId, loadLevel) => {
-      const schedule = createEmptySchedule()
+      const schedule = createFilledSchedule(profileId, 0)
       for (const day of WEEKDAYS) {
         // Pic du matin
         for (let h = 10; h < 12; h++) {
@@ -74,7 +74,7 @@ const presets: Preset[] = [
     description: 'Boost 6h-22h tous les jours',
     icon: '🌙',
     generate: (profileId, loadLevel) => {
-      const schedule = createEmptySchedule()
+      const schedule = createFilledSchedule(profileId, 0)
       for (const day of DAYS_OF_WEEK) {
         for (let h = 6; h < 22; h++) {
           schedule[day][h] = createHourlyConfig(profileId, loadLevel)
@@ -89,7 +89,7 @@ const presets: Preset[] = [
     description: 'Lun-Ven max, Sam-Dim minimum',
     icon: '🏖️',
     generate: (profileId, loadLevel) => {
-      const schedule = createEmptySchedule()
+      const schedule = createFilledSchedule(profileId, 0)
       for (const day of WEEKDAYS) {
         for (let h = 0; h < 24; h++) {
           schedule[day][h] = createHourlyConfig(profileId, loadLevel)
@@ -105,7 +105,7 @@ const presets: Preset[] = [
     description: '24h/7j au maximum',
     icon: '🚀',
     generate: (profileId, loadLevel) => {
-      const schedule = createEmptySchedule()
+      const schedule = createFilledSchedule(profileId, 0)
       for (const day of DAYS_OF_WEEK) {
         for (let h = 0; h < 24; h++) {
           schedule[day][h] = createHourlyConfig(profileId, loadLevel)
@@ -121,8 +121,6 @@ export function SchedulePresets({
   loadLevel,
   onApply,
 }: SchedulePresetsProps) {
-  if (loadLevel === 0) return null
-
   return (
     <div className="space-y-2">
       <div className="text-sm font-medium text-base-content/80">

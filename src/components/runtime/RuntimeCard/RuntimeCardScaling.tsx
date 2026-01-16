@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from 'react'
+import { memo, useState, useCallback, useEffect } from 'react'
 import { Icons, NumberInput } from '@/components/ui'
 import { useRuntimeCardContext } from './RuntimeCardContext'
 import type { RuntimeCardScalingProps } from './types'
@@ -23,8 +23,16 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
     return null
   }
 
-  const [isAddingProfile, setIsAddingProfile] = useState(false)
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null)
+
+  // Au montage, ouvrir le profil 'default' en édition s'il existe
+  useEffect(() => {
+    const defaultProfile = activeScalingProfiles.find(p => p.id === 'default')
+    if (defaultProfile && editingProfileId === null) {
+      setEditingProfileId('default')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Exécuté uniquement au montage
 
   // Trouver l'index du flavor de base
   const baseFlavorIndex = availableFlavors.findIndex(
@@ -37,8 +45,9 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
   )
 
   const handleAddProfile = useCallback(() => {
+    const newId = crypto.randomUUID()
     const newProfile: ScalingProfile = {
-      id: crypto.randomUUID(),
+      id: newId,
       name: `Profil ${activeScalingProfiles.length + 1}`,
       minInstances: baseConfig.instances,
       maxInstances: Math.min(baseConfig.instances * 2, instance?.maxInstances ?? 40),
@@ -47,7 +56,8 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
       enabled: true,
     }
     onAddScalingProfile(newProfile)
-    setIsAddingProfile(false)
+    // Passer directement en mode édition du nouveau profil
+    setEditingProfileId(newId)
   }, [activeScalingProfiles.length, baseConfig.instances, baseConfig.flavorName, instance?.maxInstances, scalingFlavors, onAddScalingProfile])
 
   return (
@@ -60,15 +70,13 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
               Profils de scaling
             </span>
           </label>
-          {!isAddingProfile && (
-            <button
-              className="btn btn-ghost btn-xs gap-1"
-              onClick={() => setIsAddingProfile(true)}
-            >
-              <Icons.Plus className="w-3 h-3" />
-              Ajouter
-            </button>
-          )}
+          <button
+            className="btn btn-ghost btn-xs gap-1"
+            onClick={handleAddProfile}
+          >
+            <Icons.Plus className="w-3 h-3" />
+            Ajouter
+          </button>
         </div>
 
         {/* Liste des profils existants */}
@@ -81,6 +89,7 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
                 isEditing={editingProfileId === profile.id}
                 scalingFlavors={scalingFlavors}
                 maxInstances={instance?.maxInstances ?? 40}
+                canDelete={activeScalingProfiles.length > 1}
                 onEdit={() => setEditingProfileId(profile.id)}
                 onSave={() => setEditingProfileId(null)}
                 onUpdate={updates => onUpdateScalingProfile(profile.id, updates)}
@@ -95,32 +104,6 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
           </div>
         )}
 
-        {/* Formulaire d'ajout */}
-        {isAddingProfile && (
-          <div className="mt-2 p-3 border border-primary/30 bg-primary/5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Nouveau profil</span>
-              <div className="flex gap-1">
-                <button
-                  className="btn btn-ghost btn-xs text-success"
-                  onClick={handleAddProfile}
-                >
-                  <Icons.Check className="w-3 h-3" />
-                </button>
-                <button
-                  className="btn btn-ghost btn-xs text-error"
-                  onClick={() => setIsAddingProfile(false)}
-                >
-                  <Icons.X className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-            <p className="text-xs text-base-content/60">
-              Un profil avec les paramètres par défaut sera créé.
-              Vous pourrez le modifier ensuite.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   )
@@ -132,6 +115,7 @@ interface ProfileCardProps {
   isEditing: boolean
   scalingFlavors: { name: string }[]
   maxInstances: number
+  canDelete: boolean
   onEdit: () => void
   onSave: () => void
   onUpdate: (updates: Partial<ScalingProfile>) => void
@@ -143,6 +127,7 @@ function ProfileCard({
   isEditing,
   scalingFlavors,
   maxInstances,
+  canDelete,
   onEdit,
   onSave,
   onUpdate,
@@ -163,7 +148,12 @@ function ProfileCard({
             <button className="btn btn-ghost btn-xs text-success" onClick={onSave}>
               <Icons.Check className="w-3 h-3" />
             </button>
-            <button className="btn btn-ghost btn-xs text-error" onClick={onRemove}>
+            <button
+              className="btn btn-ghost btn-xs text-error"
+              onClick={onRemove}
+              disabled={!canDelete}
+              title={canDelete ? 'Supprimer' : 'Au moins un profil requis'}
+            >
               <Icons.Trash className="w-3 h-3" />
             </button>
           </div>
@@ -175,7 +165,14 @@ function ProfileCard({
             label="Min inst."
             labelPosition="top"
             value={profile.minInstances}
-            onChange={value => onUpdate({ minInstances: value })}
+            onChange={value => {
+              // Si min dépasse max, augmenter max pour suivre
+              if (value > profile.maxInstances) {
+                onUpdate({ minInstances: value, maxInstances: value })
+              } else {
+                onUpdate({ minInstances: value })
+              }
+            }}
             min={1}
             max={maxInstances}
             size="sm"
@@ -184,8 +181,15 @@ function ProfileCard({
             label="Max inst."
             labelPosition="top"
             value={profile.maxInstances}
-            onChange={value => onUpdate({ maxInstances: value })}
-            min={profile.minInstances}
+            onChange={value => {
+              // Si max descend sous min, diminuer min pour suivre
+              if (value < profile.minInstances) {
+                onUpdate({ maxInstances: value, minInstances: value })
+              } else {
+                onUpdate({ maxInstances: value })
+              }
+            }}
+            min={1}
             max={maxInstances}
             size="sm"
           />
@@ -246,7 +250,8 @@ function ProfileCard({
         <button
           className="btn btn-ghost btn-xs text-error"
           onClick={onRemove}
-          title="Supprimer"
+          disabled={!canDelete}
+          title={canDelete ? 'Supprimer' : 'Au moins un profil requis'}
         >
           <Icons.Trash className="w-3 h-3" />
         </button>

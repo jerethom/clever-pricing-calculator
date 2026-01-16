@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import type { RuntimeConfig, WeeklySchedule, ScalingProfile } from '@/types'
-import { DAYS_OF_WEEK, createEmptySchedule, BASELINE_PROFILE_ID, getBaselineProfile, getBaseConfig, createBaselineProfile } from '@/types'
+import { DAYS_OF_WEEK, createEmptySchedule, createFilledSchedule, BASELINE_PROFILE_ID, getBaselineProfile, getBaseConfig, createBaselineProfile } from '@/types'
 import { useProjectActions } from '@/store'
 import { useInstances } from '@/hooks/useInstances'
 import { calculateRuntimeCost, buildFlavorPriceMap, getAvailableFlavors } from '@/lib/costCalculator'
@@ -177,12 +177,53 @@ export function useRuntimeCard({ projectId, runtime }: UseRuntimeCardOptions) {
   // Handler switch scaling mode
   const handleToggleScaling = useCallback(
     (enabled: boolean) => {
-      updateRuntime(projectId, runtime.id, {
-        scalingEnabled: enabled,
-        weeklySchedule: enabled ? createEmptySchedule() : undefined,
-      })
+      if (enabled) {
+        // Créer un profil de scaling par défaut si aucun n'existe
+        const existingProfiles = runtime.scalingProfiles ?? []
+        const hasScalingProfile = existingProfiles.some(
+          p => p.id !== BASELINE_PROFILE_ID && p.enabled
+        )
+
+        if (!hasScalingProfile) {
+          // Créer un planning rempli avec le profil default à niveau 0
+          const schedule = runtime.weeklySchedule ?? createFilledSchedule('default', 0)
+          // Créer un profil de scaling par défaut
+          const defaultProfile: ScalingProfile = {
+            id: 'default',
+            name: 'Standard',
+            minInstances: baselineProfile.minInstances,
+            maxInstances: Math.min(baselineProfile.minInstances * 2, instance?.maxInstances ?? 40),
+            minFlavorName: baselineProfile.minFlavorName,
+            maxFlavorName: baselineProfile.maxFlavorName,
+            enabled: true,
+          }
+
+          updateRuntime(projectId, runtime.id, {
+            scalingEnabled: true,
+            scalingProfiles: [...existingProfiles, defaultProfile],
+            weeklySchedule: schedule,
+          })
+        } else {
+          // Conserver le planning existant ou en créer un vide
+          const schedule = runtime.weeklySchedule ?? createEmptySchedule()
+          updateRuntime(projectId, runtime.id, {
+            scalingEnabled: true,
+            weeklySchedule: schedule,
+          })
+        }
+
+        // Ouvrir automatiquement le planning
+        setShowTimeSlots(true)
+      } else {
+        // Fermer le planning quand on désactive le scaling
+        // Conserver les profils et le planning pour pouvoir les réutiliser
+        setShowTimeSlots(false)
+        updateRuntime(projectId, runtime.id, {
+          scalingEnabled: false,
+        })
+      }
     },
-    [updateRuntime, projectId, runtime.id]
+    [updateRuntime, projectId, runtime.id, runtime.scalingProfiles, runtime.weeklySchedule, baselineProfile, instance?.maxInstances]
   )
 
   // Handler profils de scaling
@@ -208,6 +249,12 @@ export function useRuntimeCard({ projectId, runtime }: UseRuntimeCardOptions) {
     (profileId: string) => {
       // Ne pas supprimer le profil baseline
       if (profileId === BASELINE_PROFILE_ID) return
+
+      // Ne pas supprimer le dernier profil de scaling actif
+      const activeProfiles = (runtime.scalingProfiles ?? []).filter(
+        p => p.enabled && p.id !== BASELINE_PROFILE_ID
+      )
+      if (activeProfiles.length <= 1) return
 
       const newProfiles = (runtime.scalingProfiles ?? []).filter(p => p.id !== profileId)
 

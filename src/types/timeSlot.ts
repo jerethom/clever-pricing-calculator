@@ -76,3 +76,19 @@ export function createEmptySchedule(): WeeklySchedule {
     sun: emptyDay(),
   }
 }
+
+/**
+ * Fonction utilitaire pour créer une grille remplie avec un profil et niveau spécifique
+ */
+export function createFilledSchedule(profileId: string, loadLevel: LoadLevel): WeeklySchedule {
+  const filledDay = (): HourlySchedule => Array(24).fill(null).map(() => createHourlyConfig(profileId, loadLevel))
+  return {
+    mon: filledDay(),
+    tue: filledDay(),
+    wed: filledDay(),
+    thu: filledDay(),
+    fri: filledDay(),
+    sat: filledDay(),
+    sun: filledDay(),
+  }
+}

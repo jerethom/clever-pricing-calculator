@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { RuntimeConfig, WeeklySchedule, LoadLevel } from '@/types'
 import { createEmptySchedule, LOAD_LEVELS, LOAD_LEVEL_LABELS, BASELINE_PROFILE_ID } from '@/types'
 import { useProjectAction } from '@/store'
@@ -28,6 +28,17 @@ function TimeSlotEditor({
   )
   const [loadLevel, setLoadLevel] = useState<LoadLevel>(3)
 
+  // Profils de scaling disponibles (sans baseline)
+  const scalingProfiles = (runtime.scalingProfiles ?? []).filter(p => p.enabled && p.id !== BASELINE_PROFILE_ID)
+
+  // Mettre à jour selectedProfileId si le profil sélectionné n'existe plus
+  useEffect(() => {
+    const profileExists = scalingProfiles.some(p => p.id === selectedProfileId)
+    if (!profileExists && scalingProfiles.length > 0) {
+      setSelectedProfileId(scalingProfiles[0].id)
+    }
+  }, [scalingProfiles, selectedProfileId])
+
   const handleScheduleChange = (newSchedule: WeeklySchedule) => {
     updateRuntime(projectId, runtimeId, { weeklySchedule: newSchedule })
   }
@@ -36,8 +47,6 @@ function TimeSlotEditor({
     handleScheduleChange(createEmptySchedule())
   }
 
-  // Profils de scaling disponibles (sans baseline)
-  const scalingProfiles = (runtime.scalingProfiles ?? []).filter(p => p.enabled && p.id !== BASELINE_PROFILE_ID)
   const selectedProfile = scalingProfiles.find(p => p.id === selectedProfileId) ?? scalingProfiles[0]
 
   const schedule = runtime.weeklySchedule ?? createEmptySchedule()
@@ -45,6 +54,14 @@ function TimeSlotEditor({
   // Calcul du nombre d'heures de scaling configurées
   const scalingHoursCount = Object.values(schedule).reduce((total, day) => {
     return total + day.filter(config => config.loadLevel > 0).length
+  }, 0)
+
+  // Détecter les créneaux orphelins (profil supprimé)
+  const allProfileIds = new Set((runtime.scalingProfiles ?? []).map(p => p.id))
+  const orphanedSlotsCount = Object.values(schedule).reduce((total, day) => {
+    return total + day.filter(config =>
+      config.profileId !== BASELINE_PROFILE_ID && !allProfileIds.has(config.profileId)
+    ).length
   }, 0)
 
   const hasScaling = scalingProfiles.length > 0
@@ -157,7 +174,7 @@ function TimeSlotEditor({
       )}
 
       {/* Presets toggle */}
-      {hasScaling && loadLevel > 0 && (
+      {hasScaling && (
         <div>
           <button
             type="button"
@@ -219,6 +236,7 @@ function TimeSlotEditor({
         onChange={handleScheduleChange}
         profileId={selectedProfileId}
         loadLevel={loadLevel}
+        scalingProfiles={scalingProfiles}
       />
 
       {/* Résumé */}
@@ -234,11 +252,27 @@ function TimeSlotEditor({
         </div>
       )}
 
+      {/* Avertissement créneaux orphelins */}
+      {orphanedSlotsCount > 0 && (
+        <div className="p-4 bg-warning/10 border border-warning/30 text-sm">
+          <div className="flex items-start gap-3">
+            <Icons.Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+            <div>
+              <div className="font-medium">Créneaux non assignés</div>
+              <div className="text-base-content/70 mt-1">
+                {orphanedSlotsCount} créneau(x) référence(nt) un profil qui n'existe plus.
+                Sélectionnez un profil et repeignez ces créneaux pour les réassigner.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Message si pas de scaling possible */}
       {!hasScaling && (
         <div className="p-4 bg-warning/10 border border-warning/30 text-sm">
           <div className="flex items-start gap-3">
-            <Icons.Warning className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+            <Icons.Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />
             <div>
               <div className="font-medium">Scaling non disponible</div>
               <div className="text-base-content/70 mt-1">
