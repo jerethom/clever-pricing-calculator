@@ -108,11 +108,13 @@ const ProjectProjectionItem = memo(function ProjectProjectionItem({
 interface OrganizationProjectionsProps {
   projects: Project[]
   projectCosts: Map<string, ProjectCostSummary>
+  budgetTarget?: number
 }
 
 export const OrganizationProjections = memo(function OrganizationProjections({
   projects,
   projectCosts,
+  budgetTarget,
 }: OrganizationProjectionsProps) {
   const [selectedMonths, setSelectedMonths] = useState(12)
 
@@ -215,6 +217,12 @@ export const OrganizationProjections = memo(function OrganizationProjections({
                   Plage: {formatPrice(totals.minMonthly)} - {formatPrice(totals.maxMonthly)}
                 </p>
               )}
+              {budgetTarget && totals.hasCostRange && totals.maxMonthly > budgetTarget && totals.monthly <= budgetTarget && (
+                <div className="flex items-center gap-1.5 text-warning text-xs mt-1">
+                  <Icons.Info className="w-3.5 h-3.5" />
+                  <span>Max peut depasser le budget ({formatPrice(budgetTarget)})</span>
+                </div>
+              )}
             </div>
 
             {/* Fleche et projection */}
@@ -230,6 +238,12 @@ export const OrganizationProjections = memo(function OrganizationProjections({
                 <p className="text-sm text-base-content/50 tabular-nums">
                   Plage: {formatPrice(projectedMin)} - {formatPrice(projectedMax)}
                 </p>
+              )}
+              {budgetTarget && totals.hasCostRange && projectedMax > budgetTarget * selectedMonths && projectedTotal <= budgetTarget * selectedMonths && (
+                <div className="flex items-center gap-1.5 text-warning text-xs mt-1">
+                  <Icons.Info className="w-3.5 h-3.5" />
+                  <span>Max peut depasser {formatPrice(budgetTarget * selectedMonths)}</span>
+                </div>
               )}
             </div>
           </div>

@@ -25,6 +25,23 @@ const getStatusColor = (percent: number, type: 'bg' | 'text'): string => {
   return `${prefix}success`
 }
 
+const getProgressGradient = (percent: number): string => {
+  if (percent > 100) {
+    // Over budget: orange to red gradient
+    return 'bg-gradient-to-r from-warning via-error to-error'
+  }
+  if (percent >= 90) {
+    // Critical zone: orange to red
+    return 'bg-gradient-to-r from-warning to-error'
+  }
+  if (percent >= 70) {
+    // Warning zone: green transitioning to orange
+    return 'bg-gradient-to-r from-success via-warning to-warning'
+  }
+  // Safe zone: green
+  return 'bg-gradient-to-r from-success to-success'
+}
+
 export const OrganizationBudgetGauge = memo(function OrganizationBudgetGauge({
   currentCost,
   minCost,
@@ -185,56 +202,92 @@ export const OrganizationBudgetGauge = memo(function OrganizationBudgetGauge({
     </div>
   )
 
-  const renderBudgetStatus = () => (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-base-content/60">Budget mensuel</span>
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs opacity-60 hover:opacity-100"
-          onClick={handleStartEdit}
-          aria-label="Modifier le budget"
-        >
-          <Icons.Edit className="w-3 h-3" />
-        </button>
-      </div>
+  const renderBudgetStatus = () => {
+    const maxCostPercent = budgetTarget && budgetTarget > 0
+      ? (maxCost / budgetTarget) * 100
+      : 0
+    const showMaxMarker = hasCostRange && maxCostPercent > 0 && maxCostPercent !== budgetPercent
+    const maxMarkerPosition = Math.min(maxCostPercent, 100)
+    const isMaxOverBudget = maxCost > budgetTarget!
 
-      <div className="space-y-2">
-        <div className="h-3 bg-base-300 rounded-full overflow-hidden">
-          <div
-            className={`h-full transition-all duration-700 ease-out ${getStatusColor(budgetPercent, 'bg')}`}
-            style={{ width: `${Math.min(budgetPercent, 100)}%` }}
-            role="progressbar"
-            aria-valuenow={budgetPercent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={`${budgetPercent.toFixed(0)}% du budget utilise`}
-          />
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-base-content/60">Budget mensuel</span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs opacity-60 hover:opacity-100"
+            onClick={handleStartEdit}
+            aria-label="Modifier le budget"
+          >
+            <Icons.Edit className="w-3 h-3" />
+          </button>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className={`font-bold tabular-nums ${getStatusColor(budgetPercent, 'text')}`}>
-            {budgetPercent.toFixed(0)}%
-          </span>
-          <span className="text-base-content/60">
-            {formatPrice(currentCost)} / {formatPrice(budgetTarget!)}
-          </span>
+
+        <div className="space-y-2">
+          {/* Progress bar with max cost marker */}
+          <div className="relative">
+            {/* Max cost marker */}
+            {showMaxMarker && (
+              <div
+                className="absolute -top-4 transition-all duration-500 ease-out"
+                style={{ left: `${maxMarkerPosition}%`, transform: 'translateX(-50%)' }}
+                title={`Cout max: ${formatPrice(maxCost)}`}
+              >
+                <span className={`text-xs ${isMaxOverBudget ? 'text-warning' : 'text-base-content/40'}`}>
+                  ▼
+                </span>
+              </div>
+            )}
+
+            {/* Progress bar */}
+            <div className="h-3 bg-base-300 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-700 ease-out ${getProgressGradient(budgetPercent)}`}
+                style={{ width: `${Math.min(budgetPercent, 100)}%` }}
+                role="progressbar"
+                aria-valuenow={budgetPercent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${budgetPercent.toFixed(0)}% du budget utilise`}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-sm">
+            <span className={`font-bold tabular-nums ${getStatusColor(budgetPercent, 'text')}`}>
+              {budgetPercent.toFixed(0)}%
+            </span>
+            <span className="text-base-content/60">
+              {formatPrice(currentCost)} / {formatPrice(budgetTarget!)}
+            </span>
+          </div>
+        </div>
+
+        {/* Animated alert badges */}
+        <div className="flex flex-wrap gap-2">
+          {budgetPercent > 100 && (
+            <span className="badge badge-error gap-1 status-scaling">
+              <Icons.Warning className="w-3 h-3" />
+              Depasse de {formatPrice(currentCost - budgetTarget!)}
+            </span>
+          )}
+          {budgetPercent >= 80 && budgetPercent <= 100 && (
+            <span className="badge badge-warning gap-1">
+              <Icons.Warning className="w-3 h-3" />
+              {formatPrice(budgetTarget! - currentCost)} restant
+            </span>
+          )}
+          {hasCostRange && maxCost > budgetTarget! && budgetPercent <= 100 && (
+            <span className="badge badge-warning badge-outline gap-1">
+              <Icons.Info className="w-3 h-3" />
+              Max peut depasser
+            </span>
+          )}
         </div>
       </div>
-
-      {budgetPercent > 100 && (
-        <div className="flex items-center gap-2 text-error text-sm">
-          <Icons.Warning className="w-4 h-4" />
-          <span>Budget depasse de {formatPrice(currentCost - budgetTarget!)}</span>
-        </div>
-      )}
-      {budgetPercent >= 80 && budgetPercent <= 100 && (
-        <div className="flex items-center gap-2 text-warning text-sm">
-          <Icons.Warning className="w-4 h-4" />
-          <span>Proche de la limite ({formatPrice(budgetTarget! - currentCost)} restant)</span>
-        </div>
-      )}
-    </div>
-  )
+    )
+  }
 
   const renderNoBudget = () => (
     <div className="text-center py-2">

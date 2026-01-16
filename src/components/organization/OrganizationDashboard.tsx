@@ -229,6 +229,7 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
             <OrganizationProjections
               projects={projects}
               projectCosts={projectCosts}
+              budgetTarget={organization.budgetTarget}
             />
           )}
         </div>
