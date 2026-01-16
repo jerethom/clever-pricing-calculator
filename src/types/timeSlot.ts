@@ -1,5 +1,3 @@
-import { BASELINE_PROFILE_ID } from './scaling'
-
 export type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 
 export const DAYS_OF_WEEK: DayOfWeek[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
@@ -48,7 +46,7 @@ export const LOAD_LEVEL_DESCRIPTIONS: Record<LoadLevel, string> = {
  * Configuration de scaling pour une heure donnée
  */
 export interface HourlyConfig {
-  profileId: string // Référence au ScalingProfile (ou 'baseline')
+  profileId: string | null // Référence au ScalingProfile (null = baseline)
   loadLevel: LoadLevel // Niveau de charge pour estimation
 }
 
@@ -61,7 +59,7 @@ export type WeeklySchedule = Record<DayOfWeek, HourlySchedule>
  */
 export function createBaselineConfig(): HourlyConfig {
   return {
-    profileId: BASELINE_PROFILE_ID,
+    profileId: null,
     loadLevel: 0,
   }
 }

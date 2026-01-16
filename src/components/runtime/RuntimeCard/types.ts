@@ -24,8 +24,7 @@ export interface RuntimeCardContextValue {
   hasScaling: boolean
   activeScalingProfiles: ScalingProfile[]
   availableFlavors: InstanceFlavor[]
-  // Configuration de base (depuis baseline profile)
-  baselineProfile: ScalingProfile
+  // Configuration de base (depuis baselineConfig)
   baseConfig: { instances: number; flavorName: string }
 
   // Etat d'édition du nom

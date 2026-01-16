@@ -1,3 +1,6 @@
+import { generateProfileId } from '@/lib/typeid'
+import type { BaselineConfig } from './project'
+
 /**
  * Profil de scaling réutilisable
  *
@@ -18,23 +21,6 @@ export interface ScalingProfile {
 }
 
 /**
- * Profil baseline par défaut (pas de scaling)
- */
-export const BASELINE_PROFILE_ID = 'baseline'
-
-export function createBaselineProfile(): ScalingProfile {
-  return {
-    id: BASELINE_PROFILE_ID,
-    name: 'Baseline',
-    minInstances: 1,
-    maxInstances: 1,
-    minFlavorName: '',
-    maxFlavorName: '',
-    enabled: false,
-  }
-}
-
-/**
  * Crée un profil de scaling par défaut
  */
 export function createDefaultProfile(
@@ -43,7 +29,7 @@ export function createDefaultProfile(
   maxInstances: number = 2
 ): ScalingProfile {
   return {
-    id: 'default',
+    id: generateProfileId(),
     name: 'Standard',
     minInstances,
     maxInstances,
@@ -54,25 +40,11 @@ export function createDefaultProfile(
 }
 
 /**
- * Récupère le profil baseline d'un runtime
- * Le baseline est toujours présent et définit la configuration de base
+ * Récupère la configuration de base (instances et flavor) depuis le baselineConfig
  */
-export function getBaselineProfile(profiles: ScalingProfile[]): ScalingProfile {
-  const baseline = profiles?.find(p => p.id === BASELINE_PROFILE_ID)
-  if (!baseline) {
-    return createBaselineProfile()
-  }
-  return baseline
-}
-
-/**
- * Récupère la configuration de base (instances et flavor minimum)
- * depuis le profil baseline
- */
-export function getBaseConfig(profiles: ScalingProfile[]): { instances: number; flavorName: string } {
-  const baseline = getBaselineProfile(profiles)
+export function getBaseConfig(baselineConfig: BaselineConfig | undefined): { instances: number; flavorName: string } {
   return {
-    instances: baseline.minInstances,
-    flavorName: baseline.minFlavorName,
+    instances: baselineConfig?.instances ?? 1,
+    flavorName: baselineConfig?.flavorName ?? '',
   }
 }

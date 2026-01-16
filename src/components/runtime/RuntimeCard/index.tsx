@@ -23,7 +23,6 @@ export const RuntimeCard = memo(function RuntimeCard({
     hasScaling,
     activeScalingProfiles,
     availableFlavors,
-    baselineProfile,
     baseConfig,
 
     // Etat d'édition du nom
@@ -80,7 +79,6 @@ export const RuntimeCard = memo(function RuntimeCard({
       hasScaling,
       activeScalingProfiles,
       availableFlavors,
-      baselineProfile,
       baseConfig,
 
       isEditingName,
@@ -120,7 +118,6 @@ export const RuntimeCard = memo(function RuntimeCard({
       hasScaling,
       activeScalingProfiles,
       availableFlavors,
-      baselineProfile,
       baseConfig,
       isEditingName,
       editName,

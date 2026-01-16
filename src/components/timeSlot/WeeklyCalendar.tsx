@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useMemo, memo, useEffect } from 'react'
 import type { WeeklySchedule, DayOfWeek, HourlyConfig, LoadLevel, ScalingProfile } from '@/types'
-import { DAYS_OF_WEEK, DAY_LABELS, createHourlyConfig, BASELINE_PROFILE_ID, LOAD_LEVEL_LABELS } from '@/types'
+import { DAYS_OF_WEEK, DAY_LABELS, createHourlyConfig, LOAD_LEVEL_LABELS } from '@/types'
 import { SelectionIndicator } from './SelectionIndicator'
 import {
   PROFILE_COLORS,
@@ -59,7 +59,7 @@ const getCellBackgroundStyle = (
   config: HourlyConfig,
   profileColorIndex: number | null
 ): React.CSSProperties => {
-  if (!config || config.profileId === BASELINE_PROFILE_ID || profileColorIndex === null) {
+  if (!config || config.profileId === null || profileColorIndex === null) {
     return {}
   }
 
@@ -79,7 +79,7 @@ const getTextColorClass = (
   config: HourlyConfig,
   profileColorIndex: number | null
 ): string => {
-  if (!config || config.profileId === BASELINE_PROFILE_ID || profileColorIndex === null) {
+  if (!config || config.profileId === null || profileColorIndex === null) {
     return 'text-base-content'
   }
 
@@ -231,7 +231,7 @@ export function WeeklyCalendar({
         let profileColorIndex: number | null = null
         let profileData: { profile: ScalingProfile; index: number } | undefined
 
-        if (config && config.profileId !== BASELINE_PROFILE_ID) {
+        if (config && config.profileId !== null) {
           profileData = profilesMap.get(config.profileId)
           if (profileData) {
             profileColorIndex = profileData.index % PROFILE_COLORS.length

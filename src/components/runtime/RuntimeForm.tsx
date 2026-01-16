@@ -3,7 +3,6 @@ import { useInstances } from '@/hooks/useInstances'
 import { useProjectAction } from '@/store'
 import { formatMonthlyPrice, formatHourlyPrice } from '@/lib/costCalculator'
 import { Icons, NumberInput } from '@/components/ui'
-import { createBaselineProfile } from '@/types'
 import type { Instance, InstanceFlavor } from '@/api/types'
 
 const HOURS_PER_MONTH = 730 // ~24h x 30.4j
@@ -104,21 +103,17 @@ function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
   const handleSubmit = () => {
     if (!selectedInstance) return
 
-    // Créer le profil baseline avec la configuration choisie
-    const baselineProfile = createBaselineProfile()
-    baselineProfile.minInstances = instanceCount
-    baselineProfile.maxInstances = instanceCount
-    baselineProfile.minFlavorName = selectedFlavor
-    baselineProfile.maxFlavorName = selectedFlavor
-    baselineProfile.enabled = true
-
     // Créer en mode fixe (sans scaling) - le scaling sera configuré après
     addRuntime(projectId, {
       instanceType: selectedInstance.type,
       instanceName: selectedInstance.name,
       variantLogo: selectedInstance.variant.logo,
       scalingEnabled: false,
-      scalingProfiles: [baselineProfile],
+      baselineConfig: {
+        instances: instanceCount,
+        flavorName: selectedFlavor,
+      },
+      scalingProfiles: [],
       weeklySchedule: undefined,
     })
 

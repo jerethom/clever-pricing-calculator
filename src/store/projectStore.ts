@@ -2,12 +2,13 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import type { Project, RuntimeConfig, AddonConfig, Organization } from '@/types'
-import { DEFAULT_ORGANIZATION_ID, DEFAULT_ORGANIZATION_NAME } from '@/types'
-import { ensureMigratedRuntime } from '@/lib/migration'
-
-function generateId(): string {
-  return crypto.randomUUID()
-}
+import { DEFAULT_ORGANIZATION_NAME } from '@/types'
+import {
+  generateOrganizationId,
+  generateProjectId,
+  generateRuntimeId,
+  generateAddonId,
+} from '@/lib/typeid'
 
 function now(): string {
   return new Date().toISOString()
@@ -49,34 +50,31 @@ export interface ProjectActions {
 
 export type ProjectStore = ProjectState & OrganizationActions & ProjectActions
 
-// Type pour la migration depuis la version 1
-interface V1State {
-  projects: Omit<Project, 'organizationId'>[]
-  activeProjectId: string | null
-}
-
 // Organisation par defaut pour les nouveaux utilisateurs
 function createDefaultOrganization(): Organization {
   const timestamp = now()
   return {
-    id: DEFAULT_ORGANIZATION_ID,
+    id: generateOrganizationId(),
     name: DEFAULT_ORGANIZATION_NAME,
     createdAt: timestamp,
     updatedAt: timestamp,
   }
 }
 
+// Creer l'organisation par defaut une seule fois au chargement du module
+const initialDefaultOrg = createDefaultOrganization()
+
 export const useProjectStore = create<ProjectStore>()(
   persist(
     immer((set) => ({
-      organizations: [createDefaultOrganization()],
+      organizations: [initialDefaultOrg],
       projects: [],
-      activeOrganizationId: DEFAULT_ORGANIZATION_ID,
+      activeOrganizationId: initialDefaultOrg.id,
       activeProjectId: null,
 
       // Organization actions
       createOrganization: (name: string) => {
-        const id = generateId()
+        const id = generateOrganizationId()
         const timestamp = now()
         const newOrg: Organization = {
           id,
@@ -126,7 +124,7 @@ export const useProjectStore = create<ProjectStore>()(
 
       // Project actions
       createProject: (organizationId: string, name: string) => {
-        const id = generateId()
+        const id = generateProjectId()
         const timestamp = now()
         const newProject: Project = {
           id,
@@ -174,7 +172,7 @@ export const useProjectStore = create<ProjectStore>()(
 
       // Runtime actions
       addRuntime: (projectId: string, runtime: Omit<RuntimeConfig, 'id'>) => {
-        const id = generateId()
+        const id = generateRuntimeId()
         set(state => {
           const project = state.projects.find(p => p.id === projectId)
           if (project) {
@@ -213,7 +211,7 @@ export const useProjectStore = create<ProjectStore>()(
 
       // Addon actions
       addAddon: (projectId: string, addon: Omit<AddonConfig, 'id'>) => {
-        const id = generateId()
+        const id = generateAddonId()
         set(state => {
           const project = state.projects.find(p => p.id === projectId)
           if (project) {
@@ -250,49 +248,6 @@ export const useProjectStore = create<ProjectStore>()(
         })
       },
     })),
-    {
-      name: 'clever-pricing-projects',
-      version: 3,
-      migrate: (persistedState: unknown, version: number) => {
-        let state = persistedState as ProjectState
-
-        // Migration v1 -> v2 : Ajout des organisations
-        if (version === 1) {
-          const v1State = persistedState as V1State
-          const timestamp = now()
-
-          // Creer l'organisation par defaut
-          const defaultOrg: Organization = {
-            id: DEFAULT_ORGANIZATION_ID,
-            name: DEFAULT_ORGANIZATION_NAME,
-            createdAt: timestamp,
-            updatedAt: timestamp,
-          }
-
-          // Migrer les projets existants vers l'org par defaut
-          const migratedProjects: Project[] = v1State.projects.map(project => ({
-            ...project,
-            organizationId: DEFAULT_ORGANIZATION_ID,
-          }))
-
-          state = {
-            organizations: [defaultOrg],
-            projects: migratedProjects,
-            activeOrganizationId: DEFAULT_ORGANIZATION_ID,
-            activeProjectId: v1State.activeProjectId,
-          }
-        }
-
-        // Migration v2 -> v3 : Nouveau format RuntimeConfig avec scalingEnabled
-        if (version <= 2) {
-          state.projects = state.projects.map(project => ({
-            ...project,
-            runtimes: project.runtimes.map(runtime => ensureMigratedRuntime(runtime)),
-          }))
-        }
-
-        return state
-      },
-    }
+    { name: 'clever-pricing-projects' }
   )
 )

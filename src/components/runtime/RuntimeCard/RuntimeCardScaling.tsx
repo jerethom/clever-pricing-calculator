@@ -3,6 +3,7 @@ import { Icons, NumberInput } from '@/components/ui'
 import { useRuntimeCardContext } from './RuntimeCardContext'
 import { toast } from '@/store/toastStore'
 import { formatPrice } from '@/lib/costCalculator'
+import { generateProfileId } from '@/lib/typeid'
 import type { RuntimeCardScalingProps } from './types'
 import type { ScalingProfile } from '@/types'
 import type { InstanceFlavor } from '@/api/types'
@@ -29,7 +30,7 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null)
 
   const handleAddProfile = useCallback(() => {
-    const newId = crypto.randomUUID()
+    const newId = generateProfileId()
     const maxInst = instance?.maxInstances ?? 40
     const lastFlavor = availableFlavors[availableFlavors.length - 1]?.name ?? baseConfig.flavorName
 

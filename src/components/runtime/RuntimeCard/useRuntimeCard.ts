@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react'
-import type { RuntimeConfig, WeeklySchedule, ScalingProfile } from '@/types'
-import { DAYS_OF_WEEK, createEmptySchedule, createFilledSchedule, BASELINE_PROFILE_ID, getBaselineProfile, getBaseConfig, createBaselineProfile } from '@/types'
+import type { RuntimeConfig, WeeklySchedule, ScalingProfile, BaselineConfig } from '@/types'
+import { DAYS_OF_WEEK, createEmptySchedule, createFilledSchedule, getBaseConfig } from '@/types'
+import { generateProfileId } from '@/lib/typeid'
 import { useProjectActions } from '@/store'
 import { useInstances } from '@/hooks/useInstances'
 import { calculateRuntimeCost, buildFlavorPriceMap, getAvailableFlavors } from '@/lib/costCalculator'
@@ -27,15 +28,10 @@ export function useRuntimeCard({ projectId, runtime }: UseRuntimeCardOptions) {
     [instances, runtime.variantLogo]
   )
 
-  // Extraire la configuration de base depuis le profil baseline
-  const baselineProfile = useMemo(
-    () => getBaselineProfile(runtime.scalingProfiles ?? []),
-    [runtime.scalingProfiles]
-  )
-
+  // Extraire la configuration de base depuis baselineConfig
   const baseConfig = useMemo(
-    () => getBaseConfig(runtime.scalingProfiles ?? []),
-    [runtime.scalingProfiles]
+    () => getBaseConfig(runtime.baselineConfig),
+    [runtime.baselineConfig]
   )
 
   const defaultName = useMemo(
@@ -79,7 +75,7 @@ export function useRuntimeCard({ projectId, runtime }: UseRuntimeCardOptions) {
 
   // Profils de scaling actifs
   const activeScalingProfiles = useMemo(
-    () => (runtime.scalingProfiles ?? []).filter(p => p.enabled && p.id !== BASELINE_PROFILE_ID),
+    () => (runtime.scalingProfiles ?? []).filter(p => p.enabled),
     [runtime.scalingProfiles]
   )
 
@@ -122,56 +118,28 @@ export function useRuntimeCard({ projectId, runtime }: UseRuntimeCardOptions) {
     [handleSaveEditName, handleCancelEditName]
   )
 
-  // Handler flavor - modifie le profil baseline
+  // Handler flavor - modifie le baselineConfig
   const handleFlavorChange = useCallback(
     (flavorName: string) => {
-      const profiles = runtime.scalingProfiles ?? []
-      const hasBaseline = profiles.some(p => p.id === BASELINE_PROFILE_ID)
-
-      let newProfiles: ScalingProfile[]
-      if (hasBaseline) {
-        newProfiles = profiles.map(p =>
-          p.id === BASELINE_PROFILE_ID
-            ? { ...p, minFlavorName: flavorName, maxFlavorName: flavorName }
-            : p
-        )
-      } else {
-        // Créer le baseline s'il n'existe pas
-        const baseline = createBaselineProfile()
-        baseline.minFlavorName = flavorName
-        baseline.maxFlavorName = flavorName
-        baseline.enabled = true
-        newProfiles = [baseline, ...profiles]
+      const newBaselineConfig: BaselineConfig = {
+        ...runtime.baselineConfig,
+        flavorName,
       }
-      updateRuntime(projectId, runtime.id, { scalingProfiles: newProfiles })
+      updateRuntime(projectId, runtime.id, { baselineConfig: newBaselineConfig })
     },
-    [runtime.scalingProfiles, updateRuntime, projectId, runtime.id]
+    [runtime.baselineConfig, updateRuntime, projectId, runtime.id]
   )
 
-  // Handler base instances - modifie le profil baseline
+  // Handler base instances - modifie le baselineConfig
   const handleBaseInstancesChange = useCallback(
     (value: number) => {
-      const profiles = runtime.scalingProfiles ?? []
-      const hasBaseline = profiles.some(p => p.id === BASELINE_PROFILE_ID)
-
-      let newProfiles: ScalingProfile[]
-      if (hasBaseline) {
-        newProfiles = profiles.map(p =>
-          p.id === BASELINE_PROFILE_ID
-            ? { ...p, minInstances: value, maxInstances: value }
-            : p
-        )
-      } else {
-        // Créer le baseline s'il n'existe pas
-        const baseline = createBaselineProfile()
-        baseline.minInstances = value
-        baseline.maxInstances = value
-        baseline.enabled = true
-        newProfiles = [baseline, ...profiles]
+      const newBaselineConfig: BaselineConfig = {
+        ...runtime.baselineConfig,
+        instances: value,
       }
-      updateRuntime(projectId, runtime.id, { scalingProfiles: newProfiles })
+      updateRuntime(projectId, runtime.id, { baselineConfig: newBaselineConfig })
     },
-    [runtime.scalingProfiles, updateRuntime, projectId, runtime.id]
+    [runtime.baselineConfig, updateRuntime, projectId, runtime.id]
   )
 
   // Handler switch scaling mode
@@ -180,23 +148,22 @@ export function useRuntimeCard({ projectId, runtime }: UseRuntimeCardOptions) {
       if (enabled) {
         // Créer un profil de scaling par défaut si aucun n'existe
         const existingProfiles = runtime.scalingProfiles ?? []
-        const hasScalingProfile = existingProfiles.some(
-          p => p.id !== BASELINE_PROFILE_ID && p.enabled
-        )
+        const hasScalingProfile = existingProfiles.some(p => p.enabled)
 
         if (!hasScalingProfile) {
-          // Créer un planning rempli avec le profil default à niveau 0
-          const schedule = runtime.weeklySchedule ?? createFilledSchedule('default', 0)
-          // Créer un profil de scaling par défaut
+          // Créer un profil de scaling par défaut avec TypeID
+          const newProfileId = generateProfileId()
           const defaultProfile: ScalingProfile = {
-            id: 'default',
+            id: newProfileId,
             name: 'Standard',
-            minInstances: baselineProfile.minInstances,
-            maxInstances: Math.min(baselineProfile.minInstances * 2, instance?.maxInstances ?? 40),
-            minFlavorName: baselineProfile.minFlavorName,
-            maxFlavorName: baselineProfile.maxFlavorName,
+            minInstances: baseConfig.instances,
+            maxInstances: Math.min(baseConfig.instances * 2, instance?.maxInstances ?? 40),
+            minFlavorName: baseConfig.flavorName,
+            maxFlavorName: baseConfig.flavorName,
             enabled: true,
           }
+          // Créer un planning rempli avec le nouveau profil à niveau 0
+          const schedule = runtime.weeklySchedule ?? createFilledSchedule(newProfileId, 0)
 
           updateRuntime(projectId, runtime.id, {
             scalingEnabled: true,
@@ -223,7 +190,7 @@ export function useRuntimeCard({ projectId, runtime }: UseRuntimeCardOptions) {
         })
       }
     },
-    [updateRuntime, projectId, runtime.id, runtime.scalingProfiles, runtime.weeklySchedule, baselineProfile, instance?.maxInstances]
+    [updateRuntime, projectId, runtime.id, runtime.scalingProfiles, runtime.weeklySchedule, baseConfig, instance?.maxInstances]
   )
 
   // Handler profils de scaling
@@ -247,25 +214,20 @@ export function useRuntimeCard({ projectId, runtime }: UseRuntimeCardOptions) {
 
   const handleRemoveScalingProfile = useCallback(
     (profileId: string) => {
-      // Ne pas supprimer le profil baseline
-      if (profileId === BASELINE_PROFILE_ID) return
-
       // Ne pas supprimer le dernier profil de scaling actif
-      const activeProfiles = (runtime.scalingProfiles ?? []).filter(
-        p => p.enabled && p.id !== BASELINE_PROFILE_ID
-      )
+      const activeProfiles = (runtime.scalingProfiles ?? []).filter(p => p.enabled)
       if (activeProfiles.length <= 1) return
 
       const newProfiles = (runtime.scalingProfiles ?? []).filter(p => p.id !== profileId)
 
-      // Réinitialiser les cellules qui utilisaient ce profil
+      // Réinitialiser les cellules qui utilisaient ce profil (profileId = null = baseline)
       const currentSchedule = runtime.weeklySchedule ?? createEmptySchedule()
       const newSchedule: WeeklySchedule = {} as WeeklySchedule
 
       for (const day of DAYS_OF_WEEK) {
         newSchedule[day] = currentSchedule[day].map(config => {
           if (config.profileId === profileId) {
-            return { profileId: BASELINE_PROFILE_ID, loadLevel: 0 as const }
+            return { profileId: null, loadLevel: 0 as const }
           }
           return config
         })
@@ -316,8 +278,7 @@ export function useRuntimeCard({ projectId, runtime }: UseRuntimeCardOptions) {
     hasScaling,
     activeScalingProfiles,
     availableFlavors,
-    // Configuration de base (depuis baseline profile)
-    baselineProfile,
+    // Configuration de base (depuis baselineConfig)
     baseConfig,
 
     // Etat d'édition du nom

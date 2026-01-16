@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import type { RuntimeConfig, WeeklySchedule, LoadLevel } from '@/types'
-import { createEmptySchedule, LOAD_LEVELS, LOAD_LEVEL_LABELS, LOAD_LEVEL_DESCRIPTIONS, BASELINE_PROFILE_ID } from '@/types'
+import { createEmptySchedule, LOAD_LEVELS, LOAD_LEVEL_LABELS, LOAD_LEVEL_DESCRIPTIONS } from '@/types'
 import { useProjectAction } from '@/store'
 import { WeeklyCalendar } from './WeeklyCalendar'
 import { SchedulePresets } from './SchedulePresets'
@@ -71,13 +71,13 @@ function TimeSlotEditor({
 }: TimeSlotEditorProps) {
   const updateRuntime = useProjectAction('updateRuntime')
   const [selectedProfileId, setSelectedProfileId] = useState<string>(
-    (runtime.scalingProfiles ?? []).find(p => p.enabled && p.id !== BASELINE_PROFILE_ID)?.id ?? 'default'
+    (runtime.scalingProfiles ?? []).find(p => p.enabled)?.id ?? 'default'
   )
   const [loadLevel, setLoadLevel] = useState<LoadLevel>(3)
 
-  // Profils de scaling disponibles (sans baseline) - memoises pour eviter les recalculs
+  // Profils de scaling disponibles - memoises pour eviter les recalculs
   const scalingProfiles = useMemo(
-    () => (runtime.scalingProfiles ?? []).filter(p => p.enabled && p.id !== BASELINE_PROFILE_ID),
+    () => (runtime.scalingProfiles ?? []).filter(p => p.enabled),
     [runtime.scalingProfiles]
   )
 
@@ -120,7 +120,7 @@ function TimeSlotEditor({
     const allProfileIds = new Set((runtime.scalingProfiles ?? []).map(p => p.id))
     return Object.values(schedule).reduce((total, day) => {
       return total + day.filter(config =>
-        config.profileId !== BASELINE_PROFILE_ID && !allProfileIds.has(config.profileId)
+        config.profileId !== null && !allProfileIds.has(config.profileId)
       ).length
     }, 0)
   }, [schedule, runtime.scalingProfiles])

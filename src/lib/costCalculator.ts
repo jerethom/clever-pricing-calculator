@@ -1,5 +1,5 @@
 import type { RuntimeConfig, Project, RuntimeCostDetail, AddonCostDetail, ProjectCostSummary } from '@/types'
-import { DAYS_OF_WEEK, createEmptySchedule, BASELINE_PROFILE_ID, getBaselineProfile } from '@/types'
+import { DAYS_OF_WEEK, createEmptySchedule, getBaseConfig } from '@/types'
 import type { Instance, InstanceFlavor } from '@/api/types'
 import { WEEKS_PER_MONTH } from '@/constants'
 import {
@@ -21,10 +21,10 @@ export function calculateRuntimeCost(
   flavorPrices: Map<string, number>,
   availableFlavors?: InstanceFlavor[]
 ): RuntimeCostDetail {
-  // Extraire la config baseline depuis le profil
-  const baseline = getBaselineProfile(runtime.scalingProfiles ?? [])
-  const baseFlavorName = baseline.minFlavorName
-  const baseInstances = baseline.minInstances
+  // Extraire la config baseline depuis baselineConfig
+  const baseConfig = getBaseConfig(runtime.baselineConfig)
+  const baseFlavorName = baseConfig.flavorName
+  const baseInstances = baseConfig.instances
 
   // Prix du flavor de base
   const baseHourlyPrice = flavorPrices.get(baseFlavorName) ?? 0
@@ -64,9 +64,9 @@ export function calculateRuntimeCost(
   const scalingCostByProfile: Record<string, number> = {} // Cout hebdomadaire par profil
   let totalWeeklyCost = 0
 
-  // Trouver le profil par défaut (premier profil actif non-baseline)
+  // Trouver le profil par défaut (premier profil actif)
   const defaultProfile = runtime.scalingProfiles?.find(
-    p => p.enabled && p.id !== BASELINE_PROFILE_ID
+    p => p.enabled
   )
 
   // Parcourir TOUTES les cellules de la grille (168 heures)
@@ -75,11 +75,11 @@ export function calculateRuntimeCost(
       const config = schedule[day][hour]
 
       // Trouver le profil correspondant à cette cellule
-      let profile = config?.profileId && config.profileId !== BASELINE_PROFILE_ID
+      let profile = config?.profileId !== null
         ? runtime.scalingProfiles?.find(p => p.id === config.profileId && p.enabled)
         : null
 
-      // Si pas de profil assigné ou profil baseline, utiliser le profil par défaut
+      // Si pas de profil assigné (null = baseline), utiliser le profil par défaut
       if (!profile) {
         profile = defaultProfile
       }

@@ -1,5 +1,4 @@
-import { memo, useMemo } from 'react'
-import { BASELINE_PROFILE_ID } from '@/types'
+import { memo } from 'react'
 import type { ScalingProfile } from '@/types'
 import { PROFILE_COLORS } from '@/constants'
 
@@ -13,11 +12,8 @@ interface ScheduleLegendProps {
 export const ScheduleLegend = memo(function ScheduleLegend({
   scalingProfiles,
 }: ScheduleLegendProps) {
-  // Filtrer les profils actifs (non baseline)
-  const activeProfiles = useMemo(() =>
-    scalingProfiles.filter(p => p.id !== BASELINE_PROFILE_ID),
-    [scalingProfiles]
-  )
+  // Tous les profils dans scalingProfiles sont maintenant des vrais profils de scaling
+  const activeProfiles = scalingProfiles
 
   if (activeProfiles.length === 0) {
     return null

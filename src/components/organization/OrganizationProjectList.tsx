@@ -1,7 +1,49 @@
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useMemo } from 'react'
 import { formatPrice } from '@/lib/costCalculator'
 import { Icons } from '@/components/ui'
 import type { Project, ProjectCostSummary } from '@/types'
+
+interface CostBreakdownBarProps {
+  runtimesCost: number
+  addonsCost: number
+  total: number
+}
+
+const CostBreakdownBar = memo(function CostBreakdownBar({
+  runtimesCost,
+  addonsCost,
+  total,
+}: CostBreakdownBarProps) {
+  const runtimesPercent = total > 0 ? (runtimesCost / total) * 100 : 0
+  const addonsPercent = total > 0 ? (addonsCost / total) * 100 : 0
+
+  if (total === 0) {
+    return (
+      <div className="h-1.5 bg-base-200 rounded-full" aria-hidden="true" />
+    )
+  }
+
+  return (
+    <div
+      className="h-1.5 bg-base-200 rounded-full overflow-hidden flex"
+      role="img"
+      aria-label={`Repartition: Runtimes ${runtimesPercent.toFixed(0)}%, Addons ${addonsPercent.toFixed(0)}%`}
+    >
+      {runtimesPercent > 0 && (
+        <div
+          className="bg-primary h-full"
+          style={{ width: `${runtimesPercent}%` }}
+        />
+      )}
+      {addonsPercent > 0 && (
+        <div
+          className="bg-secondary h-full"
+          style={{ width: `${addonsPercent}%` }}
+        />
+      )}
+    </div>
+  )
+})
 
 interface ProjectItemProps {
   project: Project
@@ -20,6 +62,15 @@ const ProjectItem = memo(function ProjectItem({
 
   const runtimesCount = project.runtimes.length
   const addonsCount = project.addons.length
+
+  const costDetails = useMemo(() => {
+    if (!cost) return null
+    return {
+      runtimesCost: cost.runtimesCost,
+      addonsCost: cost.addonsCost,
+      total: cost.totalMonthlyCost,
+    }
+  }, [cost])
 
   return (
     <button
@@ -63,6 +114,31 @@ const ProjectItem = memo(function ProjectItem({
             <Icons.ChevronRight className="w-5 h-5 text-base-content/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
           </div>
         </div>
+
+        {/* Barre de repartition et details des couts */}
+        {costDetails && costDetails.total > 0 && (
+          <div className="mt-3 pt-3 border-t border-base-200">
+            <CostBreakdownBar
+              runtimesCost={costDetails.runtimesCost}
+              addonsCost={costDetails.addonsCost}
+              total={costDetails.total}
+            />
+            <div className="flex items-center justify-between mt-2 text-xs">
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-primary" aria-hidden="true" />
+                  <span className="text-base-content/60">Runtimes:</span>
+                  <span className="font-medium text-primary">{formatPrice(costDetails.runtimesCost)}</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-secondary" aria-hidden="true" />
+                  <span className="text-base-content/60">Addons:</span>
+                  <span className="font-medium text-secondary">{formatPrice(costDetails.addonsCost)}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </button>
   )
