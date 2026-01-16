@@ -636,17 +636,18 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
         </div>
       ) : (
         /* Grille de runtimes */
-        <div
-          className={
-            viewMode === 'grid'
-              ? 'grid gap-4 grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3'
-              : 'flex flex-col gap-3'
-          }
-        >
-          {filteredAndSortedRuntimes.map(({ runtime }, index) => (
-            <div
-              key={runtime.id}
-              className="animate-in-up"
+        <div className="@container">
+          <div
+            className={
+              viewMode === 'grid'
+                ? 'grid gap-4 grid-cols-1 @7xl:grid-cols-2'
+                : 'flex flex-col gap-3'
+            }
+          >
+            {filteredAndSortedRuntimes.map(({ runtime }, index) => (
+              <div
+                key={runtime.id}
+                className="animate-in-up"
               style={{
                 animationDelay: `${index * 50}ms`,
               }}
@@ -656,7 +657,8 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
                 runtime={runtime}
               />
             </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 

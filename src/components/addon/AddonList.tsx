@@ -530,24 +530,26 @@ export function AddonList({ projectId }: AddonListProps) {
         </div>
       ) : (
         /* Grille d'addons */
-        <div
-          className={
-            viewMode === 'grid'
-              ? 'grid gap-4 grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3'
-              : 'flex flex-col gap-3'
-          }
-        >
-          {filteredAndSortedAddons.map((addon, index) => (
-            <div
-              key={addon.id}
-              className="animate-in-up"
-              style={{
-                animationDelay: `${index * 50}ms`,
-              }}
-            >
-              <AddonCard projectId={projectId} addon={addon} />
-            </div>
-          ))}
+        <div className="@container">
+          <div
+            className={
+              viewMode === 'grid'
+                ? 'grid gap-4 grid-cols-1 @7xl:grid-cols-2'
+                : 'flex flex-col gap-3'
+            }
+          >
+            {filteredAndSortedAddons.map((addon, index) => (
+              <div
+                key={addon.id}
+                className="animate-in-up"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                }}
+              >
+                <AddonCard projectId={projectId} addon={addon} />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
