@@ -1,25 +1,27 @@
+import { memo } from 'react'
 import { LOAD_LEVELS, LOAD_LEVEL_LABELS } from '@/types'
 
-export function ScheduleLegend() {
-  // Couleurs pour chaque niveau
-  const levelColors = [
-    'bg-base-200',      // 0 - Baseline
-    'bg-[#5754aa]/20',  // 1
-    'bg-[#5754aa]/40',  // 2
-    'bg-[#5754aa]/60',  // 3
-    'bg-[#5754aa]/80',  // 4
-    'bg-[#5754aa]',     // 5
-  ]
+// Constantes statiques hors du composant pour eviter les re-creations
+const LEVEL_COLORS = [
+  'bg-base-200',      // 0 - Baseline
+  'bg-[#5754aa]/20',  // 1
+  'bg-[#5754aa]/40',  // 2
+  'bg-[#5754aa]/60',  // 3
+  'bg-[#5754aa]/80',  // 4
+  'bg-[#5754aa]',     // 5
+]
 
-  const textColors = [
-    'text-base-content',
-    'text-[#1c2045]',
-    'text-[#1c2045]',
-    'text-white',
-    'text-white',
-    'text-white',
-  ]
+const TEXT_COLORS = [
+  'text-base-content',
+  'text-[#1c2045]',
+  'text-[#1c2045]',
+  'text-white',
+  'text-white',
+  'text-white',
+]
 
+// Composant memoise car il n'a pas de props et ne change jamais
+export const ScheduleLegend = memo(function ScheduleLegend() {
   return (
     <div className="flex items-center gap-1">
       <span className="text-xs text-base-content/50 mr-2">Niveau :</span>
@@ -31,8 +33,8 @@ export function ScheduleLegend() {
             <div
               className={`
                 w-6 h-6 flex items-center justify-center text-xs font-bold border border-base-300
-                ${levelColors[index]}
-                ${textColors[index]}
+                ${LEVEL_COLORS[index]}
+                ${TEXT_COLORS[index]}
               `}
               title={LOAD_LEVEL_LABELS[level]}
             >
@@ -48,4 +50,4 @@ export function ScheduleLegend() {
       </div>
     </div>
   )
-}
+})

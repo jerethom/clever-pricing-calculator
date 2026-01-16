@@ -18,16 +18,40 @@ export const RuntimeCardQuickConfig = memo(function RuntimeCardQuickConfig({
     activeScalingProfiles,
     onOpenFlavorPicker,
     onBaseInstancesChange,
+    onToggleScaling,
   } = useRuntimeCardContext()
 
   const isScalingMode = runtime.scalingEnabled
 
   return (
-    <details className={`collapse collapse-arrow bg-base-200 ${className}`} open>
-      <summary className="collapse-title text-sm font-medium py-3 min-h-0">
-        Configuration
-      </summary>
-      <div className="collapse-content px-4 pb-4">
+    <div className={`bg-base-200 ${className}`}>
+      <div className="px-4 py-3 border-b border-base-300">
+        <span className="text-sm font-medium">Configuration</span>
+      </div>
+      <div className="px-4 py-4">
+        {/* Switch scaling automatique - toujours visible */}
+        <label
+          htmlFor={`scaling-toggle-quick-${runtime.id}`}
+          className="flex items-center justify-between p-3 bg-base-100 border border-base-300 cursor-pointer hover:bg-base-300/50 transition-colors mb-4"
+        >
+          <div>
+            <div className="font-medium text-sm">Scaling automatique</div>
+            <div className="text-xs text-base-content/60">
+              {runtime.scalingEnabled
+                ? 'Configurez les profils de scaling ci-dessous'
+                : 'Configuration fixe, ressources constantes'}
+            </div>
+          </div>
+          <input
+            id={`scaling-toggle-quick-${runtime.id}`}
+            type="checkbox"
+            className="toggle toggle-primary"
+            checked={runtime.scalingEnabled ?? false}
+            onChange={(e) => onToggleScaling(e.target.checked)}
+            aria-describedby={`scaling-desc-quick-${runtime.id}`}
+          />
+        </label>
+
         {!isScalingMode ? (
           // Mode fixe : Flavor picker + Nombre d'instances
           <div className="space-y-4">
@@ -82,26 +106,8 @@ export const RuntimeCardQuickConfig = memo(function RuntimeCardQuickConfig({
             </div>
           </div>
         ) : (
-          // Mode scaling : Resume compact
+          // Mode scaling : Resume compact (sans config de base)
           <div className="space-y-4">
-            {/* Resume du scaling actif */}
-            <div className="p-3 bg-base-100 border border-base-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-sm">Configuration de base</div>
-                  <div className="text-xs text-base-content/60">
-                    {baseConfig.instances} inst. x {baseConfig.flavorName}
-                  </div>
-                </div>
-                <button
-                  className="btn btn-ghost btn-xs"
-                  onClick={onOpenFlavorPicker}
-                >
-                  Modifier
-                </button>
-              </div>
-            </div>
-
             {/* Resume des profils de scaling */}
             {activeScalingProfiles.length > 0 && (
               <div className="p-3 bg-base-100 border border-base-300">
@@ -144,6 +150,6 @@ export const RuntimeCardQuickConfig = memo(function RuntimeCardQuickConfig({
           </div>
         )}
       </div>
-    </details>
+    </div>
   )
 })

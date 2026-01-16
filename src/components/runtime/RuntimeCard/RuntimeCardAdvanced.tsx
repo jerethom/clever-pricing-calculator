@@ -16,7 +16,7 @@ export const RuntimeCardAdvanced = memo(function RuntimeCardAdvanced({
     instance,
     cost,
     showTimeSlots,
-    onToggleScaling,
+    activeScalingProfiles,
   } = useRuntimeCardContext()
 
   const isFixedMode = !runtime.scalingEnabled
@@ -28,29 +28,6 @@ export const RuntimeCardAdvanced = memo(function RuntimeCardAdvanced({
       </summary>
       <div className="collapse-content px-4 pb-4">
         <div className="space-y-4">
-          {/* Toggle scaling automatique */}
-          <label
-            htmlFor={`scaling-toggle-${runtime.id}`}
-            className="flex items-center justify-between p-3 bg-base-100 border border-base-300 cursor-pointer hover:bg-base-300/50 transition-colors"
-          >
-            <div>
-              <div className="font-medium text-sm">Scaling automatique</div>
-              <div className="text-xs text-base-content/60">
-                {runtime.scalingEnabled
-                  ? 'Configurez les profils de scaling ci-dessous'
-                  : 'Configuration fixe, ressources constantes'}
-              </div>
-            </div>
-            <input
-              id={`scaling-toggle-${runtime.id}`}
-              type="checkbox"
-              className="toggle toggle-primary"
-              checked={runtime.scalingEnabled ?? false}
-              onChange={(e) => onToggleScaling(e.target.checked)}
-              aria-describedby={`scaling-desc-${runtime.id}`}
-            />
-          </label>
-
           {/* Section scaling (visible si scaling active) */}
           {runtime.scalingEnabled && (
             <>
@@ -82,32 +59,55 @@ export const RuntimeCardAdvanced = memo(function RuntimeCardAdvanced({
               <span className="text-sm font-medium">Detail des couts</span>
             </div>
             <div className="p-4 space-y-3 text-sm">
-              {/* Cout de base */}
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="font-medium">{isFixedMode ? 'Configuration fixe' : 'Base (24/7)'}</span>
-                  <span className="text-base-content/60 text-xs block">
-                    {cost.baseInstances} inst. x {cost.baseFlavorName} x {formatHourlyPrice(cost.baseHourlyPrice)}
-                  </span>
-                </div>
-                <span className="font-mono tabular-nums">
-                  {formatPrice(cost.baseMonthlyCost)}
-                </span>
-              </div>
-
-              {/* Cout scaling estime */}
-              {cost.estimatedScalingCost > 0 && (
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="font-medium">Scaling estime</span>
-                    <span className="text-base-content/60 text-xs block">
-                      {cost.scalingHours}h x niveau moyen {cost.averageLoadLevel.toFixed(1)}
+              {isFixedMode ? (
+                // Mode fixe : affichage simple
+                <>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="font-medium">Configuration fixe</span>
+                      <span className="text-base-content/60 text-xs block">
+                        {cost.baseInstances} inst. x {cost.baseFlavorName} x {formatHourlyPrice(cost.baseHourlyPrice)}
+                      </span>
+                    </div>
+                    <span className="font-mono tabular-nums">
+                      {formatPrice(cost.baseMonthlyCost)}
                     </span>
                   </div>
-                  <span className="font-mono tabular-nums">
-                    +{formatPrice(cost.estimatedScalingCost)}
-                  </span>
-                </div>
+                </>
+              ) : (
+                // Mode scaling : affichage par profil uniquement
+                <>
+                  {activeScalingProfiles.length > 0 ? (
+                    <div className="space-y-3">
+                      {activeScalingProfiles.map(profile => {
+                        const profileHours = cost.scalingHoursByProfile?.[profile.id] ?? 0
+                        const profileCost = cost.scalingCostByProfile?.[profile.id] ?? 0
+                        const totalProfileHours = 168
+                        const displayHours = profileHours > 0 ? profileHours : totalProfileHours
+                        return (
+                          <div key={profile.id} className="flex justify-between items-start">
+                            <div className="flex-1 min-w-0">
+                              <span className="font-medium">{profile.name}</span>
+                              <span className="text-base-content/60 text-xs block">
+                                {profile.minInstances}-{profile.maxInstances} inst. ({profile.minFlavorName}-{profile.maxFlavorName})
+                              </span>
+                              <span className="text-base-content/50 text-xs">
+                                {displayHours}h/sem
+                              </span>
+                            </div>
+                            <span className="font-mono tabular-nums text-right">
+                              {formatPrice(profileCost)}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-base-content/60 text-sm">
+                      Aucun profil de scaling actif
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Separateur */}

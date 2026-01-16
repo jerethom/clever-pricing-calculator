@@ -7,7 +7,7 @@ import type { RuntimeCardCostsProps } from './types'
 export const RuntimeCardCosts = memo(function RuntimeCardCosts({
   className = '',
 }: RuntimeCardCostsProps) {
-  const { runtime, cost, gaugePosition } = useRuntimeCardContext()
+  const { runtime, cost, gaugePosition, activeScalingProfiles } = useRuntimeCardContext()
 
   // En mode fixe, affichage simplifié
   const isFixedMode = !runtime.scalingEnabled
@@ -57,7 +57,7 @@ export const RuntimeCardCosts = memo(function RuntimeCardCosts({
       {/* Detail collapse */}
       <details className="group">
         <summary className="px-4 py-2 bg-base-200 cursor-pointer flex items-center justify-between hover:bg-base-300 transition-colors list-none">
-          <span className="text-sm font-medium">Voir le détail</span>
+          <span className="text-sm font-medium">Voir le detail</span>
           <svg
             className="w-4 h-4 transition-transform group-open:rotate-180"
             fill="none"
@@ -74,38 +74,60 @@ export const RuntimeCardCosts = memo(function RuntimeCardCosts({
         </summary>
 
         <div className="p-4 bg-base-100 space-y-3 text-sm border-t border-base-300">
-          {/* Cout de base */}
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="font-medium">{isFixedMode ? 'Configuration fixe' : 'Base (24/7)'}</span>
-              <span className="text-base-content/60 text-xs block">
-                {cost.baseInstances} inst. × {cost.baseFlavorName} × {formatHourlyPrice(cost.baseHourlyPrice)}
-              </span>
-            </div>
-            <span className="font-mono tabular-nums">
-              {formatPrice(cost.baseMonthlyCost)}
-            </span>
-          </div>
-
-          {/* Cout scaling estimé */}
-          {cost.estimatedScalingCost > 0 && (
+          {isFixedMode ? (
+            // Mode fixe : affichage simple
             <div className="flex justify-between items-start">
               <div>
-                <span className="font-medium">Scaling estimé</span>
+                <span className="font-medium">Configuration fixe</span>
                 <span className="text-base-content/60 text-xs block">
-                  {cost.scalingHours}h × niveau moyen {cost.averageLoadLevel.toFixed(1)}
+                  {cost.baseInstances} inst. x {cost.baseFlavorName} x {formatHourlyPrice(cost.baseHourlyPrice)}
                 </span>
               </div>
               <span className="font-mono tabular-nums">
-                +{formatPrice(cost.estimatedScalingCost)}
+                {formatPrice(cost.baseMonthlyCost)}
               </span>
             </div>
+          ) : (
+            // Mode scaling : affichage par profil uniquement
+            <>
+              {activeScalingProfiles.length > 0 ? (
+                <div className="space-y-3">
+                  {activeScalingProfiles.map(profile => {
+                    const profileHours = cost.scalingHoursByProfile?.[profile.id] ?? 0
+                    const profileCost = cost.scalingCostByProfile?.[profile.id] ?? 0
+                    // Afficher tous les profils actifs, même sans heures de scaling
+                    const totalProfileHours = 168 // Total heures par semaine
+                    const displayHours = profileHours > 0 ? profileHours : totalProfileHours
+                    return (
+                      <div key={profile.id} className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium">{profile.name}</span>
+                          <span className="text-base-content/60 text-xs block">
+                            {profile.minInstances}-{profile.maxInstances} inst. ({profile.minFlavorName}-{profile.maxFlavorName})
+                          </span>
+                          <span className="text-base-content/50 text-xs">
+                            {displayHours}h/sem
+                          </span>
+                        </div>
+                        <span className="font-mono tabular-nums text-right">
+                          {formatPrice(profileCost)}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="text-base-content/60 text-sm">
+                  Aucun profil de scaling actif
+                </div>
+              )}
+            </>
           )}
 
-          {/* Séparateur */}
+          {/* Separateur */}
           <div className="border-t border-base-300 pt-2">
             <div className="flex justify-between items-center font-medium">
-              <span>Total estimé</span>
+              <span>Total estime</span>
               <span className="font-mono tabular-nums text-primary">
                 {formatPrice(cost.estimatedTotalCost)}
               </span>

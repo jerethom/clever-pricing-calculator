@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import type { RuntimeConfig, WeeklySchedule, LoadLevel } from '@/types'
 import { createEmptySchedule, LOAD_LEVELS, LOAD_LEVEL_LABELS, LOAD_LEVEL_DESCRIPTIONS, BASELINE_PROFILE_ID } from '@/types'
 import { useProjectAction } from '@/store'
@@ -15,6 +15,38 @@ interface TimeSlotEditorProps {
   instance?: Instance
 }
 
+// Composant memoise pour les boutons de niveau de charge
+interface LoadLevelButtonsProps {
+  loadLevel: LoadLevel
+  onLoadLevelChange: (level: LoadLevel) => void
+}
+
+const LoadLevelButtons = memo(function LoadLevelButtons({
+  loadLevel,
+  onLoadLevelChange,
+}: LoadLevelButtonsProps) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {LOAD_LEVELS.map(level => (
+        <button
+          key={level}
+          type="button"
+          onClick={() => onLoadLevelChange(level)}
+          className={`
+            btn btn-sm w-8 h-8 min-h-0 p-0
+            ${loadLevel === level
+              ? 'btn-primary'
+              : 'btn-ghost border border-base-300'}
+          `}
+          title={`${LOAD_LEVEL_LABELS[level]} - ${LOAD_LEVEL_DESCRIPTIONS[level]}`}
+        >
+          {level}
+        </button>
+      ))}
+    </div>
+  )
+})
+
 function TimeSlotEditor({
   projectId,
   runtimeId,
@@ -28,8 +60,11 @@ function TimeSlotEditor({
   )
   const [loadLevel, setLoadLevel] = useState<LoadLevel>(3)
 
-  // Profils de scaling disponibles (sans baseline)
-  const scalingProfiles = (runtime.scalingProfiles ?? []).filter(p => p.enabled && p.id !== BASELINE_PROFILE_ID)
+  // Profils de scaling disponibles (sans baseline) - memoises pour eviter les recalculs
+  const scalingProfiles = useMemo(
+    () => (runtime.scalingProfiles ?? []).filter(p => p.enabled && p.id !== BASELINE_PROFILE_ID),
+    [runtime.scalingProfiles]
+  )
 
   // Mettre à jour selectedProfileId si le profil sélectionné n'existe plus
   useEffect(() => {
@@ -39,30 +74,47 @@ function TimeSlotEditor({
     }
   }, [scalingProfiles, selectedProfileId])
 
-  const handleScheduleChange = (newSchedule: WeeklySchedule) => {
+  // Memoiser les callbacks pour eviter les re-renders inutiles
+  const handleScheduleChange = useCallback((newSchedule: WeeklySchedule) => {
     updateRuntime(projectId, runtimeId, { weeklySchedule: newSchedule })
-  }
+  }, [updateRuntime, projectId, runtimeId])
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     handleScheduleChange(createEmptySchedule())
-  }
+  }, [handleScheduleChange])
 
-  const selectedProfile = scalingProfiles.find(p => p.id === selectedProfileId) ?? scalingProfiles[0]
+  // Memoiser la recherche du profil selectionne
+  const selectedProfile = useMemo(
+    () => scalingProfiles.find(p => p.id === selectedProfileId) ?? scalingProfiles[0],
+    [scalingProfiles, selectedProfileId]
+  )
 
-  const schedule = runtime.weeklySchedule ?? createEmptySchedule()
+  const schedule = useMemo(
+    () => runtime.weeklySchedule ?? createEmptySchedule(),
+    [runtime.weeklySchedule]
+  )
 
-  // Calcul du nombre d'heures de scaling configurées
-  const scalingHoursCount = Object.values(schedule).reduce((total, day) => {
-    return total + day.filter(config => config.loadLevel > 0).length
-  }, 0)
+  // Memoiser le callback pour le changement de niveau de charge
+  const handleLoadLevelChange = useCallback((level: LoadLevel) => {
+    setLoadLevel(level)
+  }, [])
 
-  // Détecter les créneaux orphelins (profil supprimé)
-  const allProfileIds = new Set((runtime.scalingProfiles ?? []).map(p => p.id))
-  const orphanedSlotsCount = Object.values(schedule).reduce((total, day) => {
-    return total + day.filter(config =>
-      config.profileId !== BASELINE_PROFILE_ID && !allProfileIds.has(config.profileId)
-    ).length
-  }, 0)
+  // Calcul du nombre d'heures de scaling configurees - memoise pour eviter recalculs a chaque render
+  const scalingHoursCount = useMemo(() => {
+    return Object.values(schedule).reduce((total, day) => {
+      return total + day.filter(config => config.loadLevel > 0).length
+    }, 0)
+  }, [schedule])
+
+  // Detecter les creneaux orphelins (profil supprime) - memoise
+  const orphanedSlotsCount = useMemo(() => {
+    const allProfileIds = new Set((runtime.scalingProfiles ?? []).map(p => p.id))
+    return Object.values(schedule).reduce((total, day) => {
+      return total + day.filter(config =>
+        config.profileId !== BASELINE_PROFILE_ID && !allProfileIds.has(config.profileId)
+      ).length
+    }, 0)
+  }, [schedule, runtime.scalingProfiles])
 
   const hasScaling = scalingProfiles.length > 0
 
@@ -179,24 +231,10 @@ function TimeSlotEditor({
             {/* Boutons de niveau de charge */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-base-content/70 whitespace-nowrap">Niveau :</span>
-              <div className="flex items-center gap-0.5">
-                {LOAD_LEVELS.map(level => (
-                  <button
-                    key={level}
-                    type="button"
-                    onClick={() => setLoadLevel(level)}
-                    className={`
-                      btn btn-sm w-8 h-8 min-h-0 p-0
-                      ${loadLevel === level
-                        ? 'btn-primary'
-                        : 'btn-ghost border border-base-300'}
-                    `}
-                    title={`${LOAD_LEVEL_LABELS[level]} - ${LOAD_LEVEL_DESCRIPTIONS[level]}`}
-                  >
-                    {level}
-                  </button>
-                ))}
-              </div>
+              <LoadLevelButtons
+                loadLevel={loadLevel}
+                onLoadLevelChange={handleLoadLevelChange}
+              />
             </div>
 
             {/* Séparateur */}

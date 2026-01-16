@@ -17,6 +17,7 @@ export interface RuntimeCostDetail {
   scalingHours: number // Nombre d'heures avec scaling > 0
   averageLoadLevel: number // Niveau de charge moyen (0-5)
   scalingHoursByProfile: Record<string, number> // Heures par profil
+  scalingCostByProfile: Record<string, number> // Cout mensuel par profil
 }
 
 export interface AddonCostDetail {

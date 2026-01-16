@@ -1,7 +1,41 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo, memo, useEffect } from 'react'
 import type { WeeklySchedule, DayOfWeek, HourlyConfig, LoadLevel, ScalingProfile } from '@/types'
 import { DAYS_OF_WEEK, DAY_LABELS, createHourlyConfig, BASELINE_PROFILE_ID, LOAD_LEVEL_LABELS } from '@/types'
 import { SelectionIndicator } from './SelectionIndicator'
+
+// Utilitaire de throttle pour limiter les appels a 60fps (16ms)
+function throttle<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): T {
+  let lastCall = 0
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+  return ((...args: Parameters<T>) => {
+    const now = Date.now()
+    const timeSinceLastCall = now - lastCall
+
+    if (timeSinceLastCall >= delay) {
+      lastCall = now
+      fn(...args)
+    } else if (!timeoutId) {
+      // Planifier l'execution pour la prochaine frame disponible
+      timeoutId = setTimeout(() => {
+        lastCall = Date.now()
+        timeoutId = null
+        fn(...args)
+      }, delay - timeSinceLastCall)
+    }
+  }) as T
+}
+
+// Precalculer les index des jours pour eviter les indexOf repetitifs
+const DAY_INDEX_MAP: Record<DayOfWeek, number> = {
+  mon: 0,
+  tue: 1,
+  wed: 2,
+  thu: 3,
+  fri: 4,
+  sat: 5,
+  sun: 6,
+}
 
 interface WeeklyCalendarProps {
   schedule: WeeklySchedule
@@ -45,6 +79,94 @@ const getTextColor = (config: HourlyConfig): string => {
   return 'text-white'
 }
 
+// Type pour les infos de cellule precalculees
+interface CellDisplayInfo {
+  bgColor: string
+  textColor: string
+  displayLevel: number
+  profileInfo: { initial: string; colorIndex: number } | null
+  badgeColor: typeof PROFILE_COLORS[number] | null
+  tooltipText: string
+}
+
+// Props pour le composant CalendarCell memoise
+interface CalendarCellProps {
+  day: DayOfWeek
+  hour: number
+  cellInfo: CellDisplayInfo
+  inSelection: boolean
+  onMouseDown: (day: DayOfWeek, hour: number) => void
+  onMouseEnter: (day: DayOfWeek, hour: number) => void
+  onTouchStart: (e: React.TouchEvent, day: DayOfWeek, hour: number) => void
+}
+
+// Composant CalendarCell memoise pour eviter les re-renders inutiles
+const CalendarCell = memo(function CalendarCell({
+  day,
+  hour,
+  cellInfo,
+  inSelection,
+  onMouseDown,
+  onMouseEnter,
+  onTouchStart,
+}: CalendarCellProps) {
+  const { bgColor, textColor, displayLevel, profileInfo, badgeColor, tooltipText } = cellInfo
+
+  // Handlers inline avec closure - evite la creation de nouvelles fonctions a chaque render parent
+  const handleMouseDown = useCallback(() => {
+    onMouseDown(day, hour)
+  }, [onMouseDown, day, hour])
+
+  const handleMouseEnter = useCallback(() => {
+    onMouseEnter(day, hour)
+  }, [onMouseEnter, day, hour])
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    onTouchStart(e, day, hour)
+  }, [onTouchStart, day, hour])
+
+  return (
+    <td
+      data-day={day}
+      data-hour={hour}
+      className={`
+        p-0 border border-base-300 cursor-pointer transition-colors
+        ${bgColor}
+        ${inSelection ? 'ring-2 ring-secondary ring-inset' : ''}
+        touch-none
+      `}
+      onMouseDown={handleMouseDown}
+      onMouseEnter={handleMouseEnter}
+      onTouchStart={handleTouchStart}
+      title={tooltipText}
+      role="gridcell"
+      aria-label={`${DAY_LABELS[day]} ${hour}h, niveau de charge ${displayLevel}`}
+    >
+      <div
+        className={`
+          relative
+          w-8 h-6
+          sm:w-10 sm:h-7
+          md:w-8 md:h-6
+          flex items-center justify-center text-xs
+          ${textColor}
+        `}
+      >
+        {/* Badge du profil en haut a gauche avec couleur unique */}
+        {profileInfo && badgeColor && (
+          <span className={`absolute -top-0.5 -left-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 flex items-center justify-center ${badgeColor.bg} ${badgeColor.text} text-[8px] sm:text-[9px] font-bold rounded-full shadow-sm`}>
+            {profileInfo.initial}
+          </span>
+        )}
+        {/* Niveau de charge au centre */}
+        <span className={`font-bold text-[10px] sm:text-xs ${displayLevel === 0 ? 'opacity-30' : ''}`}>
+          {displayLevel}
+        </span>
+      </div>
+    </td>
+  )
+})
+
 export function WeeklyCalendar({
   schedule,
   onChange,
@@ -52,20 +174,6 @@ export function WeeklyCalendar({
   loadLevel,
   scalingProfiles,
 }: WeeklyCalendarProps) {
-  // Récupérer les infos d'affichage d'un profil (initiale + couleur)
-  const getProfileDisplayInfo = useCallback(
-    (pId: string): { initial: string; colorIndex: number } | null => {
-      if (pId === BASELINE_PROFILE_ID) return null
-      const profileIndex = scalingProfiles.findIndex(p => p.id === pId)
-      if (profileIndex === -1) return null
-      const profile = scalingProfiles[profileIndex]
-      return {
-        initial: profile.name.charAt(0).toUpperCase(),
-        colorIndex: profileIndex % PROFILE_COLORS.length,
-      }
-    },
-    [scalingProfiles]
-  )
   const [isPainting, setIsPainting] = useState(false)
   const [selectionStart, setSelectionStart] = useState<{
     day: DayOfWeek
@@ -76,35 +184,104 @@ export function WeeklyCalendar({
     hour: number
   } | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const isPaintingRef = useRef(false) // Ref pour le throttle
 
-  // Crée la config à peindre (toujours associée au profil sélectionné)
-  const paintConfig: HourlyConfig = createHourlyConfig(profileId, loadLevel)
+  // Synchroniser la ref avec l'etat via useEffect pour eviter l'acces pendant le render
+  useEffect(() => {
+    isPaintingRef.current = isPainting
+  }, [isPainting])
 
-  // Vérifie si une cellule est dans la sélection actuelle
-  const isInSelection = useCallback(
-    (day: DayOfWeek, hour: number): boolean => {
-      if (!selectionStart || !selectionEnd) return false
-
-      const startDayIndex = DAYS_OF_WEEK.indexOf(selectionStart.day)
-      const endDayIndex = DAYS_OF_WEEK.indexOf(selectionEnd.day)
-      const currentDayIndex = DAYS_OF_WEEK.indexOf(day)
-
-      const minDay = Math.min(startDayIndex, endDayIndex)
-      const maxDay = Math.max(startDayIndex, endDayIndex)
-      const minHour = Math.min(selectionStart.hour, selectionEnd.hour)
-      const maxHour = Math.max(selectionStart.hour, selectionEnd.hour)
-
-      return (
-        currentDayIndex >= minDay &&
-        currentDayIndex <= maxDay &&
-        hour >= minHour &&
-        hour <= maxHour
-      )
-    },
-    [selectionStart, selectionEnd]
+  // Cree la config a peindre (toujours associee au profil selectionne) - memoise
+  const paintConfig: HourlyConfig = useMemo(
+    () => createHourlyConfig(profileId, loadLevel),
+    [profileId, loadLevel]
   )
 
-  // Applique la sélection au schedule
+  // Map des profils pour acces O(1) - memoise
+  const profilesMap = useMemo(() => {
+    const map = new Map<string, { profile: ScalingProfile; index: number }>()
+    scalingProfiles.forEach((p, index) => {
+      map.set(p.id, { profile: p, index })
+    })
+    return map
+  }, [scalingProfiles])
+
+  // Precalculer toutes les infos de cellules une seule fois par render (168 cellules)
+  const cellsDisplayInfo = useMemo(() => {
+    const info: Record<string, Record<number, CellDisplayInfo>> = {}
+
+    for (const day of DAYS_OF_WEEK) {
+      info[day] = {}
+      for (let hour = 0; hour < 24; hour++) {
+        const config = schedule[day][hour]
+        const displayLevel = config?.loadLevel ?? 0
+
+        // Calcul profile info avec la map pour O(1)
+        let profileInfo: { initial: string; colorIndex: number } | null = null
+        let badgeColor: typeof PROFILE_COLORS[number] | null = null
+
+        if (config && config.profileId !== BASELINE_PROFILE_ID) {
+          const profileData = profilesMap.get(config.profileId)
+          if (profileData) {
+            profileInfo = {
+              initial: profileData.profile.name.charAt(0).toUpperCase(),
+              colorIndex: profileData.index % PROFILE_COLORS.length,
+            }
+            badgeColor = PROFILE_COLORS[profileInfo.colorIndex]
+          }
+        }
+
+        // Generer le tooltip enrichi
+        const tooltipLines = [
+          `${DAY_LABELS[day]} ${hour}h-${hour + 1}h`,
+          `Niveau : ${displayLevel} (${LOAD_LEVEL_LABELS[displayLevel as LoadLevel]})`,
+        ]
+        if (profileInfo && displayLevel > 0) {
+          const profileData = profilesMap.get(config?.profileId ?? '')
+          if (profileData) {
+            tooltipLines.push(`Profil : ${profileData.profile.name}`)
+            tooltipLines.push(`Ressources : ${profileData.profile.minInstances}-${profileData.profile.maxInstances} inst.`)
+          }
+        }
+
+        info[day][hour] = {
+          bgColor: getLoadLevelColor(config),
+          textColor: getTextColor(config),
+          displayLevel,
+          profileInfo,
+          badgeColor,
+          tooltipText: tooltipLines.join('\n'),
+        }
+      }
+    }
+
+    return info
+  }, [schedule, profilesMap])
+
+  // Precalculer un Set des cellules selectionnees pour O(1) lookup au lieu de O(n) calcul par cellule
+  const selectedCellsSet = useMemo(() => {
+    const set = new Set<string>()
+    if (!selectionStart || !selectionEnd) return set
+
+    const startDayIndex = DAY_INDEX_MAP[selectionStart.day]
+    const endDayIndex = DAY_INDEX_MAP[selectionEnd.day]
+
+    const minDay = Math.min(startDayIndex, endDayIndex)
+    const maxDay = Math.max(startDayIndex, endDayIndex)
+    const minHour = Math.min(selectionStart.hour, selectionEnd.hour)
+    const maxHour = Math.max(selectionStart.hour, selectionEnd.hour)
+
+    for (let d = minDay; d <= maxDay; d++) {
+      const day = DAYS_OF_WEEK[d]
+      for (let h = minHour; h <= maxHour; h++) {
+        set.add(`${day}-${h}`)
+      }
+    }
+
+    return set
+  }, [selectionStart, selectionEnd])
+
+  // Applique la selection au schedule - memoise
   const applySelection = useCallback(() => {
     if (!selectionStart || !selectionEnd) return
 
@@ -113,8 +290,8 @@ export function WeeklyCalendar({
       newSchedule[day] = [...schedule[day]]
     }
 
-    const startDayIndex = DAYS_OF_WEEK.indexOf(selectionStart.day)
-    const endDayIndex = DAYS_OF_WEEK.indexOf(selectionEnd.day)
+    const startDayIndex = DAY_INDEX_MAP[selectionStart.day]
+    const endDayIndex = DAY_INDEX_MAP[selectionEnd.day]
     const minDay = Math.min(startDayIndex, endDayIndex)
     const maxDay = Math.max(startDayIndex, endDayIndex)
     const minHour = Math.min(selectionStart.hour, selectionEnd.hour)
@@ -130,90 +307,104 @@ export function WeeklyCalendar({
     onChange(newSchedule)
   }, [selectionStart, selectionEnd, paintConfig, schedule, onChange])
 
-  // Début de la sélection (souris)
-  const handleMouseDown = (day: DayOfWeek, hour: number) => {
+  // Debut de la selection (souris) - memoise
+  const handleMouseDown = useCallback((day: DayOfWeek, hour: number) => {
     setIsPainting(true)
     setSelectionStart({ day, hour })
     setSelectionEnd({ day, hour })
-  }
+  }, [])
 
-  // Extension de la sélection (souris)
-  const handleMouseEnter = (day: DayOfWeek, hour: number) => {
-    if (isPainting) {
-      setSelectionEnd({ day, hour })
-    }
-  }
+  // Extension de la selection (souris) - throttle a 60fps (16ms)
+  const handleMouseEnterThrottled = useMemo(
+    () => throttle((day: DayOfWeek, hour: number) => {
+      if (isPaintingRef.current) {
+        setSelectionEnd({ day, hour })
+      }
+    }, 16),
+    []
+  )
 
-  // Fin de la sélection (souris)
-  const handleMouseUp = () => {
-    if (isPainting && selectionStart && selectionEnd) {
+  const handleMouseEnter = useCallback((day: DayOfWeek, hour: number) => {
+    handleMouseEnterThrottled(day, hour)
+  }, [handleMouseEnterThrottled])
+
+  // Fin de la selection (souris) - memoise
+  const handleMouseUp = useCallback(() => {
+    if (isPaintingRef.current && selectionStart && selectionEnd) {
       applySelection()
     }
     setIsPainting(false)
     setSelectionStart(null)
     setSelectionEnd(null)
-  }
+  }, [applySelection, selectionStart, selectionEnd])
 
-  // Gestion du mouse leave sur le conteneur
-  const handleMouseLeave = () => {
-    if (isPainting) {
+  // Gestion du mouse leave sur le conteneur - memoise
+  const handleMouseLeave = useCallback(() => {
+    if (isPaintingRef.current) {
       handleMouseUp()
     }
-  }
+  }, [handleMouseUp])
 
-  // Support tactile - début
-  const handleTouchStart = (day: DayOfWeek, hour: number) => (e: React.TouchEvent) => {
+  // Support tactile - debut - memoise (signature modifiee pour eviter creation de closures)
+  const handleTouchStart = useCallback((e: React.TouchEvent, day: DayOfWeek, hour: number) => {
     e.preventDefault()
     setIsPainting(true)
     setSelectionStart({ day, hour })
     setSelectionEnd({ day, hour })
-  }
+  }, [])
 
-  // Support tactile - mouvement
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isPainting || !containerRef.current) return
+  // Support tactile - mouvement - throttle a 60fps (16ms)
+  const handleTouchMoveThrottled = useMemo(
+    () => throttle((e: React.TouchEvent) => {
+      if (!isPaintingRef.current || !containerRef.current) return
 
-    const touch = e.touches[0]
-    const element = document.elementFromPoint(touch.clientX, touch.clientY)
+      const touch = e.touches[0]
+      const element = document.elementFromPoint(touch.clientX, touch.clientY)
 
-    if (element) {
-      const cell = element.closest('[data-day][data-hour]')
-      if (cell) {
-        const day = cell.getAttribute('data-day') as DayOfWeek
-        const hour = parseInt(cell.getAttribute('data-hour') || '0')
-        setSelectionEnd({ day, hour })
+      if (element) {
+        const cell = element.closest('[data-day][data-hour]')
+        if (cell) {
+          const day = cell.getAttribute('data-day') as DayOfWeek
+          const hour = parseInt(cell.getAttribute('data-hour') || '0')
+          setSelectionEnd({ day, hour })
+        }
       }
-    }
-  }
+    }, 16),
+    []
+  )
 
-  // Support tactile - fin
-  const handleTouchEnd = () => {
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    handleTouchMoveThrottled(e)
+  }, [handleTouchMoveThrottled])
+
+  // Support tactile - fin - memoise
+  const handleTouchEnd = useCallback(() => {
     handleMouseUp()
-  }
+  }, [handleMouseUp])
 
-  // Remplir toute une journée
-  const handleDayClick = (day: DayOfWeek) => {
+  // Remplir toute une journee - memoise
+  const handleDayClick = useCallback((day: DayOfWeek) => {
     const newSchedule = { ...schedule }
     for (const d of DAYS_OF_WEEK) {
       newSchedule[d] = [...schedule[d]]
     }
     newSchedule[day] = Array(24).fill(null).map(() => ({ ...paintConfig }))
     onChange(newSchedule)
-  }
+  }, [schedule, paintConfig, onChange])
 
-  // Remplir toute une heure (tous les jours)
-  const handleHourClick = (hour: number) => {
+  // Remplir toute une heure (tous les jours) - memoise
+  const handleHourClick = useCallback((hour: number) => {
     const newSchedule = { ...schedule }
     for (const day of DAYS_OF_WEEK) {
       newSchedule[day] = [...schedule[day]]
       newSchedule[day][hour] = { ...paintConfig }
     }
     onChange(newSchedule)
-  }
+  }, [schedule, paintConfig, onChange])
 
   return (
     <>
-      {/* Indicateur de sélection flottant */}
+      {/* Indicateur de selection flottant */}
       <SelectionIndicator
         start={selectionStart}
         end={selectionEnd}
@@ -259,69 +450,21 @@ export function WeeklyCalendar({
                   {hour.toString().padStart(2, '0')}h
                 </td>
                 {DAYS_OF_WEEK.map(day => {
-                  const config = schedule[day][hour]
-                  const inSelection = isInSelection(day, hour)
-                  const displayLevel = config?.loadLevel ?? 0
-                  const profileInfo = config ? getProfileDisplayInfo(config.profileId) : null
-                  const badgeColor = profileInfo ? PROFILE_COLORS[profileInfo.colorIndex] : null
-
-                  // Générer le tooltip enrichi
-                  const profileName = profileInfo
-                    ? scalingProfiles.find(p => p.id === config?.profileId)?.name
-                    : null
-                  const profile = profileName
-                    ? scalingProfiles.find(p => p.id === config?.profileId)
-                    : null
-                  const tooltipLines = [
-                    `${DAY_LABELS[day]} ${hour}h-${hour + 1}h`,
-                    `Niveau : ${displayLevel} (${LOAD_LEVEL_LABELS[displayLevel as LoadLevel]})`,
-                  ]
-                  if (profile && displayLevel > 0) {
-                    tooltipLines.push(`Profil : ${profile.name}`)
-                    tooltipLines.push(`Ressources : ${profile.minInstances}-${profile.maxInstances} inst.`)
-                  }
-                  const tooltipText = tooltipLines.join('\n')
+                  const cellKey = `${day}-${hour}`
+                  const cellInfo = cellsDisplayInfo[day][hour]
+                  const inSelection = selectedCellsSet.has(cellKey)
 
                   return (
-                    <td
-                      key={`${day}-${hour}`}
-                      data-day={day}
-                      data-hour={hour}
-                      className={`
-                        p-0 border border-base-300 cursor-pointer transition-colors
-                        ${getLoadLevelColor(config)}
-                        ${inSelection ? 'ring-2 ring-secondary ring-inset' : ''}
-                        touch-none
-                      `}
-                      onMouseDown={() => handleMouseDown(day, hour)}
-                      onMouseEnter={() => handleMouseEnter(day, hour)}
-                      onTouchStart={handleTouchStart(day, hour)}
-                      title={tooltipText}
-                      role="gridcell"
-                      aria-label={`${DAY_LABELS[day]} ${hour}h, niveau de charge ${displayLevel}`}
-                    >
-                      <div
-                        className={`
-                          relative
-                          w-8 h-6
-                          sm:w-10 sm:h-7
-                          md:w-8 md:h-6
-                          flex items-center justify-center text-xs
-                          ${getTextColor(config)}
-                        `}
-                      >
-                        {/* Badge du profil en haut à gauche avec couleur unique */}
-                        {profileInfo && badgeColor && (
-                          <span className={`absolute -top-0.5 -left-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 flex items-center justify-center ${badgeColor.bg} ${badgeColor.text} text-[8px] sm:text-[9px] font-bold rounded-full shadow-sm`}>
-                            {profileInfo.initial}
-                          </span>
-                        )}
-                        {/* Niveau de charge au centre */}
-                        <span className={`font-bold text-[10px] sm:text-xs ${displayLevel === 0 ? 'opacity-30' : ''}`}>
-                          {displayLevel}
-                        </span>
-                      </div>
-                    </td>
+                    <CalendarCell
+                      key={cellKey}
+                      day={day}
+                      hour={hour}
+                      cellInfo={cellInfo}
+                      inSelection={inSelection}
+                      onMouseDown={handleMouseDown}
+                      onMouseEnter={handleMouseEnter}
+                      onTouchStart={handleTouchStart}
+                    />
                   )
                 })}
               </tr>
@@ -332,7 +475,7 @@ export function WeeklyCalendar({
 
       {/* Instructions */}
       <p className="text-sm text-base-content/60 mt-2">
-        Cliquez sur les en-têtes pour remplir une colonne/ligne entière.
+        Cliquez sur les en-tetes pour remplir une colonne/ligne entiere.
       </p>
     </>
   )

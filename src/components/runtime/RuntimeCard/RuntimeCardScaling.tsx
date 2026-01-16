@@ -1,9 +1,19 @@
-import { memo, useState, useCallback, useEffect } from 'react'
+import { memo, useState, useCallback } from 'react'
 import { Icons, NumberInput } from '@/components/ui'
 import { useRuntimeCardContext } from './RuntimeCardContext'
 import type { RuntimeCardScalingProps } from './types'
 import type { ScalingProfile } from '@/types'
+import type { InstanceFlavor } from '@/api/types'
 import { toast } from '@/store/toastStore'
+import { formatPrice } from '@/lib/costCalculator'
+
+const HOURS_PER_MONTH = 730
+
+// Formater les infos d'un flavor pour les options de select
+function formatFlavorOption(f: InstanceFlavor): string {
+  const monthlyPrice = f.price * HOURS_PER_MONTH
+  return `${f.name} (${f.memory.formatted}, ${f.cpus} vCPU) - ${formatPrice(monthlyPrice)}/mois`
+}
 
 export const RuntimeCardScaling = memo(function RuntimeCardScaling({
   className = '',
@@ -21,25 +31,8 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
 
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null)
 
-  // Trouver l'index du flavor de base
-  const baseFlavorIndex = availableFlavors.findIndex(
-    f => f.name === baseConfig.flavorName
-  )
-
-  // Flavors disponibles pour le scaling (>= flavor de base)
-  const scalingFlavors = availableFlavors.filter(
-    (_, index) => index >= baseFlavorIndex
-  )
-
-  // Au montage, ouvrir le profil 'default' en edition s'il existe
-  useEffect(() => {
-    if (!runtime.scalingEnabled) return
-    const defaultProfile = activeScalingProfiles.find(p => p.id === 'default')
-    if (defaultProfile && editingProfileId === null) {
-      setEditingProfileId('default')
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runtime.scalingEnabled]) // Execute uniquement quand le scaling est active
+  // En mode auto scaling, tous les flavors sont disponibles
+  const scalingFlavors = availableFlavors
 
   const handleAddProfile = useCallback(() => {
     const newId = crypto.randomUUID()
@@ -118,7 +111,7 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
 interface ProfileCardProps {
   profile: ScalingProfile
   isEditing: boolean
-  scalingFlavors: { name: string }[]
+  scalingFlavors: InstanceFlavor[]
   maxInstances: number
   canDelete: boolean
   onEdit: () => void
@@ -211,7 +204,7 @@ function ProfileCard({
             >
               {scalingFlavors.map(f => (
                 <option key={f.name} value={f.name}>
-                  {f.name}
+                  {formatFlavorOption(f)}
                 </option>
               ))}
             </select>
@@ -225,7 +218,7 @@ function ProfileCard({
             >
               {scalingFlavors.map(f => (
                 <option key={f.name} value={f.name}>
-                  {f.name}
+                  {formatFlavorOption(f)}
                 </option>
               ))}
             </select>

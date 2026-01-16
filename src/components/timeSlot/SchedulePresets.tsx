@@ -1,3 +1,4 @@
+import { memo, useCallback, useMemo } from 'react'
 import type { WeeklySchedule, DayOfWeek, LoadLevel, ScalingProfile } from '@/types'
 import { DAYS_OF_WEEK, createFilledSchedule, createHourlyConfig } from '@/types'
 import { toast } from '@/store/toastStore'
@@ -145,20 +146,63 @@ const presetsByCategory = presets.reduce(
 
 const categoryOrder: Preset['category'][] = ['standard', 'optimization', 'performance']
 
-export function SchedulePresets({
+// Composant bouton preset memoise pour eviter les re-renders inutiles
+interface PresetButtonProps {
+  preset: Preset
+  profileId: string
+  loadLevel: LoadLevel
+  onApply: (schedule: WeeklySchedule) => void
+}
+
+const PresetButton = memo(function PresetButton({
+  preset,
+  profileId,
+  loadLevel,
+  onApply,
+}: PresetButtonProps) {
+  const handleClick = useCallback(() => {
+    onApply(preset.generate(profileId, loadLevel))
+    toast.success(`Configuration "${preset.label}" appliquee`)
+  }, [preset, profileId, loadLevel, onApply])
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="
+        group flex items-center gap-2 px-3 py-2
+        bg-base-100 border border-base-300
+        hover:border-primary hover:bg-primary/5
+        transition-all text-left cursor-pointer
+      "
+      title={preset.description}
+    >
+      <span className="text-lg" aria-hidden="true">
+        {preset.icon}
+      </span>
+      <div>
+        <div className="text-sm font-medium group-hover:text-primary">
+          {preset.label}
+        </div>
+        <div className="text-xs text-base-content/50">
+          {preset.description}
+        </div>
+      </div>
+    </button>
+  )
+})
+
+export const SchedulePresets = memo(function SchedulePresets({
   profileId,
   loadLevel,
   scalingProfiles,
   onApply,
 }: SchedulePresetsProps) {
-  // Recuperer le nom du profil selectionne
-  const selectedProfile = scalingProfiles.find(p => p.id === profileId)
-  const selectedProfileName = selectedProfile?.name ?? profileId
-
-  const handleApply = (preset: Preset) => {
-    onApply(preset.generate(profileId, loadLevel))
-    toast.success(`Configuration "${preset.label}" appliquee`)
-  }
+  // Memoiser la recherche du profil selectionne
+  const selectedProfileName = useMemo(() => {
+    const profile = scalingProfiles.find(p => p.id === profileId)
+    return profile?.name ?? profileId
+  }, [scalingProfiles, profileId])
 
   return (
     <div className="space-y-3">
@@ -183,30 +227,13 @@ export function SchedulePresets({
               </div>
               <div className="flex flex-wrap gap-2">
                 {categoryPresets.map(preset => (
-                  <button
+                  <PresetButton
                     key={preset.id}
-                    type="button"
-                    onClick={() => handleApply(preset)}
-                    className="
-                      group flex items-center gap-2 px-3 py-2
-                      bg-base-100 border border-base-300
-                      hover:border-primary hover:bg-primary/5
-                      transition-all text-left cursor-pointer
-                    "
-                    title={preset.description}
-                  >
-                    <span className="text-lg" aria-hidden="true">
-                      {preset.icon}
-                    </span>
-                    <div>
-                      <div className="text-sm font-medium group-hover:text-primary">
-                        {preset.label}
-                      </div>
-                      <div className="text-xs text-base-content/50">
-                        {preset.description}
-                      </div>
-                    </div>
-                  </button>
+                    preset={preset}
+                    profileId={profileId}
+                    loadLevel={loadLevel}
+                    onApply={onApply}
+                  />
                 ))}
               </div>
             </div>
@@ -215,4 +242,4 @@ export function SchedulePresets({
       </div>
     </div>
   )
-}
+})

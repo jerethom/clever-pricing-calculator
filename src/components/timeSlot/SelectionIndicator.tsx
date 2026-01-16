@@ -1,6 +1,18 @@
+import { memo, useMemo } from 'react'
 import type { DayOfWeek } from '@/types'
 import { DAY_LABELS, DAYS_OF_WEEK } from '@/types'
 import { Portal } from '@/components/ui'
+
+// Precalculer les index des jours pour eviter les indexOf repetitifs
+const DAY_INDEX_MAP: Record<DayOfWeek, number> = {
+  mon: 0,
+  tue: 1,
+  wed: 2,
+  thu: 3,
+  fri: 4,
+  sat: 5,
+  sun: 6,
+}
 
 interface SelectionIndicatorProps {
   start: { day: DayOfWeek; hour: number } | null
@@ -9,28 +21,44 @@ interface SelectionIndicatorProps {
   isVisible: boolean
 }
 
-export function SelectionIndicator({
+export const SelectionIndicator = memo(function SelectionIndicator({
   start,
   end,
   paintValue,
   isVisible,
 }: SelectionIndicatorProps) {
-  if (!isVisible || !start || !end) return null
+  // Memoiser les calculs derives
+  const displayInfo = useMemo(() => {
+    if (!start || !end) return null
 
-  const startHour = Math.min(start.hour, end.hour)
-  const endHour = Math.max(start.hour, end.hour)
-  const hoursCount = endHour - startHour + 1
+    const startHour = Math.min(start.hour, end.hour)
+    const endHour = Math.max(start.hour, end.hour)
+    const hoursCount = endHour - startHour + 1
 
-  const startDayIndex = DAYS_OF_WEEK.indexOf(start.day)
-  const endDayIndex = DAYS_OF_WEEK.indexOf(end.day)
-  const minDayIndex = Math.min(startDayIndex, endDayIndex)
-  const maxDayIndex = Math.max(startDayIndex, endDayIndex)
-  const daysCount = maxDayIndex - minDayIndex + 1
-  const totalCells = hoursCount * daysCount
+    const startDayIndex = DAY_INDEX_MAP[start.day]
+    const endDayIndex = DAY_INDEX_MAP[end.day]
+    const minDayIndex = Math.min(startDayIndex, endDayIndex)
+    const maxDayIndex = Math.max(startDayIndex, endDayIndex)
+    const daysCount = maxDayIndex - minDayIndex + 1
+    const totalCells = hoursCount * daysCount
 
-  const startDayLabel = DAY_LABELS[DAYS_OF_WEEK[minDayIndex]]
-  const endDayLabel = DAY_LABELS[DAYS_OF_WEEK[maxDayIndex]]
-  const isSameDay = minDayIndex === maxDayIndex
+    const startDayLabel = DAY_LABELS[DAYS_OF_WEEK[minDayIndex]]
+    const endDayLabel = DAY_LABELS[DAYS_OF_WEEK[maxDayIndex]]
+    const isSameDay = minDayIndex === maxDayIndex
+
+    return {
+      startHour,
+      endHour,
+      startDayLabel,
+      endDayLabel,
+      isSameDay,
+      totalCells,
+    }
+  }, [start, end])
+
+  if (!isVisible || !displayInfo) return null
+
+  const { startHour, endHour, startDayLabel, endDayLabel, isSameDay, totalCells } = displayInfo
 
   return (
     <Portal>
@@ -64,4 +92,4 @@ export function SelectionIndicator({
       </div>
     </Portal>
   )
-}
+})

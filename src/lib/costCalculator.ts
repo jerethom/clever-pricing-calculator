@@ -49,6 +49,7 @@ export function calculateRuntimeCost(
       scalingHours: 0,
       averageLoadLevel: 0,
       scalingHoursByProfile: {},
+      scalingCostByProfile: {},
     }
   }
 
@@ -60,6 +61,7 @@ export function calculateRuntimeCost(
   let scalingHours = 0 // Heures avec loadLevel > 0
   let totalLoadLevel = 0
   const scalingHoursByProfile: Record<string, number> = {}
+  const scalingCostByProfile: Record<string, number> = {} // Cout hebdomadaire par profil
   let totalWeeklyCost = 0
 
   // Trouver le profil par défaut (premier profil actif non-baseline)
@@ -98,13 +100,14 @@ export function calculateRuntimeCost(
       }
 
       // Calculer le coût pour cette heure selon le profil et le niveau
+      let hourlyCost = 0
       if (availableFlavors && availableFlavors.length > 0) {
         const scalingState = calculateScalingAtLevel(
           profile,
           loadLevel,
           availableFlavors
         )
-        totalWeeklyCost += scalingState.hourlyCost
+        hourlyCost = scalingState.hourlyCost
       } else {
         // Fallback : estimation basée sur le profil
         const minFlavorPrice = flavorPrices.get(profile.minFlavorName) ?? baseHourlyPrice
@@ -112,15 +115,19 @@ export function calculateRuntimeCost(
 
         if (loadLevel === 0) {
           // Niveau 0 : configuration minimum du profil
-          totalWeeklyCost += minFlavorPrice * profile.minInstances
+          hourlyCost = minFlavorPrice * profile.minInstances
         } else {
           // Niveaux 1-5 : interpolation entre min et max
           const progressRatio = loadLevel / 5
           const minCost = minFlavorPrice * profile.minInstances
           const maxCost = maxFlavorPrice * profile.maxInstances
-          totalWeeklyCost += minCost + progressRatio * (maxCost - minCost)
+          hourlyCost = minCost + progressRatio * (maxCost - minCost)
         }
       }
+
+      totalWeeklyCost += hourlyCost
+      // Accumuler le cout par profil
+      scalingCostByProfile[profile.id] = (scalingCostByProfile[profile.id] || 0) + hourlyCost
     }
   }
 
@@ -201,6 +208,13 @@ export function calculateRuntimeCost(
     scalingHours,
     averageLoadLevel: Math.round(averageLoadLevel * 10) / 10,
     scalingHoursByProfile,
+    // Convertir les couts hebdomadaires par profil en couts mensuels
+    scalingCostByProfile: Object.fromEntries(
+      Object.entries(scalingCostByProfile).map(([id, weeklyCost]) => [
+        id,
+        Math.round(weeklyCost * WEEKS_PER_MONTH * 100) / 100,
+      ])
+    ),
   }
 }
 
