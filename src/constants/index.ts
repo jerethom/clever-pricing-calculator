@@ -24,3 +24,6 @@ export const PRIORITY_FEATURES = [
   'storage',
   'max_connection_limit',
 ] as const
+
+// Couleurs des profils de scaling
+export * from './profileColors'

@@ -2,6 +2,12 @@ import { useState, useCallback, useRef, useMemo, memo, useEffect } from 'react'
 import type { WeeklySchedule, DayOfWeek, HourlyConfig, LoadLevel, ScalingProfile } from '@/types'
 import { DAYS_OF_WEEK, DAY_LABELS, createHourlyConfig, BASELINE_PROFILE_ID, LOAD_LEVEL_LABELS } from '@/types'
 import { SelectionIndicator } from './SelectionIndicator'
+import {
+  PROFILE_COLORS,
+  LOAD_LEVEL_OPACITIES,
+  hexToRgba,
+  shouldUseWhiteText,
+} from '@/constants'
 
 // Utilitaire de throttle pour limiter les appels a 60fps (16ms)
 function throttle<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): T {
@@ -45,47 +51,58 @@ interface WeeklyCalendarProps {
   scalingProfiles: ScalingProfile[]
 }
 
-// Palette de couleurs pour les profils de scaling
-const PROFILE_COLORS = [
-  { bg: 'bg-blue-500', text: 'text-white' },
-  { bg: 'bg-emerald-500', text: 'text-white' },
-  { bg: 'bg-amber-500', text: 'text-white' },
-  { bg: 'bg-rose-500', text: 'text-white' },
-  { bg: 'bg-violet-500', text: 'text-white' },
-  { bg: 'bg-cyan-500', text: 'text-white' },
-  { bg: 'bg-orange-500', text: 'text-white' },
-  { bg: 'bg-pink-500', text: 'text-white' },
-]
-
-// Couleurs pour les différents niveaux de charge (style Clever Cloud)
-const getLoadLevelColor = (config: HourlyConfig): string => {
-  if (!config || config.profileId === BASELINE_PROFILE_ID || config.loadLevel === 0) {
-    return 'bg-base-200'
+/**
+ * Calcule le style de fond d'une cellule en fonction du profil et du niveau de charge
+ * Retourne un style CSS inline avec la couleur rgba appropriée
+ */
+const getCellBackgroundStyle = (
+  config: HourlyConfig,
+  profileColorIndex: number | null
+): React.CSSProperties => {
+  if (!config || config.profileId === BASELINE_PROFILE_ID || config.loadLevel === 0 || profileColorIndex === null) {
+    return {}
   }
-  const level = config.loadLevel
-  if (level === 1) return 'bg-[#5754aa]/30'
-  if (level === 2) return 'bg-[#5754aa]/50'
-  if (level === 3) return 'bg-[#5754aa]/65'
-  if (level === 4) return 'bg-[#5754aa]/80'
-  return 'bg-[#5754aa]'
+
+  const color = PROFILE_COLORS[profileColorIndex % PROFILE_COLORS.length]
+  const opacity = LOAD_LEVEL_OPACITIES[config.loadLevel] ?? 1
+
+  return {
+    backgroundColor: hexToRgba(color.hex, opacity),
+  }
 }
 
-// Couleur du texte selon le fond pour assurer le contraste
-const getTextColor = (config: HourlyConfig): string => {
-  if (!config || config.profileId === BASELINE_PROFILE_ID || config.loadLevel === 0) {
+/**
+ * Détermine la classe CSS pour la couleur du texte
+ * Utilise le contraste calculé pour assurer la lisibilité
+ */
+const getTextColorClass = (
+  config: HourlyConfig,
+  profileColorIndex: number | null
+): string => {
+  if (!config || config.profileId === BASELINE_PROFILE_ID || config.loadLevel === 0 || profileColorIndex === null) {
     return 'text-base-content'
   }
-  if (config.loadLevel <= 2) return 'text-[#1c2045] font-semibold'
-  return 'text-white'
+
+  const color = PROFILE_COLORS[profileColorIndex % PROFILE_COLORS.length]
+  const opacity = LOAD_LEVEL_OPACITIES[config.loadLevel] ?? 1
+
+  if (shouldUseWhiteText(color.hex, opacity)) {
+    return 'text-white'
+  }
+  return 'text-gray-900 font-semibold'
 }
 
 // Type pour les infos de cellule precalculees
 interface CellDisplayInfo {
-  bgColor: string
-  textColor: string
+  /** Style CSS inline pour le fond (couleur du profil avec opacité du niveau) */
+  bgStyle: React.CSSProperties
+  /** Classe CSS pour le fond de base (niveau 0) */
+  bgClass: string
+  /** Classe CSS pour la couleur du texte */
+  textColorClass: string
+  /** Niveau de charge affiché (0-5) */
   displayLevel: number
-  profileInfo: { initial: string; colorIndex: number } | null
-  badgeColor: typeof PROFILE_COLORS[number] | null
+  /** Texte du tooltip */
   tooltipText: string
 }
 
@@ -110,7 +127,7 @@ const CalendarCell = memo(function CalendarCell({
   onMouseEnter,
   onTouchStart,
 }: CalendarCellProps) {
-  const { bgColor, textColor, displayLevel, profileInfo, badgeColor, tooltipText } = cellInfo
+  const { bgStyle, bgClass, textColorClass, displayLevel, tooltipText } = cellInfo
 
   // Handlers inline avec closure - evite la creation de nouvelles fonctions a chaque render parent
   const handleMouseDown = useCallback(() => {
@@ -131,10 +148,11 @@ const CalendarCell = memo(function CalendarCell({
       data-hour={hour}
       className={`
         p-0 border border-base-300 cursor-pointer transition-colors
-        ${bgColor}
+        ${bgClass}
         ${inSelection ? 'ring-2 ring-secondary ring-inset' : ''}
         touch-none
       `}
+      style={bgStyle}
       onMouseDown={handleMouseDown}
       onMouseEnter={handleMouseEnter}
       onTouchStart={handleTouchStart}
@@ -144,20 +162,13 @@ const CalendarCell = memo(function CalendarCell({
     >
       <div
         className={`
-          relative
           w-8 h-6
           sm:w-10 sm:h-7
           md:w-8 md:h-6
           flex items-center justify-center text-xs
-          ${textColor}
+          ${textColorClass}
         `}
       >
-        {/* Badge du profil en haut a gauche avec couleur unique */}
-        {profileInfo && badgeColor && (
-          <span className={`absolute -top-0.5 -left-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 flex items-center justify-center ${badgeColor.bg} ${badgeColor.text} text-[8px] sm:text-[9px] font-bold rounded-full shadow-sm`}>
-            {profileInfo.initial}
-          </span>
-        )}
         {/* Niveau de charge au centre */}
         <span className={`font-bold text-[10px] sm:text-xs ${displayLevel === 0 ? 'opacity-30' : ''}`}>
           {displayLevel}
@@ -216,18 +227,14 @@ export function WeeklyCalendar({
         const config = schedule[day][hour]
         const displayLevel = config?.loadLevel ?? 0
 
-        // Calcul profile info avec la map pour O(1)
-        let profileInfo: { initial: string; colorIndex: number } | null = null
-        let badgeColor: typeof PROFILE_COLORS[number] | null = null
+        // Determiner l'index de couleur du profil (null si baseline ou pas de profil)
+        let profileColorIndex: number | null = null
+        let profileData: { profile: ScalingProfile; index: number } | undefined
 
         if (config && config.profileId !== BASELINE_PROFILE_ID) {
-          const profileData = profilesMap.get(config.profileId)
+          profileData = profilesMap.get(config.profileId)
           if (profileData) {
-            profileInfo = {
-              initial: profileData.profile.name.charAt(0).toUpperCase(),
-              colorIndex: profileData.index % PROFILE_COLORS.length,
-            }
-            badgeColor = PROFILE_COLORS[profileInfo.colorIndex]
+            profileColorIndex = profileData.index % PROFILE_COLORS.length
           }
         }
 
@@ -236,20 +243,21 @@ export function WeeklyCalendar({
           `${DAY_LABELS[day]} ${hour}h-${hour + 1}h`,
           `Niveau : ${displayLevel} (${LOAD_LEVEL_LABELS[displayLevel as LoadLevel]})`,
         ]
-        if (profileInfo && displayLevel > 0) {
-          const profileData = profilesMap.get(config?.profileId ?? '')
-          if (profileData) {
-            tooltipLines.push(`Profil : ${profileData.profile.name}`)
-            tooltipLines.push(`Ressources : ${profileData.profile.minInstances}-${profileData.profile.maxInstances} inst.`)
-          }
+        if (profileData && displayLevel > 0) {
+          tooltipLines.push(`Profil : ${profileData.profile.name}`)
+          tooltipLines.push(`Ressources : ${profileData.profile.minInstances}-${profileData.profile.maxInstances} inst.`)
         }
 
+        // Calculer le style de fond et la classe de texte
+        const bgStyle = getCellBackgroundStyle(config, profileColorIndex)
+        const bgClass = displayLevel === 0 || profileColorIndex === null ? 'bg-base-200' : ''
+        const textColorClass = getTextColorClass(config, profileColorIndex)
+
         info[day][hour] = {
-          bgColor: getLoadLevelColor(config),
-          textColor: getTextColor(config),
+          bgStyle,
+          bgClass,
+          textColorClass,
           displayLevel,
-          profileInfo,
-          badgeColor,
           tooltipText: tooltipLines.join('\n'),
         }
       }

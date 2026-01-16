@@ -7,6 +7,7 @@ import { SchedulePresets } from './SchedulePresets'
 import { ScheduleLegend } from './ScheduleLegend'
 import type { Instance } from '@/api/types'
 import { Icons } from '@/components/ui'
+import { PROFILE_COLORS, shouldUseWhiteText } from '@/constants'
 
 interface TimeSlotEditorProps {
   projectId: string
@@ -19,11 +20,13 @@ interface TimeSlotEditorProps {
 interface LoadLevelButtonsProps {
   loadLevel: LoadLevel
   onLoadLevelChange: (level: LoadLevel) => void
+  profileColor: string
 }
 
 const LoadLevelButtons = memo(function LoadLevelButtons({
   loadLevel,
   onLoadLevelChange,
+  profileColor,
 }: LoadLevelButtonsProps) {
   return (
     <div className="flex items-center gap-0.5">
@@ -35,9 +38,13 @@ const LoadLevelButtons = memo(function LoadLevelButtons({
           className={`
             btn btn-sm w-8 h-8 min-h-0 p-0
             ${loadLevel === level
-              ? 'btn-primary'
+              ? ''
               : 'btn-ghost border border-base-300'}
           `}
+          style={loadLevel === level ? {
+            backgroundColor: profileColor,
+            color: shouldUseWhiteText(profileColor, 1) ? '#fff' : '#000'
+          } : undefined}
           title={`${LOAD_LEVEL_LABELS[level]} - ${LOAD_LEVEL_DESCRIPTIONS[level]}`}
         >
           {level}
@@ -54,7 +61,6 @@ function TimeSlotEditor({
   instance: _instance,
 }: TimeSlotEditorProps) {
   const updateRuntime = useProjectAction('updateRuntime')
-  const [showPresets, setShowPresets] = useState(true)
   const [selectedProfileId, setSelectedProfileId] = useState<string>(
     (runtime.scalingProfiles ?? []).find(p => p.enabled && p.id !== BASELINE_PROFILE_ID)?.id ?? 'default'
   )
@@ -82,12 +88,6 @@ function TimeSlotEditor({
   const handleReset = useCallback(() => {
     handleScheduleChange(createEmptySchedule())
   }, [handleScheduleChange])
-
-  // Memoiser la recherche du profil selectionne
-  const selectedProfile = useMemo(
-    () => scalingProfiles.find(p => p.id === selectedProfileId) ?? scalingProfiles[0],
-    [scalingProfiles, selectedProfileId]
-  )
 
   const schedule = useMemo(
     () => runtime.weeklySchedule ?? createEmptySchedule(),
@@ -118,6 +118,12 @@ function TimeSlotEditor({
 
   const hasScaling = scalingProfiles.length > 0
 
+  // Couleur du profil selectionne - memoise pour eviter recalcul a chaque render
+  const selectedProfileColor = useMemo(() => {
+    const index = Math.max(0, scalingProfiles.findIndex(p => p.id === selectedProfileId))
+    return PROFILE_COLORS[index % PROFILE_COLORS.length].hex
+  }, [scalingProfiles, selectedProfileId])
+
   return (
     <div className="space-y-4">
       {/* Header avec infos */}
@@ -133,77 +139,13 @@ function TimeSlotEditor({
         </div>
 
         {/* Légende contextuelle */}
-        <ScheduleLegend />
+        <ScheduleLegend scalingProfiles={runtime.scalingProfiles ?? []} />
       </div>
 
-      {/* Info baseline */}
-      <div className="flex items-center gap-4 p-3 bg-base-200 border border-base-300 text-sm flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="text-base-content/60">Baseline :</span>
-          <span className="font-semibold">
-            Configuration de base
-          </span>
-        </div>
-        {hasScaling && selectedProfile && (
-          <>
-            <div className="w-px h-4 bg-base-300 hidden sm:block" />
-            <div className="flex items-center gap-2">
-              <span className="text-base-content/60">Profil :</span>
-              <span className="font-semibold">{selectedProfile.name}</span>
-            </div>
-            <div className="w-px h-4 bg-base-300 hidden sm:block" />
-            <div className="flex items-center gap-2 text-primary">
-              <span>
-                {selectedProfile.minInstances}-{selectedProfile.maxInstances} instances,{' '}
-                {selectedProfile.minFlavorName}-{selectedProfile.maxFlavorName}
-              </span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Presets toggle */}
+      {/* Toolbar sticky compacte - 2 lignes */}
       {hasScaling && (
-        <div>
-          <button
-            type="button"
-            onClick={() => setShowPresets(!showPresets)}
-            className="btn btn-ghost btn-sm gap-2"
-          >
-            <span>
-              {showPresets ? 'Masquer' : 'Afficher'} les configurations rapides
-            </span>
-            <svg
-              className={`w-4 h-4 transition-transform ${showPresets ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-
-          {showPresets && (
-            <div className="mt-2 animate-in">
-              <SchedulePresets
-                profileId={selectedProfileId}
-                loadLevel={loadLevel}
-                scalingProfiles={scalingProfiles}
-                onApply={handleScheduleChange}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Toolbar sticky compacte */}
-      {hasScaling && (
-        <div className="sticky top-0 z-10 bg-base-100 border border-base-300 shadow-sm rounded-lg p-3">
+        <div className="sticky top-0 z-10 bg-base-100 border border-base-300 shadow-sm rounded-lg p-3 space-y-2">
+          {/* Ligne 1 : Profil et Niveau de charge */}
           <div className="flex items-center gap-4 flex-wrap">
             {/* Sélecteur de profil */}
             {scalingProfiles.length > 1 && (
@@ -230,15 +172,13 @@ function TimeSlotEditor({
 
             {/* Boutons de niveau de charge */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-base-content/70 whitespace-nowrap">Niveau :</span>
+              <span className="text-sm text-base-content/70 whitespace-nowrap">Charge estimée :</span>
               <LoadLevelButtons
                 loadLevel={loadLevel}
                 onLoadLevelChange={handleLoadLevelChange}
+                profileColor={selectedProfileColor}
               />
             </div>
-
-            {/* Séparateur */}
-            <div className="w-px h-6 bg-base-300 hidden sm:block" />
 
             {/* Indicateur du mode actuel */}
             <div className="flex items-center gap-2">
@@ -246,19 +186,28 @@ function TimeSlotEditor({
                 <Icons.Edit className="w-3 h-3" />
                 {loadLevel}
               </span>
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium hidden sm:inline">
                 {LOAD_LEVEL_LABELS[loadLevel]}
               </span>
             </div>
+          </div>
 
-            {/* Spacer pour pousser le bouton Reset à droite */}
-            <div className="flex-1" />
+          {/* Ligne 2 : Presets et Reset */}
+          <div className="flex items-center gap-2 pt-2 border-t border-base-300">
+            {/* Presets scrollables horizontalement */}
+            <div className="flex-1 min-w-0 overflow-x-auto scrollbar-none">
+              <SchedulePresets
+                profileId={selectedProfileId}
+                loadLevel={loadLevel}
+                onApply={handleScheduleChange}
+              />
+            </div>
 
             {/* Bouton Reset */}
             <button
               type="button"
               onClick={handleReset}
-              className="btn btn-ghost btn-sm text-error gap-1"
+              className="btn btn-sm btn-ghost text-error gap-1 shrink-0"
             >
               <Icons.Refresh className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Reset</span>
