@@ -33,6 +33,18 @@ export const LOAD_LEVEL_LABELS: Record<LoadLevel, string> = {
 }
 
 /**
+ * Descriptions détaillées des niveaux de charge pour l'UX
+ */
+export const LOAD_LEVEL_DESCRIPTIONS: Record<LoadLevel, string> = {
+  0: 'Configuration de base, pas de scaling',
+  1: 'Trafic minimal, scaling léger (~20% des ressources max)',
+  2: 'Trafic faible, scaling modeste (~40% des ressources max)',
+  3: 'Trafic normal, scaling équilibré (~60% des ressources max)',
+  4: 'Trafic élevé, scaling important (~80% des ressources max)',
+  5: 'Trafic maximal, toutes les ressources disponibles',
+}
+
+/**
  * Configuration de scaling pour une heure donnée
  */
 export interface HourlyConfig {

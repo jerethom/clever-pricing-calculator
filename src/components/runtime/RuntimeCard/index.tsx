@@ -165,7 +165,7 @@ export const RuntimeCard = memo(function RuntimeCard({
 
           {/* Editeur de planning (conditionnel) */}
           {showTimeSlots && (
-            <div className="mt-4 p-4 bg-base-200">
+            <div className="mt-4 p-4 bg-base-200 animate-in fade-in slide-in-from-top-2 duration-200">
               <Suspense fallback={null}>
                 <TimeSlotEditor
                   projectId={projectId}

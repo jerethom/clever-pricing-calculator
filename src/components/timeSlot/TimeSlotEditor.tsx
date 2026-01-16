@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { RuntimeConfig, WeeklySchedule, LoadLevel } from '@/types'
-import { createEmptySchedule, LOAD_LEVELS, LOAD_LEVEL_LABELS, BASELINE_PROFILE_ID } from '@/types'
+import { createEmptySchedule, LOAD_LEVELS, LOAD_LEVEL_LABELS, LOAD_LEVEL_DESCRIPTIONS, BASELINE_PROFILE_ID } from '@/types'
 import { useProjectAction } from '@/store'
 import { WeeklyCalendar } from './WeeklyCalendar'
 import { SchedulePresets } from './SchedulePresets'
@@ -22,7 +22,7 @@ function TimeSlotEditor({
   instance: _instance,
 }: TimeSlotEditorProps) {
   const updateRuntime = useProjectAction('updateRuntime')
-  const [showPresets, setShowPresets] = useState(false)
+  const [showPresets, setShowPresets] = useState(true)
   const [selectedProfileId, setSelectedProfileId] = useState<string>(
     (runtime.scalingProfiles ?? []).find(p => p.enabled && p.id !== BASELINE_PROFILE_ID)?.id ?? 'default'
   )
@@ -137,38 +137,47 @@ function TimeSlotEditor({
           )}
 
           {/* Sélecteur de niveau de charge */}
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <div className="text-sm font-medium">Niveau de charge</div>
-              <div className="text-xs text-base-content/60">
-                Niveau de scaling attendu (vertical puis horizontal)
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <div className="text-sm font-medium">Niveau de charge</div>
+                <div className="text-xs text-base-content/60">
+                  Intensité du scaling attendu sur les créneaux sélectionnés
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                {LOAD_LEVELS.map(level => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setLoadLevel(level)}
+                    className={`
+                      w-10 h-10 flex flex-col items-center justify-center text-xs font-medium
+                      border transition-all rounded
+                      ${loadLevel === level
+                        ? 'bg-primary text-primary-content border-primary ring-2 ring-primary/30'
+                        : 'bg-base-100 border-base-300 hover:border-primary hover:bg-base-200'}
+                    `}
+                    title={`${LOAD_LEVEL_LABELS[level]} - ${LOAD_LEVEL_DESCRIPTIONS[level]}`}
+                  >
+                    <span className="font-bold">{level}</span>
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {LOAD_LEVELS.map(level => (
-                <button
-                  key={level}
-                  type="button"
-                  onClick={() => setLoadLevel(level)}
-                  className={`
-                    w-10 h-10 flex items-center justify-center text-sm font-medium
-                    border transition-all
-                    ${loadLevel === level
-                      ? 'bg-primary text-primary-content border-primary'
-                      : 'bg-base-100 border-base-300 hover:border-primary'}
-                  `}
-                  title={LOAD_LEVEL_LABELS[level]}
-                >
-                  {level}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Explication du niveau sélectionné */}
-          <div className="text-sm text-base-content/70 bg-base-200 p-2">
-            <strong>Niveau {loadLevel} :</strong> {LOAD_LEVEL_LABELS[loadLevel]}
-            {loadLevel === 0 && ' (pas de scaling, reste sur baseline)'}
+            {/* Explication détaillée du niveau sélectionné */}
+            <div className={`p-3 rounded border ${loadLevel === 0 ? 'bg-base-200 border-base-300' : 'bg-primary/10 border-primary/30'}`}>
+              <div className="flex items-center gap-2">
+                <span className={`w-8 h-8 flex items-center justify-center rounded font-bold ${loadLevel === 0 ? 'bg-base-300 text-base-content' : 'bg-primary text-primary-content'}`}>
+                  {loadLevel}
+                </span>
+                <div>
+                  <div className="font-medium text-sm">{LOAD_LEVEL_LABELS[loadLevel]}</div>
+                  <div className="text-xs text-base-content/70">{LOAD_LEVEL_DESCRIPTIONS[loadLevel]}</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -211,21 +220,30 @@ function TimeSlotEditor({
         </div>
       )}
 
-      {/* Barre d'outils */}
+      {/* Barre d'outils - Mode peinture */}
       {hasScaling && (
-        <div className="flex items-center justify-between gap-4 p-3 bg-base-100 border border-base-300">
-          <div className="text-sm">
-            <span className="text-base-content/60">Peinture :</span>{' '}
-            <span className="font-semibold">
-              {loadLevel === 0 ? 'Baseline' : `Niveau ${loadLevel}`}
-            </span>
+        <div className={`flex items-center justify-between gap-4 p-3 rounded border-2 ${loadLevel === 0 ? 'bg-base-200 border-base-300' : 'bg-primary/5 border-primary/50'}`}>
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded ${loadLevel === 0 ? 'bg-base-300' : 'bg-primary text-primary-content'}`}>
+              <Icons.Edit className="w-4 h-4" />
+              <span className="font-semibold text-sm">
+                {loadLevel === 0 ? 'Baseline' : `Niveau ${loadLevel}`}
+              </span>
+            </div>
+            <div className="text-sm text-base-content/70 hidden sm:block">
+              {selectedProfile?.name && loadLevel > 0 && (
+                <span>Profil : <strong>{selectedProfile.name}</strong></span>
+              )}
+              {loadLevel === 0 && <span>Retour à la configuration de base</span>}
+            </div>
           </div>
           <button
             type="button"
             onClick={handleReset}
-            className="btn btn-ghost btn-sm text-error"
+            className="btn btn-ghost btn-sm text-error gap-1"
           >
-            Réinitialiser
+            <Icons.Refresh className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Réinitialiser</span>
           </button>
         </div>
       )}

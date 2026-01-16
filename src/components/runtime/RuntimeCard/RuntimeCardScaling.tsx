@@ -3,6 +3,7 @@ import { Icons, NumberInput } from '@/components/ui'
 import { useRuntimeCardContext } from './RuntimeCardContext'
 import type { RuntimeCardScalingProps } from './types'
 import type { ScalingProfile } from '@/types'
+import { toast } from '@/store/toastStore'
 
 export const RuntimeCardScaling = memo(function RuntimeCardScaling({
   className = '',
@@ -61,7 +62,7 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
   }, [activeScalingProfiles.length, baseConfig.instances, baseConfig.flavorName, instance?.maxInstances, scalingFlavors, onAddScalingProfile])
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 ${className}`}>
       {/* Section: Profils de scaling */}
       <div>
         <div className="flex items-center justify-between">
@@ -91,7 +92,10 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
                 maxInstances={instance?.maxInstances ?? 40}
                 canDelete={activeScalingProfiles.length > 1}
                 onEdit={() => setEditingProfileId(profile.id)}
-                onSave={() => setEditingProfileId(null)}
+                onSave={() => {
+                  setEditingProfileId(null)
+                  toast.success(`Profil "${profile.name}" mis à jour`)
+                }}
                 onUpdate={updates => onUpdateScalingProfile(profile.id, updates)}
                 onRemove={() => onRemoveScalingProfile(profile.id)}
               />
@@ -239,16 +243,16 @@ function ProfileCard({
           {profile.minFlavorName}-{profile.maxFlavorName}
         </div>
       </div>
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
         <button
-          className="btn btn-ghost btn-xs"
+          className="btn btn-ghost btn-xs focus:opacity-100"
           onClick={onEdit}
           title="Modifier"
         >
           <Icons.Edit className="w-3 h-3" />
         </button>
         <button
-          className="btn btn-ghost btn-xs text-error"
+          className="btn btn-ghost btn-xs text-error focus:opacity-100"
           onClick={onRemove}
           disabled={!canDelete}
           title={canDelete ? 'Supprimer' : 'Au moins un profil requis'}

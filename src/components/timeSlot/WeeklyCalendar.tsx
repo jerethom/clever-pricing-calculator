@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import type { WeeklySchedule, DayOfWeek, HourlyConfig, LoadLevel, ScalingProfile } from '@/types'
-import { DAYS_OF_WEEK, DAY_LABELS, createHourlyConfig, BASELINE_PROFILE_ID } from '@/types'
+import { DAYS_OF_WEEK, DAY_LABELS, createHourlyConfig, BASELINE_PROFILE_ID, LOAD_LEVEL_LABELS } from '@/types'
 import { SelectionIndicator } from './SelectionIndicator'
 
 interface WeeklyCalendarProps {
@@ -29,9 +29,9 @@ const getLoadLevelColor = (config: HourlyConfig): string => {
     return 'bg-base-200'
   }
   const level = config.loadLevel
-  if (level === 1) return 'bg-[#5754aa]/20'
-  if (level === 2) return 'bg-[#5754aa]/40'
-  if (level === 3) return 'bg-[#5754aa]/60'
+  if (level === 1) return 'bg-[#5754aa]/30'
+  if (level === 2) return 'bg-[#5754aa]/50'
+  if (level === 3) return 'bg-[#5754aa]/65'
   if (level === 4) return 'bg-[#5754aa]/80'
   return 'bg-[#5754aa]'
 }
@@ -41,7 +41,7 @@ const getTextColor = (config: HourlyConfig): string => {
   if (!config || config.profileId === BASELINE_PROFILE_ID || config.loadLevel === 0) {
     return 'text-base-content'
   }
-  if (config.loadLevel <= 2) return 'text-[#1c2045]'
+  if (config.loadLevel <= 2) return 'text-[#1c2045] font-semibold'
   return 'text-white'
 }
 
@@ -264,6 +264,24 @@ export function WeeklyCalendar({
                   const displayLevel = config?.loadLevel ?? 0
                   const profileInfo = config ? getProfileDisplayInfo(config.profileId) : null
                   const badgeColor = profileInfo ? PROFILE_COLORS[profileInfo.colorIndex] : null
+
+                  // Générer le tooltip enrichi
+                  const profileName = profileInfo
+                    ? scalingProfiles.find(p => p.id === config?.profileId)?.name
+                    : null
+                  const profile = profileName
+                    ? scalingProfiles.find(p => p.id === config?.profileId)
+                    : null
+                  const tooltipLines = [
+                    `${DAY_LABELS[day]} ${hour}h-${hour + 1}h`,
+                    `Niveau : ${displayLevel} (${LOAD_LEVEL_LABELS[displayLevel as LoadLevel]})`,
+                  ]
+                  if (profile && displayLevel > 0) {
+                    tooltipLines.push(`Profil : ${profile.name}`)
+                    tooltipLines.push(`Ressources : ${profile.minInstances}-${profile.maxInstances} inst.`)
+                  }
+                  const tooltipText = tooltipLines.join('\n')
+
                   return (
                     <td
                       key={`${day}-${hour}`}
@@ -278,7 +296,7 @@ export function WeeklyCalendar({
                       onMouseDown={() => handleMouseDown(day, hour)}
                       onMouseEnter={() => handleMouseEnter(day, hour)}
                       onTouchStart={handleTouchStart(day, hour)}
-                      title={`${DAY_LABELS[day]} ${hour}h : niveau ${displayLevel}`}
+                      title={tooltipText}
                       role="gridcell"
                       aria-label={`${DAY_LABELS[day]} ${hour}h, niveau de charge ${displayLevel}`}
                     >

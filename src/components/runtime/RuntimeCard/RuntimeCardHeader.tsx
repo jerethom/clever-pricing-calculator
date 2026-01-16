@@ -26,22 +26,11 @@ export const RuntimeCardHeader = memo(function RuntimeCardHeader({
     <div className={`flex items-start justify-between gap-4 ${className}`}>
       <div className="flex items-center gap-3 min-w-0">
         {runtime.variantLogo ? (
-          <div className="relative flex-shrink-0">
+          <div className="flex-shrink-0">
             <img
               src={runtime.variantLogo}
               alt=""
               className="w-12 h-12 object-contain bg-base-200 p-1.5"
-            />
-            {/* Indicateur de statut */}
-            <span
-              className={`absolute -bottom-1 -right-1 w-3 h-3 border-2 border-base-100 ${
-                cost.averageLoadLevel > 0
-                  ? 'bg-warning animate-pulse'
-                  : 'bg-success'
-              }`}
-              title={
-                cost.averageLoadLevel > 0 ? 'Scaling actif' : 'Baseline 24/7'
-              }
             />
           </div>
         ) : (
@@ -93,7 +82,7 @@ export const RuntimeCardHeader = memo(function RuntimeCardHeader({
                 {runtime.instanceName}
               </h3>
               <button
-                className="btn btn-ghost btn-xs btn-square opacity-0 group-hover/name:opacity-100 transition-opacity cursor-pointer"
+                className="btn btn-ghost btn-xs btn-square opacity-0 group-hover/name:opacity-100 focus:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"
                 onClick={onStartEditName}
                 aria-label="Modifier le nom du runtime"
               >
@@ -109,12 +98,19 @@ export const RuntimeCardHeader = memo(function RuntimeCardHeader({
               {baseConfig.instances} inst.
             </span>
             {runtime.scalingEnabled ? (
-              <span className="badge badge-sm badge-primary">
-                Scaling
-              </span>
+              cost.averageLoadLevel > 0 ? (
+                <span className="badge badge-sm badge-warning gap-1">
+                  <span className="w-1.5 h-1.5 bg-warning-content rounded-full animate-pulse" />
+                  Scaling actif
+                </span>
+              ) : (
+                <span className="badge badge-sm badge-primary">
+                  Scaling
+                </span>
+              )
             ) : (
-              <span className="badge badge-sm badge-neutral">
-                Fixe
+              <span className="badge badge-sm badge-success">
+                24/7
               </span>
             )}
           </div>

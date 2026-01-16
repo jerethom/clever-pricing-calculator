@@ -76,7 +76,10 @@ export const RuntimeCardConfig = memo(function RuntimeCardConfig({
       )}
 
       {/* Switch scaling */}
-      <div className="flex items-center justify-between p-3 bg-base-200 border border-base-300">
+      <label
+        htmlFor={`scaling-toggle-${runtime.id}`}
+        className="flex items-center justify-between p-3 bg-base-200 border border-base-300 cursor-pointer hover:bg-base-300/50 transition-colors"
+      >
         <div>
           <div className="font-medium text-sm">Scaling automatique</div>
           <div className="text-xs text-base-content/60">
@@ -86,12 +89,14 @@ export const RuntimeCardConfig = memo(function RuntimeCardConfig({
           </div>
         </div>
         <input
+          id={`scaling-toggle-${runtime.id}`}
           type="checkbox"
           className="toggle toggle-primary"
           checked={runtime.scalingEnabled ?? false}
           onChange={(e) => onToggleScaling(e.target.checked)}
+          aria-describedby={`scaling-desc-${runtime.id}`}
         />
-      </div>
+      </label>
     </div>
   )
 })
