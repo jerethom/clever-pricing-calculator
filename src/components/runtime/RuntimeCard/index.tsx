@@ -182,17 +182,4 @@ export const RuntimeCard = memo(function RuntimeCard({
   )
 })
 
-// Re-export des nouveaux composants de la hierarchie reorganisee
-export { RuntimeCardIdentity } from './RuntimeCardIdentity'
-export { RuntimeCardQuickConfig } from './RuntimeCardQuickConfig'
-export { RuntimeCardAdvanced } from './RuntimeCardAdvanced'
-
-// Re-export des sous-composants internes (pour usage dans RuntimeCardAdvanced)
-export { RuntimeCardScaling } from './RuntimeCardScaling'
-export { RuntimeCardSchedule } from './RuntimeCardSchedule'
-
-// Re-export des anciens composants (pour compatibilite ou usage externe)
-export { RuntimeCardHeader } from './RuntimeCardHeader'
-export { RuntimeCardConfig } from './RuntimeCardConfig'
-export { RuntimeCardCosts } from './RuntimeCardCosts'
 export type * from './types'

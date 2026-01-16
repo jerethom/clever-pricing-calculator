@@ -13,7 +13,6 @@ export const RuntimeCardAdvanced = memo(function RuntimeCardAdvanced({
   const {
     projectId,
     runtime,
-    instance,
     cost,
     showTimeSlots,
     activeScalingProfiles,
@@ -40,7 +39,6 @@ export const RuntimeCardAdvanced = memo(function RuntimeCardAdvanced({
                       projectId={projectId}
                       runtimeId={runtime.id}
                       runtime={runtime}
-                      instance={instance}
                     />
                   </Suspense>
                 </div>

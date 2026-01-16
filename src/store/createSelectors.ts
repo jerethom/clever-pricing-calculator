@@ -24,7 +24,6 @@ export function useSelector<T>(selector: Selector<T>): T {
  *
  * @example
  * const project = useSelectorWith(selectProjectById, projectId)
- * const runtime = useSelectorWith(selectRuntimeById, projectId, runtimeId)
  */
 export function useSelectorWith<TArgs extends unknown[], T>(
   selectorFactory: SelectorFactory<TArgs, T>,
@@ -44,9 +43,9 @@ export function useSelectorWith<TArgs extends unknown[], T>(
  * Utilise useShallow pour une comparaison superficielle et eviter les re-renders
  *
  * @example
- * const { projects, activeProjectId } = useSelectors(state => ({
+ * const { projects, activeProject } = useSelectors(state => ({
  *   projects: selectProjects(state),
- *   activeProjectId: selectActiveProjectId(state)
+ *   activeProject: selectActiveProject(state)
  * }))
  */
 export function useSelectors<T extends object>(

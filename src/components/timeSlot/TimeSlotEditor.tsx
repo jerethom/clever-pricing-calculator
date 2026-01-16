@@ -5,7 +5,6 @@ import { useProjectAction } from '@/store'
 import { WeeklyCalendar } from './WeeklyCalendar'
 import { SchedulePresets } from './SchedulePresets'
 import { ScheduleLegend } from './ScheduleLegend'
-import type { Instance } from '@/api/types'
 import { Icons } from '@/components/ui'
 import { PROFILE_COLORS, LOAD_LEVEL_OPACITIES, hexToRgba, shouldUseWhiteText } from '@/constants'
 
@@ -13,7 +12,6 @@ interface TimeSlotEditorProps {
   projectId: string
   runtimeId: string
   runtime: RuntimeConfig
-  instance?: Instance
 }
 
 // Composant memoise pour les boutons de niveau de charge
@@ -67,7 +65,6 @@ function TimeSlotEditor({
   projectId,
   runtimeId,
   runtime,
-  instance: _instance,
 }: TimeSlotEditorProps) {
   const updateRuntime = useProjectAction('updateRuntime')
   const [selectedProfileId, setSelectedProfileId] = useState<string>(

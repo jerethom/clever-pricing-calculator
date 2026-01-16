@@ -79,9 +79,7 @@ export function calculateTotalScalingSteps(
 export function calculateScalingAtLevel(
   profile: ScalingProfile,
   loadLevel: LoadLevel,
-  availableFlavors: InstanceFlavor[],
-  _baseFlavorName?: string,
-  _baseInstances?: number
+  availableFlavors: InstanceFlavor[]
 ): ScalingState {
   // Profil désactivé : retourner la config minimum du profil
   if (!profile.enabled) {

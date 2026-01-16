@@ -4,28 +4,13 @@ import { useInstances } from './useInstances'
 import {
   useSelector,
   useSelectorWith,
-  selectActiveProject,
   selectProjectById,
   selectProjects,
   selectActiveOrganizationProjects,
-  selectProjectsByOrganization,
 } from '@/store'
 import { useProjectStore } from '@/store/projectStore'
 import { calculateProjectCost } from '@/lib/costCalculator'
 import type { ProjectCostSummary } from '@/types'
-
-/**
- * Hook pour calculer les couts du projet actif
- */
-export function useActiveProjectCost(): ProjectCostSummary | null {
-  const { data: instances } = useInstances()
-  const activeProject = useSelector(selectActiveProject)
-
-  return useMemo(() => {
-    if (!activeProject || !instances) return null
-    return calculateProjectCost(activeProject, instances)
-  }, [activeProject, instances])
-}
 
 /**
  * Hook pour calculer les couts d'un projet specifique
@@ -65,7 +50,7 @@ export function useAllProjectsCosts(): Map<string, ProjectCostSummary> {
  */
 export function useActiveOrganizationCosts(): Map<string, ProjectCostSummary> {
   const { data: instances } = useInstances()
-  // Utiliser useShallow pour éviter les re-renders quand le tableau est recréé mais identique
+  // Utiliser useShallow pour eviter les re-renders quand le tableau est recree mais identique
   const orgProjects = useProjectStore(useShallow(selectActiveOrganizationProjects))
 
   return useMemo(() => {
@@ -79,21 +64,4 @@ export function useActiveOrganizationCosts(): Map<string, ProjectCostSummary> {
 
     return costsMap
   }, [orgProjects, instances])
-}
-
-/**
- * Hook pour calculer le total des couts d'une organisation
- */
-export function useOrganizationTotalCost(organizationId: string): number {
-  const { data: instances } = useInstances()
-  const projects = useSelectorWith(selectProjectsByOrganization, organizationId)
-
-  return useMemo(() => {
-    if (!instances) return 0
-
-    return projects.reduce((total, project) => {
-      const cost = calculateProjectCost(project, instances)
-      return total + cost.totalMonthlyCost
-    }, 0)
-  }, [projects, instances])
 }

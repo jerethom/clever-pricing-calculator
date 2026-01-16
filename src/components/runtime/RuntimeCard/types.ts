@@ -64,20 +64,6 @@ export interface RuntimeCardContextValue {
 }
 
 /**
- * Props pour RuntimeCardHeader
- */
-export interface RuntimeCardHeaderProps {
-  className?: string
-}
-
-/**
- * Props pour RuntimeCardConfig
- */
-export interface RuntimeCardConfigProps {
-  className?: string
-}
-
-/**
  * Props pour RuntimeCardScaling
  */
 export interface RuntimeCardScalingProps {
@@ -88,13 +74,6 @@ export interface RuntimeCardScalingProps {
  * Props pour RuntimeCardSchedule
  */
 export interface RuntimeCardScheduleProps {
-  className?: string
-}
-
-/**
- * Props pour RuntimeCardCosts
- */
-export interface RuntimeCardCostsProps {
   className?: string
 }
 
