@@ -25,7 +25,7 @@ export interface ProjectState {
 export interface OrganizationActions {
   // Organization actions
   createOrganization: (name: string) => string
-  updateOrganization: (id: string, updates: Partial<Pick<Organization, 'name'>>) => void
+  updateOrganization: (id: string, updates: Partial<Pick<Organization, 'name' | 'budgetTarget'>>) => void
   deleteOrganization: (id: string) => void
   setActiveOrganization: (id: string | null) => void
 }
@@ -90,7 +90,7 @@ export const useProjectStore = create<ProjectStore>()(
         return id
       },
 
-      updateOrganization: (id: string, updates: Partial<Pick<Organization, 'name'>>) => {
+      updateOrganization: (id: string, updates: Partial<Pick<Organization, 'name' | 'budgetTarget'>>) => {
         set(state => {
           const org = state.organizations.find(o => o.id === id)
           if (org) {

@@ -6,12 +6,21 @@ interface NumberInputProps {
   onChange: (value: number) => void
   min?: number
   max?: number
+  step?: number
   label?: string
   className?: string
   size?: 'sm' | 'md' | 'lg'
   disabled?: boolean
   /** Position du label : 'top' (défaut), 'left' (inline) */
   labelPosition?: 'top' | 'left'
+  /** ID personnalise pour l'input */
+  id?: string
+  /** Handler de touches */
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  /** Focus automatique */
+  autoFocus?: boolean
+  /** Suffixe affiché après l'input (ex: "EUR", "€") */
+  suffix?: string
 }
 
 export function NumberInput({
@@ -19,23 +28,29 @@ export function NumberInput({
   onChange,
   min = 1,
   max = 999,
+  step = 1,
   label,
   className = '',
   size = 'md',
   disabled = false,
   labelPosition = 'top',
+  id,
+  onKeyDown: externalOnKeyDown,
+  autoFocus = false,
+  suffix,
 }: NumberInputProps) {
-  const inputId = useId()
+  const generatedId = useId()
+  const inputId = id ?? generatedId
 
   const handleDecrement = () => {
     if (value > min && !disabled) {
-      onChange(value - 1)
+      onChange(Math.max(min, value - step))
     }
   }
 
   const handleIncrement = () => {
     if (value < max && !disabled) {
-      onChange(value + 1)
+      onChange(Math.min(max, value + step))
     }
   }
 
@@ -53,6 +68,8 @@ export function NumberInput({
       e.preventDefault()
       handleDecrement()
     }
+    // Appeler le handler externe s'il existe
+    externalOnKeyDown?.(e)
   }
 
   // Classes de taille
@@ -125,10 +142,12 @@ export function NumberInput({
         `}
         min={min}
         max={max}
+        step={step}
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         disabled={disabled}
+        autoFocus={autoFocus}
         aria-valuemin={min}
         aria-valuemax={max}
         aria-valuenow={value}
@@ -145,6 +164,17 @@ export function NumberInput({
       >
         <Icons.Plus className={sizeClasses[size].icon} />
       </button>
+
+      {/* Suffixe optionnel */}
+      {suffix && (
+        <span className={`
+          join-item flex items-center justify-center px-3
+          bg-base-200 border border-base-300 border-l-0
+          ${sizeClasses[size].label} font-medium text-base-content/70
+        `}>
+          {suffix}
+        </span>
+      )}
     </div>
   )
 

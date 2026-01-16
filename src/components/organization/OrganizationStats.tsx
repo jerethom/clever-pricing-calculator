@@ -1,6 +1,5 @@
 import { memo } from 'react'
 import type { ReactNode } from 'react'
-import { formatPrice } from '@/lib/costCalculator'
 import { Icons } from '@/components/ui'
 
 interface StatCardProps {
@@ -51,17 +50,18 @@ interface OrganizationStatsProps {
   runtimesCount: number
   addonsCount: number
   totalMonthlyCost: number
+  minMonthlyCost: number
+  maxMonthlyCost: number
 }
 
 export const OrganizationStats = memo(function OrganizationStats({
   projectsCount,
   runtimesCount,
   addonsCount,
-  totalMonthlyCost,
 }: OrganizationStatsProps) {
   return (
     <div
-      className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
+      className="grid grid-cols-3 gap-3 sm:gap-4"
       role="region"
       aria-label="Statistiques de l'organisation"
     >
@@ -90,15 +90,6 @@ export const OrganizationStats = memo(function OrganizationStats({
         subValue={addonsCount === 0 ? 'Aucun service' : addonsCount === 1 ? '1 service' : `${addonsCount} services`}
         colorClass="text-secondary"
         bgClass="bg-secondary/10"
-      />
-
-      <StatCard
-        icon={<Icons.Chart className="w-5 h-5 text-success" />}
-        label="Cout mensuel"
-        value={formatPrice(totalMonthlyCost)}
-        subValue="Estimation totale"
-        colorClass="text-success"
-        bgClass="bg-success/10"
       />
     </div>
   )

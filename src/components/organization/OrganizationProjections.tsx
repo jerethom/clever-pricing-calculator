@@ -170,71 +170,68 @@ export const OrganizationProjections = memo(function OrganizationProjections({
 
   return (
     <div className="space-y-6">
-      {/* Selecteur de duree */}
-      <div className="card bg-base-100 border border-base-300">
-        <div className="card-body p-4">
-          <div className="flex items-center justify-between mb-3">
+      {/* Carte principale de projection */}
+      <div className="card bg-gradient-to-br from-base-100 to-base-200 border border-base-300">
+        <div className="card-body p-4 sm:p-6">
+          {/* Header avec selecteur de duree */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <h3 className="font-semibold flex items-center gap-2">
-              <Icons.Calendar className="w-4 h-4 text-primary" />
-              Periode de projection
+              <Icons.TrendingUp className="w-5 h-5 text-primary" />
+              Projections
             </h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {DURATION_OPTIONS.map(option => (
-              <button
-                key={option.months}
-                type="button"
-                onClick={() => setSelectedMonths(option.months)}
-                className={`
-                  px-3 py-1.5 text-sm font-medium transition-all
-                  ${selectedMonths === option.months
-                    ? 'bg-primary text-primary-content'
-                    : 'bg-base-200 text-base-content/70 hover:bg-base-300'
-                  }
-                `}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Cartes de projection globale */}
-      <div className="grid sm:grid-cols-2 gap-4">
-        {/* Cout mensuel */}
-        <div className="card bg-base-100 border border-base-300">
-          <div className="card-body p-4">
-            <div className="flex items-center gap-2 text-base-content/60 text-sm">
-              <Icons.Clock className="w-4 h-4" />
-              <span>Cout mensuel</span>
+            <div className="flex flex-wrap gap-1">
+              {DURATION_OPTIONS.map(option => (
+                <button
+                  key={option.months}
+                  type="button"
+                  onClick={() => setSelectedMonths(option.months)}
+                  className={`
+                    px-3 py-1.5 text-xs font-medium transition-all rounded
+                    ${selectedMonths === option.months
+                      ? 'bg-primary text-primary-content'
+                      : 'bg-base-200 text-base-content/70 hover:bg-base-300'
+                    }
+                  `}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
-            <p className="text-2xl font-bold text-primary mt-2 tabular-nums">
-              {formatPrice(totals.monthly)}
-            </p>
-            {totals.hasCostRange && (
-              <p className="text-sm text-base-content/50 tabular-nums">
-                Plage: {formatPrice(totals.minMonthly)} - {formatPrice(totals.maxMonthly)}
-              </p>
-            )}
           </div>
-        </div>
 
-        {/* Projection selon duree */}
-        <div className="card bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-          <div className="card-body p-4">
-            <div className="flex items-center gap-2 text-base-content/60 text-sm">
-              <Icons.TrendingUp className="w-4 h-4" />
-              <span>Projection sur {formatDurationLabel(selectedMonths)}</span>
-            </div>
-            <p className="text-2xl font-bold text-primary mt-2 tabular-nums">
-              {formatPrice(projectedTotal)}
-            </p>
-            {totals.hasCostRange && (
-              <p className="text-sm text-base-content/50 tabular-nums">
-                Plage: {formatPrice(projectedMin)} - {formatPrice(projectedMax)}
+          {/* Grille mensuel / projection */}
+          <div className="grid sm:grid-cols-2 gap-6">
+            {/* Cout mensuel */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-base-content/60 text-sm">
+                <Icons.Clock className="w-4 h-4" />
+                <span>Mensuel</span>
+              </div>
+              <p className="text-3xl font-bold text-primary tabular-nums">
+                {formatPrice(totals.monthly)}
               </p>
-            )}
+              {totals.hasCostRange && (
+                <p className="text-sm text-base-content/50 tabular-nums">
+                  Plage: {formatPrice(totals.minMonthly)} - {formatPrice(totals.maxMonthly)}
+                </p>
+              )}
+            </div>
+
+            {/* Fleche et projection */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-base-content/60 text-sm">
+                <Icons.Calendar className="w-4 h-4" />
+                <span>{formatDurationLabel(selectedMonths)}</span>
+              </div>
+              <p className="text-3xl font-bold text-primary tabular-nums">
+                {formatPrice(projectedTotal)}
+              </p>
+              {totals.hasCostRange && (
+                <p className="text-sm text-base-content/50 tabular-nums">
+                  Plage: {formatPrice(projectedMin)} - {formatPrice(projectedMax)}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>

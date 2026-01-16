@@ -1,5 +1,5 @@
 import { memo, useState, useCallback } from 'react'
-import type { Organization } from '@/types'
+import type { Organization, Project, ProjectCostSummary } from '@/types'
 import { Icons, ConfirmDialog } from '@/components/ui'
 
 // Formater les dates (hors du composant pour éviter les re-créations)
@@ -19,14 +19,70 @@ const formatDate = (dateString: string): string => {
   }
 }
 
+// Fonction d'export CSV
+function exportToCSV(
+  organization: Organization,
+  projects: Project[],
+  projectCosts: Map<string, ProjectCostSummary>
+) {
+  const rows: string[][] = [
+    ['Projet', 'Type', 'Nom', 'Cout mensuel (EUR)'],
+  ]
+
+  for (const project of projects) {
+    const cost = projectCosts.get(project.id)
+    if (!cost) continue
+
+    // Ajouter les runtimes
+    for (const runtime of cost.runtimesDetail) {
+      rows.push([
+        project.name,
+        'Runtime',
+        runtime.runtimeName,
+        runtime.estimatedTotalCost.toFixed(2),
+      ])
+    }
+
+    // Ajouter les addons
+    for (const addon of cost.addonsDetail) {
+      rows.push([
+        project.name,
+        'Addon',
+        addon.planName,
+        addon.monthlyPrice.toFixed(2),
+      ])
+    }
+  }
+
+  // Convertir en CSV
+  const csvContent = rows
+    .map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+
+  // Creer et telecharger le fichier
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${organization.name.replace(/[^a-zA-Z0-9]/g, '_')}_couts.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 interface OrganizationHeaderProps {
   organization: Organization
+  projects: Project[]
+  projectCosts: Map<string, ProjectCostSummary>
   onUpdateName: (name: string) => void
   onDelete: () => void
 }
 
 export const OrganizationHeader = memo(function OrganizationHeader({
   organization,
+  projects,
+  projectCosts,
   onUpdateName,
   onDelete,
 }: OrganizationHeaderProps) {
@@ -55,6 +111,12 @@ export const OrganizationHeader = memo(function OrganizationHeader({
       handleCancelEdit()
     }
   }, [handleSaveEdit])
+
+  const handleExport = useCallback(() => {
+    exportToCSV(organization, projects, projectCosts)
+  }, [organization, projects, projectCosts])
+
+  const hasDataToExport = projects.length > 0
 
   return (
     <div className="space-y-4">
@@ -121,17 +183,33 @@ export const OrganizationHeader = memo(function OrganizationHeader({
           )}
         </div>
 
-        {/* Bouton supprimer desktop */}
+        {/* Actions desktop */}
         {!isEditing && (
-          <div className="tooltip tooltip-left hidden sm:block" data-tip="Supprimer cette organisation">
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm text-base-content/50 hover:text-error hover:bg-error/10 cursor-pointer"
-              onClick={() => setShowDeleteConfirm(true)}
-              aria-label={`Supprimer l'organisation ${organization.name}`}
-            >
-              <Icons.Trash className="w-4 h-4" />
-            </button>
+          <div className="hidden sm:flex items-center gap-1">
+            {/* Bouton Exporter */}
+            {hasDataToExport && (
+              <div className="tooltip tooltip-bottom" data-tip="Exporter en CSV">
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm text-base-content/50 hover:text-primary hover:bg-primary/10 cursor-pointer"
+                  onClick={handleExport}
+                  aria-label="Exporter les donnees en CSV"
+                >
+                  <Icons.Download className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            {/* Bouton Supprimer */}
+            <div className="tooltip tooltip-left" data-tip="Supprimer cette organisation">
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm text-base-content/50 hover:text-error hover:bg-error/10 cursor-pointer"
+                onClick={() => setShowDeleteConfirm(true)}
+                aria-label={`Supprimer l'organisation ${organization.name}`}
+              >
+                <Icons.Trash className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -155,9 +233,20 @@ export const OrganizationHeader = memo(function OrganizationHeader({
         </div>
       )}
 
-      {/* Bouton supprimer mobile */}
+      {/* Actions mobile */}
       {!isEditing && (
-        <div className="sm:hidden pt-1">
+        <div className="sm:hidden pt-1 flex flex-col gap-1">
+          {hasDataToExport && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm text-base-content/50 hover:text-primary hover:bg-primary/10 w-full justify-center gap-2 cursor-pointer"
+              onClick={handleExport}
+              aria-label="Exporter les donnees en CSV"
+            >
+              <Icons.Download className="w-4 h-4" />
+              Exporter en CSV
+            </button>
+          )}
           <button
             type="button"
             className="btn btn-ghost btn-sm text-base-content/50 hover:text-error hover:bg-error/10 w-full justify-center gap-2 cursor-pointer"

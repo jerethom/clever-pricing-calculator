@@ -1,7 +1,9 @@
-import { memo, useCallback, useMemo } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
 import { formatPrice } from '@/lib/costCalculator'
 import { Icons } from '@/components/ui'
 import type { Project, ProjectCostSummary } from '@/types'
+
+type SortOption = 'name-asc' | 'cost-desc' | 'cost-asc'
 
 interface CostBreakdownBarProps {
   runtimesCost: number
@@ -157,6 +159,30 @@ export const OrganizationProjectList = memo(function OrganizationProjectList({
   onSelectProject,
   onCreateProject,
 }: OrganizationProjectListProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<SortOption>('name-asc')
+
+  // Filtrer et trier les projets
+  const filteredProjects = useMemo(() => {
+    return projects
+      .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      .sort((a, b) => {
+        if (sortBy === 'cost-desc') {
+          const costA = projectCosts.get(a.id)?.totalMonthlyCost ?? 0
+          const costB = projectCosts.get(b.id)?.totalMonthlyCost ?? 0
+          return costB - costA
+        }
+        if (sortBy === 'cost-asc') {
+          const costA = projectCosts.get(a.id)?.totalMonthlyCost ?? 0
+          const costB = projectCosts.get(b.id)?.totalMonthlyCost ?? 0
+          return costA - costB
+        }
+        return a.name.localeCompare(b.name)
+      })
+  }, [projects, searchQuery, sortBy, projectCosts])
+
+  const showFilters = projects.length > 1
+
   return (
     <div
       className="space-y-4"
@@ -181,10 +207,58 @@ export const OrganizationProjectList = memo(function OrganizationProjectList({
         </button>
       </div>
 
+      {/* Barre de recherche et tri */}
+      {showFilters && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Recherche */}
+          <div className="relative flex-1">
+            <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/40" />
+            <input
+              type="text"
+              placeholder="Rechercher un projet..."
+              className="input input-bordered input-sm w-full pl-9"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              aria-label="Rechercher un projet"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle"
+                onClick={() => setSearchQuery('')}
+                aria-label="Effacer la recherche"
+              >
+                <Icons.X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Tri */}
+          <select
+            className="select select-bordered select-sm min-w-[160px]"
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as SortOption)}
+            aria-label="Trier les projets"
+          >
+            <option value="name-asc">Nom A-Z</option>
+            <option value="cost-desc">Cout decroissant</option>
+            <option value="cost-asc">Cout croissant</option>
+          </select>
+        </div>
+      )}
+
+      {/* Indicateur de filtrage */}
+      {searchQuery && (
+        <p className="text-sm text-base-content/60">
+          {filteredProjects.length} projet{filteredProjects.length !== 1 ? 's' : ''} trouve{filteredProjects.length !== 1 ? 's' : ''}
+          {filteredProjects.length !== projects.length && ` sur ${projects.length}`}
+        </p>
+      )}
+
       {/* Liste des projets */}
-      {projects.length > 0 ? (
+      {filteredProjects.length > 0 ? (
         <div className="grid gap-3">
-          {projects.map(project => (
+          {filteredProjects.map(project => (
             <ProjectItem
               key={project.id}
               project={project}
@@ -192,6 +266,23 @@ export const OrganizationProjectList = memo(function OrganizationProjectList({
               onSelect={onSelectProject}
             />
           ))}
+        </div>
+      ) : searchQuery ? (
+        <div className="card bg-base-100 border border-base-300">
+          <div className="card-body items-center text-center py-8">
+            <Icons.Search className="w-8 h-8 text-base-content/30 mb-2" />
+            <h4 className="font-semibold">Aucun projet trouve</h4>
+            <p className="text-sm text-base-content/60">
+              Aucun projet ne correspond a "{searchQuery}"
+            </p>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm mt-2"
+              onClick={() => setSearchQuery('')}
+            >
+              Effacer la recherche
+            </button>
+          </div>
         </div>
       ) : (
         <div className="card bg-base-100 border border-base-300 border-dashed">

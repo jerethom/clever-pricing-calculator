@@ -11,6 +11,7 @@ import { useActiveOrganizationCosts } from '@/hooks/useCostCalculation'
 import { Icons } from '@/components/ui'
 import { OrganizationHeader } from './OrganizationHeader'
 import { OrganizationStats } from './OrganizationStats'
+import { OrganizationBudgetGauge } from './OrganizationBudgetGauge'
 import { OrganizationCostBreakdown } from './OrganizationCostBreakdown'
 import { OrganizationProjectList } from './OrganizationProjectList'
 import { OrganizationProjections } from './OrganizationProjections'
@@ -37,6 +38,10 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
     let totalMonthlyCost = 0
     let totalRuntimesCost = 0
     let totalAddonsCost = 0
+    let totalMinCost = 0
+    let totalMaxCost = 0
+    let totalBaseCost = 0
+    let totalScalingCost = 0
 
     for (const project of projects) {
       totalRuntimes += project.runtimes.length
@@ -46,6 +51,12 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
         totalMonthlyCost += cost.totalMonthlyCost
         totalRuntimesCost += cost.runtimesCost
         totalAddonsCost += cost.addonsCost
+        // Calcul des plages min/max
+        totalMinCost += cost.runtimesDetail.reduce((s, r) => s + r.minMonthlyCost, 0) + cost.addonsCost
+        totalMaxCost += cost.runtimesDetail.reduce((s, r) => s + r.maxMonthlyCost, 0) + cost.addonsCost
+        // Calcul des couts base/scaling
+        totalBaseCost += cost.runtimesDetail.reduce((s, r) => s + r.baseMonthlyCost, 0) + cost.addonsCost
+        totalScalingCost += cost.runtimesDetail.reduce((s, r) => s + r.estimatedScalingCost, 0)
       }
     }
 
@@ -56,6 +67,10 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
       totalMonthlyCost,
       totalRuntimesCost,
       totalAddonsCost,
+      totalMinCost,
+      totalMaxCost,
+      totalBaseCost,
+      totalScalingCost,
     }
   }, [projects, projectCosts])
 
@@ -83,6 +98,12 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
     setActiveProject(projectId)
   }, [setActiveProject])
 
+  const handleUpdateBudget = useCallback((budget: number | undefined) => {
+    if (organization) {
+      updateOrganization(organization.id, { budgetTarget: budget })
+    }
+  }, [organization, updateOrganization])
+
   if (!organization) {
     return null
   }
@@ -103,6 +124,8 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
       {/* Header avec nom editable */}
       <OrganizationHeader
         organization={organization}
+        projects={projects}
+        projectCosts={projectCosts}
         onUpdateName={handleUpdateName}
         onDelete={handleDelete}
       />
@@ -154,12 +177,23 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
         >
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              {/* Jauge de budget et cout total */}
+              <OrganizationBudgetGauge
+                currentCost={stats.totalMonthlyCost}
+                minCost={stats.totalMinCost}
+                maxCost={stats.totalMaxCost}
+                budgetTarget={organization.budgetTarget}
+                onUpdateBudget={handleUpdateBudget}
+              />
+
               {/* Statistiques cles */}
               <OrganizationStats
                 projectsCount={stats.projectsCount}
                 runtimesCount={stats.runtimesCount}
                 addonsCount={stats.addonsCount}
                 totalMonthlyCost={stats.totalMonthlyCost}
+                minMonthlyCost={stats.totalMinCost}
+                maxMonthlyCost={stats.totalMaxCost}
               />
 
               {/* Repartition des couts */}
@@ -167,6 +201,10 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
                 totalRuntimesCost={stats.totalRuntimesCost}
                 totalAddonsCost={stats.totalAddonsCost}
                 totalMonthlyCost={stats.totalMonthlyCost}
+                totalBaseCost={stats.totalBaseCost}
+                totalScalingCost={stats.totalScalingCost}
+                projects={projects}
+                projectCosts={projectCosts}
               />
 
               {/* Liste des projets */}
