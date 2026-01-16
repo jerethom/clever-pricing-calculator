@@ -209,83 +209,52 @@ export function ProjectView() {
         )}
       </div>
 
-      {/* Onglets */}
+      {/* Onglets - Design Pill/Segment */}
       <div
         role="tablist"
         aria-label="Sections du projet"
-        className="grid grid-cols-1 sm:grid-cols-3 gap-1 p-1 bg-base-200/50 rounded-xl pb-8"
+        className="flex bg-base-200 p-1 gap-1"
       >
-        {/* Onglet Runtimes */}
-        <button
-          type="button"
-          role="tab"
-          id="tab-runtimes"
-          aria-selected={activeTab === 'runtimes'}
-          aria-controls="tabpanel-runtimes"
-          className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors duration-200
-            ${activeTab === 'runtimes'
-              ? 'bg-base-100 border-b-2 border-primary'
-              : 'bg-base-100 hover:bg-primary/10'
-            }`}
-          onClick={() => setActiveTab('runtimes')}
-        >
-          <div className={`p-1.5 rounded-md transition-colors duration-200 ${activeTab === 'runtimes' ? 'bg-primary/10 text-primary' : 'text-base-content/60 group-hover:text-primary'}`}>
-            <Icons.Server className="w-4 h-4" />
-          </div>
-          <span className={`font-medium transition-colors duration-200 ${activeTab === 'runtimes' ? 'text-primary' : 'text-base-content/70 group-hover:text-base-content'}`}>
-            Runtimes
-          </span>
-          <span className={`badge badge-sm ${activeTab === 'runtimes' ? 'badge-primary' : 'badge-ghost'}`}>
-            {activeProject.runtimes.length}
-          </span>
-        </button>
+        {(['runtimes', 'addons', 'summary'] as const).map((tab) => {
+          const isActive = activeTab === tab;
+          const config = {
+            runtimes: { icon: Icons.Server, label: 'Runtimes', count: activeProject.runtimes.length, color: 'primary' },
+            addons: { icon: Icons.Puzzle, label: 'Addons', count: activeProject.addons.length, color: 'secondary' },
+            summary: { icon: Icons.TrendingUp, label: 'Projection', count: null, color: 'accent' },
+          }[tab];
+          const Icon = config.icon;
 
-        {/* Onglet Addons */}
-        <button
-          type="button"
-          role="tab"
-          id="tab-addons"
-          aria-selected={activeTab === 'addons'}
-          aria-controls="tabpanel-addons"
-          className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors duration-200
-            ${activeTab === 'addons'
-              ? 'bg-base-100 border-b-2 border-secondary'
-              : 'bg-base-100 hover:bg-secondary/10'
-            }`}
-          onClick={() => setActiveTab('addons')}
-        >
-          <div className={`p-1.5 rounded-md transition-colors duration-200 ${activeTab === 'addons' ? 'bg-secondary/10 text-secondary' : 'text-base-content/60 group-hover:text-secondary'}`}>
-            <Icons.Puzzle className="w-4 h-4" />
-          </div>
-          <span className={`font-medium transition-colors duration-200 ${activeTab === 'addons' ? 'text-secondary' : 'text-base-content/70 group-hover:text-base-content'}`}>
-            Addons
-          </span>
-          <span className={`badge badge-sm ${activeTab === 'addons' ? 'badge-secondary' : 'badge-ghost'}`}>
-            {activeProject.addons.length}
-          </span>
-        </button>
-
-        {/* Onglet Projection */}
-        <button
-          type="button"
-          role="tab"
-          id="tab-summary"
-          aria-selected={activeTab === 'summary'}
-          aria-controls="tabpanel-summary"
-          className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors duration-200
-            ${activeTab === 'summary'
-              ? 'bg-base-100 border-b-2 border-accent'
-              : 'bg-base-100 hover:bg-accent/10'
-            }`}
-          onClick={() => setActiveTab('summary')}
-        >
-          <div className={`p-1.5 rounded-md transition-colors duration-200 ${activeTab === 'summary' ? 'bg-accent/10 text-accent' : 'text-base-content/60 group-hover:text-accent'}`}>
-            <Icons.TrendingUp className="w-4 h-4" />
-          </div>
-          <span className={`font-medium transition-colors duration-200 ${activeTab === 'summary' ? 'text-accent' : 'text-base-content/70 group-hover:text-base-content'}`}>
-            Projection
-          </span>
-        </button>
+          return (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              id={`tab-${tab}`}
+              aria-selected={isActive}
+              aria-controls={`tabpanel-${tab}`}
+              className={`
+                flex-1 flex items-center justify-center gap-2 px-4 py-2.5
+                font-medium text-sm transition-all duration-200
+                ${isActive
+                  ? 'bg-base-100 shadow-sm text-base-content'
+                  : 'text-base-content/60 hover:text-base-content hover:bg-base-100/50'
+                }
+              `}
+              onClick={() => setActiveTab(tab)}
+            >
+              <Icon className={`w-4 h-4 ${isActive ? `text-${config.color}` : ''}`} />
+              <span>{config.label}</span>
+              {config.count !== null && (
+                <span className={`
+                  px-1.5 py-0.5 text-xs
+                  ${isActive ? `bg-${config.color}/10 text-${config.color}` : 'bg-base-300 text-base-content/50'}
+                `}>
+                  {config.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Contenu des onglets */}
