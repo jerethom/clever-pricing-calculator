@@ -16,13 +16,13 @@ export const DAY_LETTERS = ["L", "M", "M", "J", "V", "S", "D"] as const;
 // Constantes de tri
 /** Features prioritaires pour l'affichage des addons (par ordre de priorite) */
 export const PRIORITY_FEATURES = [
-	"memory",
-	"max_db_size",
-	"disk",
-	"vcpus",
-	"cpu",
-	"storage",
-	"max_connection_limit",
+  "memory",
+  "max_db_size",
+  "disk",
+  "vcpus",
+  "cpu",
+  "storage",
+  "max_connection_limit",
 ] as const;
 
 // Couleurs des profils de scaling

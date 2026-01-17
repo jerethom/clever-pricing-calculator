@@ -2,18 +2,18 @@
 
 // Helpers
 export {
-	useProjectAction,
-	useProjectActions,
-	useProjectStoreSelective,
-	useSelector,
-	useSelectors,
-	useSelectorWith,
+  useProjectAction,
+  useProjectActions,
+  useProjectStoreSelective,
+  useSelector,
+  useSelectors,
+  useSelectorWith,
 } from "./createSelectors";
 export type {
-	OrganizationActions,
-	ProjectActions,
-	ProjectState,
-	ProjectStore,
+  OrganizationActions,
+  ProjectActions,
+  ProjectState,
+  ProjectStore,
 } from "./projectStore";
 export { useProjectStore } from "./projectStore";
 // Selectors

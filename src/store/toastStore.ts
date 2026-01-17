@@ -4,48 +4,48 @@ import { generateToastId } from "@/lib/typeid";
 export type ToastType = "success" | "error" | "warning" | "info";
 
 interface Toast {
-	id: string;
-	type: ToastType;
-	message: string;
+  id: string;
+  type: ToastType;
+  message: string;
 }
 
 interface ToastStore {
-	toasts: Toast[];
-	addToast: (type: ToastType, message: string) => void;
-	removeToast: (id: string) => void;
+  toasts: Toast[];
+  addToast: (type: ToastType, message: string) => void;
+  removeToast: (id: string) => void;
 }
 
 export const useToastStore = create<ToastStore>((set) => ({
-	toasts: [],
+  toasts: [],
 
-	addToast: (type, message) => {
-		const id = generateToastId();
-		set((state) => ({
-			toasts: [...state.toasts, { id, type, message }],
-		}));
+  addToast: (type, message) => {
+    const id = generateToastId();
+    set((state) => ({
+      toasts: [...state.toasts, { id, type, message }],
+    }));
 
-		// Auto-remove after 4 seconds
-		setTimeout(() => {
-			set((state) => ({
-				toasts: state.toasts.filter((t) => t.id !== id),
-			}));
-		}, 4000);
-	},
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+      set((state) => ({
+        toasts: state.toasts.filter((t) => t.id !== id),
+      }));
+    }, 4000);
+  },
 
-	removeToast: (id) => {
-		set((state) => ({
-			toasts: state.toasts.filter((t) => t.id !== id),
-		}));
-	},
+  removeToast: (id) => {
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id),
+    }));
+  },
 }));
 
 // Helper functions for easier usage
 export const toast = {
-	success: (message: string) =>
-		useToastStore.getState().addToast("success", message),
-	error: (message: string) =>
-		useToastStore.getState().addToast("error", message),
-	warning: (message: string) =>
-		useToastStore.getState().addToast("warning", message),
-	info: (message: string) => useToastStore.getState().addToast("info", message),
+  success: (message: string) =>
+    useToastStore.getState().addToast("success", message),
+  error: (message: string) =>
+    useToastStore.getState().addToast("error", message),
+  warning: (message: string) =>
+    useToastStore.getState().addToast("warning", message),
+  info: (message: string) => useToastStore.getState().addToast("info", message),
 };

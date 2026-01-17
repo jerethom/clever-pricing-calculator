@@ -9,15 +9,15 @@ import type { ProjectState } from "../projectStore";
  * Selectionne la liste de toutes les organisations
  */
 export const selectOrganizations = (state: ProjectState): Organization[] =>
-	state.organizations;
+  state.organizations;
 
 /**
  * Selectionne l'organisation active ou null
  */
 export const selectActiveOrganization = (
-	state: ProjectState,
+  state: ProjectState,
 ): Organization | null =>
-	state.organizations.find((o) => o.id === state.activeOrganizationId) ?? null;
+  state.organizations.find((o) => o.id === state.activeOrganizationId) ?? null;
 
 // ============================================================================
 // Selectors derives Organisation -> Projets
@@ -27,6 +27,6 @@ export const selectActiveOrganization = (
  * Selectionne les projets de l'organisation active
  */
 export const selectActiveOrganizationProjects = (
-	state: ProjectState,
+  state: ProjectState,
 ): Project[] =>
-	state.projects.filter((p) => p.organizationId === state.activeOrganizationId);
+  state.projects.filter((p) => p.organizationId === state.activeOrganizationId);

@@ -1,5 +1,9 @@
+export { CloneDialog } from "./CloneDialog";
 export { ConfirmDialog } from "./ConfirmDialog";
+export type { DropdownMenuItem } from "./DropdownMenu";
+export { DropdownMenu } from "./DropdownMenu";
 export { Icons } from "./Icons";
+export { MoveProjectDialog } from "./MoveProjectDialog";
 export { NumberInput } from "./NumberInput";
 export { Portal } from "./Portal";
 export type { SkeletonProps, SkeletonShape } from "./Skeleton";
