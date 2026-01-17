@@ -1,10 +1,9 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from "react";
-import { Icons } from "@/components/ui";
+import { Icons, PriceRange } from "@/components/ui";
 import { useInstances } from "@/hooks/useInstances";
 import {
   buildFlavorPriceMap,
   calculateRuntimeCost,
-  formatPrice,
   getAvailableFlavors,
 } from "@/lib/costCalculator";
 import { selectProjectById, useSelectorWith } from "@/store";
@@ -117,15 +116,6 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
     return result;
   }, [runtimesWithCosts, filterType, searchQuery, sortBy]);
 
-  // Calcul position jauge globale (memoize)
-  const gaugePosition = useMemo(() => {
-    return costSummary.max > costSummary.min
-      ? ((costSummary.total - costSummary.min) /
-          (costSummary.max - costSummary.min)) *
-          100
-      : 0;
-  }, [costSummary.total, costSummary.min, costSummary.max]);
-
   // Handlers de filtrage/tri (useCallback pour eviter re-renders des enfants)
   const handleOpenForm = useCallback(() => {
     setShowForm(true);
@@ -205,37 +195,25 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
         <div className="card bg-gradient-to-r from-base-200 to-base-100 border border-base-300">
           <div className="card-body p-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
-              {/* Cout total */}
+              {/* Estimation avec PriceRange */}
               <div className="flex items-center gap-4">
                 <div className="bg-primary/10 p-3 rounded-lg">
                   <Icons.Chart className="w-6 h-6 text-primary" />
                 </div>
-                <div>
-                  <p className="text-sm text-base-content/60 font-medium">
-                    Estimation mensuelle totale
-                  </p>
-                  <p className="text-2xl font-bold text-primary">
-                    {formatPrice(costSummary.total)}
-                  </p>
-                </div>
+                <p className="text-sm text-base-content/60 font-medium">
+                  Estimation mensuelle totale
+                </p>
               </div>
 
-              {/* Jauge min-max */}
+              {/* PriceRange standard */}
               <div className="w-full max-w-md justify-self-center">
-                <div className="flex justify-between text-xs text-base-content/60 mb-1">
-                  <span>{formatPrice(costSummary.min)}</span>
-                  <span>{formatPrice(costSummary.max)}</span>
-                </div>
-                <div className="h-2 bg-base-300 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, gaugePosition)}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-base-content/50 mt-1">
-                  <span>Base</span>
-                  <span>Scaling 24/7</span>
-                </div>
+                <PriceRange
+                  min={costSummary.min}
+                  estimated={costSummary.total}
+                  max={costSummary.max}
+                  size="md"
+                  allowSingle
+                />
               </div>
 
               {/* Stats rapides */}
