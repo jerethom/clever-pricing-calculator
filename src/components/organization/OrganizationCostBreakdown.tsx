@@ -1,30 +1,25 @@
 import { memo, useCallback, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { Icons } from "@/components/ui";
 import { formatPrice } from "@/lib/costCalculator";
 import type { Project, ProjectCostSummary } from "@/types";
 
-// Couleurs pour le donut chart (utilisant les couleurs DaisyUI)
+// Palette de couleurs data-friendly pour le donut chart
+// Couleurs distinctes, sans connotation sémantique, bonne accessibilité
 const DONUT_COLORS = [
-  "hsl(var(--p))", // primary
-  "hsl(var(--s))", // secondary
-  "hsl(var(--a))", // accent
-  "hsl(var(--in))", // info
-  "hsl(var(--su))", // success
-  "hsl(var(--wa))", // warning
-  "hsl(var(--er))", // error
-  "hsl(var(--n))", // neutral
+  "oklch(55% 0.15 280)", // violet
+  "oklch(55% 0.15 250)", // bleu
+  "oklch(58% 0.12 200)", // cyan
+  "oklch(55% 0.12 170)", // teal
+  "oklch(60% 0.14 145)", // vert-teal
+  "oklch(72% 0.15 85)", // jaune-or
+  "oklch(65% 0.17 45)", // orange
+  "oklch(62% 0.16 350)", // rose
 ];
+
+// Couleurs pour la barre Runtimes/Addons (réutilise la palette du donut)
+const RUNTIME_COLOR = "oklch(49.02% 0.1046 281.52)";
+const ADDON_COLOR = "oklch(60.54% 0.1752 230.9)";
 
 interface ProjectCostData {
   project: Project;
@@ -134,82 +129,6 @@ const DonutChart = memo(function DonutChart({
   );
 });
 
-// Interface pour les donnees du BarChart
-interface ResourceBarData {
-  name: string;
-  runtimes: number;
-  addons: number;
-}
-
-// Custom legend pour le BarChart
-interface LegendPayload {
-  value: string;
-  color: string;
-  dataKey: string;
-}
-
-interface CustomLegendProps {
-  payload?: LegendPayload[];
-  runtimesPercent: number;
-  addonsPercent: number;
-  totalRuntimesCost: number;
-  totalAddonsCost: number;
-}
-
-const CustomBarLegend = ({
-  payload,
-  runtimesPercent,
-  addonsPercent,
-  totalRuntimesCost,
-  totalAddonsCost,
-}: CustomLegendProps) => {
-  if (!payload) return null;
-
-  const dataMap: Record<
-    string,
-    { percent: number; cost: number; label: string }
-  > = {
-    runtimes: {
-      percent: runtimesPercent,
-      cost: totalRuntimesCost,
-      label: "Runtimes",
-    },
-    addons: { percent: addonsPercent, cost: totalAddonsCost, label: "Addons" },
-  };
-
-  return (
-    <div className="flex flex-wrap gap-4 sm:gap-6 mt-4 justify-center">
-      {payload.map((entry) => {
-        const data = dataMap[entry.dataKey];
-        if (!data || data.cost === 0) return null;
-        return (
-          <div key={entry.dataKey} className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: entry.color }}
-                aria-hidden="true"
-              />
-              <span className="text-sm font-medium">{data.label}</span>
-            </div>
-            <div className="text-right">
-              <span
-                className="text-sm font-bold"
-                style={{ color: entry.color }}
-              >
-                {formatPrice(data.cost)}
-              </span>
-              <span className="text-xs text-base-content/50 ml-1">
-                ({data.percent.toFixed(0)}%)
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
 interface OrganizationCostBreakdownProps {
   totalRuntimesCost: number;
   totalAddonsCost: number;
@@ -261,17 +180,6 @@ export const OrganizationCostBreakdown = memo(
       ? projectCostData
       : projectCostData.slice(0, MAX_VISIBLE_PROJECTS);
     const hiddenCount = projectCostData.length - MAX_VISIBLE_PROJECTS;
-
-    // Donnees pour le BarChart horizontal
-    const resourceBarData = useMemo((): ResourceBarData[] => {
-      return [
-        {
-          name: "Ressources",
-          runtimes: totalRuntimesCost,
-          addons: totalAddonsCost,
-        },
-      ];
-    }, [totalRuntimesCost, totalAddonsCost]);
 
     const showDonutChart = projectCostData.length > 1;
 
@@ -358,56 +266,79 @@ export const OrganizationCostBreakdown = memo(
             </h4>
           )}
 
-          {/* BarChart horizontal stacke */}
+          {/* Barre horizontale stackée (HTML natif) */}
           <div
             className="w-full"
             role="img"
             aria-label={`Repartition: Runtimes ${runtimesPercent.toFixed(0)}%, Addons ${addonsPercent.toFixed(0)}%`}
           >
-            <ResponsiveContainer width="100%" height={60}>
-              <BarChart
-                data={resourceBarData}
-                layout="vertical"
-                margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-              >
-                <XAxis type="number" hide domain={[0, totalMonthlyCost]} />
-                <YAxis type="category" dataKey="name" hide />
-                <Legend
-                  content={
-                    <CustomBarLegend
-                      runtimesPercent={runtimesPercent}
-                      addonsPercent={addonsPercent}
-                      totalRuntimesCost={totalRuntimesCost}
-                      totalAddonsCost={totalAddonsCost}
-                    />
-                  }
+            {/* Barre de progression */}
+            <div className="h-3 bg-base-200 rounded-full overflow-hidden flex">
+              {runtimesPercent > 0 && (
+                <div
+                  className="h-full transition-all duration-500 ease-out"
+                  style={{
+                    width: `${runtimesPercent}%`,
+                    backgroundColor: RUNTIME_COLOR,
+                    borderRadius:
+                      addonsPercent > 0 ? "9999px 0 0 9999px" : "9999px",
+                  }}
                 />
-                {totalRuntimesCost > 0 && (
-                  <Bar
-                    dataKey="runtimes"
-                    stackId="a"
-                    fill="hsl(var(--p))"
-                    name="Runtimes"
-                    radius={totalAddonsCost > 0 ? [8, 0, 0, 8] : [8, 8, 8, 8]}
-                    animationBegin={0}
-                    animationDuration={700}
-                    animationEasing="ease-out"
+              )}
+              {addonsPercent > 0 && (
+                <div
+                  className="h-full transition-all duration-500 ease-out"
+                  style={{
+                    width: `${addonsPercent}%`,
+                    backgroundColor: ADDON_COLOR,
+                    borderRadius:
+                      runtimesPercent > 0 ? "0 9999px 9999px 0" : "9999px",
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Légende */}
+            <div className="flex flex-wrap gap-4 sm:gap-6 mt-3 justify-start">
+              {totalRuntimesCost > 0 && (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: RUNTIME_COLOR }}
+                    aria-hidden="true"
                   />
-                )}
-                {totalAddonsCost > 0 && (
-                  <Bar
-                    dataKey="addons"
-                    stackId="a"
-                    fill="hsl(var(--s))"
-                    name="Addons"
-                    radius={totalRuntimesCost > 0 ? [0, 8, 8, 0] : [8, 8, 8, 8]}
-                    animationBegin={0}
-                    animationDuration={700}
-                    animationEasing="ease-out"
+                  <span className="text-sm font-medium">Runtimes</span>
+                  <span
+                    className="text-sm font-bold"
+                    style={{ color: RUNTIME_COLOR }}
+                  >
+                    {formatPrice(totalRuntimesCost)}
+                  </span>
+                  <span className="text-xs text-base-content/50">
+                    ({runtimesPercent.toFixed(0)}%)
+                  </span>
+                </div>
+              )}
+              {totalAddonsCost > 0 && (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: ADDON_COLOR }}
+                    aria-hidden="true"
                   />
-                )}
-              </BarChart>
-            </ResponsiveContainer>
+                  <span className="text-sm font-medium">Addons</span>
+                  <span
+                    className="text-sm font-bold"
+                    style={{ color: ADDON_COLOR }}
+                  >
+                    {formatPrice(totalAddonsCost)}
+                  </span>
+                  <span className="text-xs text-base-content/50">
+                    ({addonsPercent.toFixed(0)}%)
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Indicateur de scaling */}
