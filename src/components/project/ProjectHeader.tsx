@@ -1,11 +1,12 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   CloneDialog,
   ConfirmDialog,
   Icons,
   MoveProjectDialog,
 } from "@/components/ui";
+import { PriceRange } from "@/components/ui/PriceRange";
 import { useProjectCost } from "@/hooks/useCostCalculation";
 import { formatPrice } from "@/lib/costCalculator";
 import {
@@ -59,6 +60,19 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
     useProjectActions();
   const addToast = useToastStore((s) => s.addToast);
   const cost = useProjectCost(project.id);
+
+  const { minCost, maxCost, estimatedCost } = useMemo(() => {
+    if (!cost) {
+      return { minCost: 0, maxCost: 0, estimatedCost: 0 };
+    }
+    const min =
+      cost.runtimesDetail.reduce((sum, r) => sum + r.minMonthlyCost, 0) +
+      cost.addonsCost;
+    const max =
+      cost.runtimesDetail.reduce((sum, r) => sum + r.maxMonthlyCost, 0) +
+      cost.addonsCost;
+    return { minCost: min, maxCost: max, estimatedCost: cost.totalMonthlyCost };
+  }, [cost]);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
@@ -259,12 +273,24 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
             <span className="hidden sm:block text-base-300" aria-hidden="true">
               |
             </span>
-            <div className="flex items-center gap-2">
-              <Icons.Chart className="w-4 h-4 text-primary" />
-              <span className="font-bold text-primary text-base">
-                {cost ? formatPrice(cost.totalMonthlyCost) : "..."}
-              </span>
-              <span className="text-base-content/60">/mois</span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <Icons.Chart className="w-4 h-4 text-primary" />
+                <span className="font-bold text-primary text-base">
+                  {cost ? formatPrice(cost.totalMonthlyCost) : "..."}
+                </span>
+                <span className="text-base-content/60">/mois</span>
+              </div>
+              {cost && (
+                <PriceRange
+                  min={minCost}
+                  estimated={estimatedCost}
+                  max={maxCost}
+                  compact
+                  size="sm"
+                  className="text-xs mt-1"
+                />
+              )}
             </div>
           </div>
         )}

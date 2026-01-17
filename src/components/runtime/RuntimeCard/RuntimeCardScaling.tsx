@@ -7,7 +7,7 @@ import type { ScalingProfile } from "@/types";
 import { useRuntimeCardContext } from "./RuntimeCardContext";
 import type { RuntimeCardScalingProps } from "./types";
 
-const HOURS_PER_MONTH = 730;
+const HOURS_PER_MONTH = 720;
 
 const formatFlavorOption = (f: InstanceFlavor) =>
   `${f.name} (${f.memory.formatted}, ${f.cpus} vCPU) - ${formatPrice(f.price * HOURS_PER_MONTH)}/mois`;

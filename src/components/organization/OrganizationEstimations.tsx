@@ -87,6 +87,7 @@ const ProjectEstimationItem = memo(function ProjectEstimationItem({
               estimated={estimatedCost}
               max={maxMonthlyCost}
               compact
+              allowSingle
             />
           </div>
           <div className="flex items-center justify-between">
@@ -99,6 +100,7 @@ const ProjectEstimationItem = memo(function ProjectEstimationItem({
               estimated={projectedCost}
               max={projectedMax}
               compact
+              allowSingle
             />
           </div>
         </div>
@@ -216,6 +218,7 @@ export const OrganizationEstimations = memo(function OrganizationEstimations({
                 estimated={totals.monthly}
                 max={totals.maxMonthly}
                 size="md"
+                allowSingle
               />
               {budgetTarget &&
                 totals.hasCostRange &&
@@ -241,6 +244,7 @@ export const OrganizationEstimations = memo(function OrganizationEstimations({
                 estimated={projectedTotal}
                 max={projectedMax}
                 size="md"
+                allowSingle
               />
               {budgetTarget &&
                 totals.hasCostRange &&

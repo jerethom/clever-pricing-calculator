@@ -50,7 +50,7 @@ export const CostRuntimeCard = memo(function CostRuntimeCard({
             </span>
           </div>
           <div className="flex items-center justify-between text-xs text-base-content/60">
-            <span>24/7 (730h/mois)</span>
+            <span>24/7 (720h/mois)</span>
             <span>{formatHourlyPrice(runtime.baseHourlyPrice)}</span>
           </div>
         </div>

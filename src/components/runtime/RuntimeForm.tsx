@@ -5,7 +5,7 @@ import { useInstances } from "@/hooks/useInstances";
 import { formatHourlyPrice, formatMonthlyPrice } from "@/lib/costCalculator";
 import { useProjectAction } from "@/store";
 
-const HOURS_PER_MONTH = 730; // ~24h x 30.4j
+const HOURS_PER_MONTH = 720; // 30j × 24h (standard Clever Cloud)
 
 interface RuntimeFormProps {
   projectId: string;
@@ -447,7 +447,7 @@ function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
                             {instanceCount} instance
                             {instanceCount > 1 ? "s" : ""} ×{" "}
                             {formatHourlyPrice(selectedFlavorData.price)}/h ×
-                            730h
+                            720h
                           </p>
                         </div>
                       </div>

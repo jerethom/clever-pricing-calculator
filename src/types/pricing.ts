@@ -8,7 +8,7 @@ export interface RuntimeCostDetail {
   baseFlavorName: string;
   baseInstances: number;
   baseHourlyPrice: number;
-  baseMonthlyCost: number; // baseInstances × baseHourlyPrice × 730h
+  baseMonthlyCost: number; // baseInstances × baseHourlyPrice × 720h
   // Estimation du scaling par niveau de charge
   estimatedScalingCost: number;
   estimatedTotalCost: number; // baseMonthlyCost + estimatedScalingCost

@@ -14,7 +14,7 @@ import {
   calculateScalingAtLevel,
 } from "./scalingCalculator";
 
-const HOURS_PER_MONTH = 730; // ~24h × 30.4j
+const HOURS_PER_MONTH = 720; // 30j × 24h (standard Clever Cloud)
 
 /**
  * Calcule le coût total pour un runtime basé sur son planning hebdomadaire
@@ -143,7 +143,7 @@ export function calculateRuntimeCost(
     }
   }
 
-  // Convertir en coût mensuel (168h/semaine → ~730h/mois)
+  // Convertir en coût mensuel (168h/semaine → ~720h/mois)
   const estimatedTotalCost = totalWeeklyCost * WEEKS_PER_MONTH;
 
   // Le coût de base n'existe plus en mode scaling, c'est le coût du planning niveau 0

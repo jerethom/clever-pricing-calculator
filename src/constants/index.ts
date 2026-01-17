@@ -3,8 +3,8 @@
  */
 
 // Constantes de temps
-/** Nombre moyen d'heures par mois (~24h x 30.4j) */
-export const HOURS_PER_MONTH = 730;
+/** Nombre d'heures par mois (30j x 24h, standard Clever Cloud) */
+export const HOURS_PER_MONTH = 720;
 
 /** Nombre moyen de semaines par mois */
 export const WEEKS_PER_MONTH = 4.33;

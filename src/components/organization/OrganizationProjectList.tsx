@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { memo, useMemo, useState } from "react";
 import { Icons } from "@/components/ui";
+import { PriceRange } from "@/components/ui/PriceRange";
 import { formatPrice } from "@/lib/costCalculator";
 import type { Project, ProjectCostSummary } from "@/types";
 
@@ -62,6 +63,19 @@ const ProjectItem = memo(function ProjectItem({
   const { runtimes, addons } = project;
   const hasCost = cost && cost.totalMonthlyCost > 0;
 
+  const { minCost, maxCost, estimatedCost } = useMemo(() => {
+    if (!cost) {
+      return { minCost: 0, maxCost: 0, estimatedCost: 0 };
+    }
+    const min =
+      cost.runtimesDetail.reduce((sum, r) => sum + r.minMonthlyCost, 0) +
+      cost.addonsCost;
+    const max =
+      cost.runtimesDetail.reduce((sum, r) => sum + r.maxMonthlyCost, 0) +
+      cost.addonsCost;
+    return { minCost: min, maxCost: max, estimatedCost: cost.totalMonthlyCost };
+  }, [cost]);
+
   return (
     <Link
       to="/org/$orgId/project/$projectId/runtimes"
@@ -98,6 +112,16 @@ const ProjectItem = memo(function ProjectItem({
                 {cost ? formatPrice(cost.totalMonthlyCost) : "..."}
               </p>
               <p className="text-xs text-base-content/50">/mois</p>
+              {cost && (
+                <PriceRange
+                  min={minCost}
+                  estimated={estimatedCost}
+                  max={maxCost}
+                  compact
+                  size="sm"
+                  className="text-xs mt-1"
+                />
+              )}
             </div>
             <Icons.ChevronRight className="w-5 h-5 text-base-content/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
           </div>

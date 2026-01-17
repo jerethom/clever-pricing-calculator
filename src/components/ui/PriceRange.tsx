@@ -8,6 +8,7 @@ interface PriceRangeProps {
   size?: "sm" | "md" | "lg";
   showBar?: boolean;
   compact?: boolean;
+  allowSingle?: boolean;
   className?: string;
 }
 
@@ -51,6 +52,7 @@ export const PriceRange = memo(function PriceRange({
   size = "md",
   showBar = true,
   compact = false,
+  allowSingle = false,
   className = "",
 }: PriceRangeProps) {
   const config = sizeConfig[size];
@@ -61,7 +63,32 @@ export const PriceRange = memo(function PriceRange({
   }, [min, estimated, max]);
 
   if (min === max) {
-    return null;
+    if (!allowSingle) {
+      return null;
+    }
+
+    if (compact) {
+      return (
+        <div className={`flex items-center gap-1.5 tabular-nums ${className}`}>
+          <span className="text-primary font-semibold">
+            {formatPrice(estimated)}
+          </span>
+          <span className="text-base-content/50 text-xs">(fixe)</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className={className}>
+        <div className="text-center">
+          <div className={`${config.label} text-primary mb-0.5`}>Estimé</div>
+          <div className={`${config.estimatedValue} text-primary tabular-nums`}>
+            {formatPrice(estimated)}
+          </div>
+          <div className="text-xs text-base-content/50 mt-1">Prix fixe</div>
+        </div>
+      </div>
+    );
   }
 
   if (compact) {

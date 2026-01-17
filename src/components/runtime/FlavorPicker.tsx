@@ -2,7 +2,7 @@ import type { InstanceFlavor } from "@/api/types";
 import { Portal } from "@/components/ui";
 import { formatHourlyPrice, formatMonthlyPrice } from "@/lib/costCalculator";
 
-const HOURS_PER_MONTH = 730;
+const HOURS_PER_MONTH = 720;
 
 interface FlavorPickerProps {
   isOpen: boolean;

@@ -1,3 +1,2 @@
 - [x] /feature-react Afficher les prix min, estimé et max dans les endroits où sont affichés les prix pour qu'il soit mieux visible.
-- [ ] /feature-react Améliore l'affichage la partie "Repartition des couts" dans l'organisation. Utilise le serveur mcp playwright pour voir.
-- [ ] 
+- [ ] /feature-react Améliore l'affichage la partie "Repartition des couts" dans l'organisation en utilisant un vrai graphique.
