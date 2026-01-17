@@ -1,4 +1,15 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Icons } from "@/components/ui";
 import { formatPrice } from "@/lib/costCalculator";
 import type { Project, ProjectCostSummary } from "@/types";
@@ -20,6 +31,8 @@ interface ProjectCostData {
   cost: number;
   percent: number;
   color: string;
+  name: string;
+  [key: string]: unknown;
 }
 
 interface DonutChartProps {
@@ -29,107 +42,89 @@ interface DonutChartProps {
   onHover: (id: string | null) => void;
 }
 
+const MAX_VISIBLE_PROJECTS = 5;
+
 const DonutChart = memo(function DonutChart({
   data,
   total,
   hoveredId,
   onHover,
 }: DonutChartProps) {
-  // Calculer les segments du donut
-  const segments = useMemo(() => {
-    const result: Array<{
-      id: string;
-      color: string;
-      dasharray: string;
-      dashoffset: number;
-      name: string;
-      cost: number;
-      percent: number;
-    }> = [];
-
-    const circumference = 2 * Math.PI * 40; // rayon = 40
-    let offset = 0;
-
-    for (const item of data) {
-      const segmentLength = (item.percent / 100) * circumference;
-      result.push({
-        id: item.project.id,
-        color: item.color,
-        dasharray: `${segmentLength} ${circumference - segmentLength}`,
-        dashoffset: -offset,
-        name: item.project.name,
-        cost: item.cost,
-        percent: item.percent,
-      });
-      offset += segmentLength;
-    }
-
-    return result;
-  }, [data]);
-
-  const hoveredSegment = hoveredId
-    ? segments.find((s) => s.id === hoveredId)
+  const hoveredData = hoveredId
+    ? data.find((d) => d.project.id === hoveredId)
     : null;
 
+  const handleMouseEnter = useCallback(
+    (_: unknown, index: number) => {
+      onHover(data[index].project.id);
+    },
+    [data, onHover],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    onHover(null);
+  }, [onHover]);
+
   return (
-    <div className="relative flex items-center justify-center">
-      <svg
-        viewBox="0 0 100 100"
-        className="w-40 h-40 sm:w-48 sm:h-48 -rotate-90"
-        role="img"
-        aria-label="Repartition des couts par projet"
-      >
-        {/* Cercle de fond */}
-        <circle
-          cx="50"
-          cy="50"
-          r="40"
-          fill="transparent"
-          stroke="hsl(var(--b2))"
-          strokeWidth="15"
-        />
-        {/* Segments */}
-        {segments.map((segment) => (
-          <circle
-            key={segment.id}
-            cx="50"
-            cy="50"
-            r="40"
-            fill="transparent"
-            stroke={segment.color}
-            strokeWidth={hoveredId === segment.id ? 18 : 15}
-            strokeDasharray={segment.dasharray}
-            strokeDashoffset={segment.dashoffset}
-            className="transition-all duration-200 cursor-pointer"
-            onMouseEnter={() => onHover(segment.id)}
-            onMouseLeave={() => onHover(null)}
-            onFocus={() => onHover(segment.id)}
-            onBlur={() => onHover(null)}
-            style={{ opacity: hoveredId && hoveredId !== segment.id ? 0.5 : 1 }}
-            role="button"
-            tabIndex={0}
-            aria-label={`${segment.name}: ${formatPrice(segment.cost)} (${segment.percent.toFixed(1)}%)`}
-          />
-        ))}
-      </svg>
-      {/* Centre avec texte */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        {hoveredSegment ? (
+    <div
+      className="relative flex items-center justify-center flex-shrink-0"
+      role="img"
+      aria-label="Repartition des couts par projet"
+    >
+      <ResponsiveContainer width={160} height={160}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={45}
+            outerRadius={68}
+            paddingAngle={1}
+            dataKey="cost"
+            nameKey="name"
+            animationBegin={0}
+            animationDuration={800}
+            animationEasing="ease-out"
+            onMouseLeave={handleMouseLeave}
+          >
+            {data.map((entry, index) => (
+              <Cell
+                key={entry.project.id}
+                fill={entry.color}
+                stroke="transparent"
+                style={{
+                  opacity:
+                    hoveredId && hoveredId !== entry.project.id ? 0.5 : 1,
+                  cursor: "pointer",
+                  transition: "opacity 0.2s ease",
+                }}
+                onMouseEnter={(e) => handleMouseEnter(e, index)}
+                tabIndex={0}
+                onFocus={() => onHover(entry.project.id)}
+                onBlur={() => onHover(null)}
+                aria-label={`${entry.name}: ${formatPrice(entry.cost)} (${entry.percent.toFixed(1)}%)`}
+              />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+        {hoveredData ? (
           <>
-            <p className="text-xs text-base-content/60 truncate max-w-[100px]">
-              {hoveredSegment.name}
+            <p className="text-xs text-base-content/60 truncate max-w-[80px]">
+              {hoveredData.name}
             </p>
-            <p className="text-lg font-bold text-base-content tabular-nums">
-              {formatPrice(hoveredSegment.cost)}
+            <p className="text-base font-bold text-base-content tabular-nums">
+              {formatPrice(hoveredData.cost)}
             </p>
             <p className="text-xs text-base-content/50">
-              {hoveredSegment.percent.toFixed(1)}%
+              {hoveredData.percent.toFixed(1)}%
             </p>
           </>
         ) : (
           <>
             <p className="text-xs text-base-content/60">Total</p>
-            <p className="text-lg font-bold text-base-content tabular-nums">
+            <p className="text-base font-bold text-base-content tabular-nums">
               {formatPrice(total)}
             </p>
           </>
@@ -139,30 +134,104 @@ const DonutChart = memo(function DonutChart({
   );
 });
 
+// Interface pour les donnees du BarChart
+interface ResourceBarData {
+  name: string;
+  runtimes: number;
+  addons: number;
+}
+
+// Custom legend pour le BarChart
+interface LegendPayload {
+  value: string;
+  color: string;
+  dataKey: string;
+}
+
+interface CustomLegendProps {
+  payload?: LegendPayload[];
+  runtimesPercent: number;
+  addonsPercent: number;
+  totalRuntimesCost: number;
+  totalAddonsCost: number;
+}
+
+const CustomBarLegend = ({
+  payload,
+  runtimesPercent,
+  addonsPercent,
+  totalRuntimesCost,
+  totalAddonsCost,
+}: CustomLegendProps) => {
+  if (!payload) return null;
+
+  const dataMap: Record<
+    string,
+    { percent: number; cost: number; label: string }
+  > = {
+    runtimes: {
+      percent: runtimesPercent,
+      cost: totalRuntimesCost,
+      label: "Runtimes",
+    },
+    addons: { percent: addonsPercent, cost: totalAddonsCost, label: "Addons" },
+  };
+
+  return (
+    <div className="flex flex-wrap gap-4 sm:gap-6 mt-4 justify-center">
+      {payload.map((entry) => {
+        const data = dataMap[entry.dataKey];
+        if (!data || data.cost === 0) return null;
+        return (
+          <div key={entry.dataKey} className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: entry.color }}
+                aria-hidden="true"
+              />
+              <span className="text-sm font-medium">{data.label}</span>
+            </div>
+            <div className="text-right">
+              <span
+                className="text-sm font-bold"
+                style={{ color: entry.color }}
+              >
+                {formatPrice(data.cost)}
+              </span>
+              <span className="text-xs text-base-content/50 ml-1">
+                ({data.percent.toFixed(0)}%)
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 interface OrganizationCostBreakdownProps {
   totalRuntimesCost: number;
   totalAddonsCost: number;
   totalMonthlyCost: number;
-  totalBaseCost: number;
   totalScalingCost: number;
   projects: Project[];
   projectCosts: Map<string, ProjectCostSummary>;
 }
 
 export const OrganizationCostBreakdown = memo(
-  function OrganizationCostBreakdown(props: OrganizationCostBreakdownProps) {
-    const {
-      totalRuntimesCost,
-      totalAddonsCost,
-      totalMonthlyCost,
-      // totalBaseCost reserve pour usage futur
-      totalScalingCost,
-      projects,
-      projectCosts,
-    } = props;
+  function OrganizationCostBreakdown({
+    totalRuntimesCost,
+    totalAddonsCost,
+    totalMonthlyCost,
+    totalScalingCost,
+    projects,
+    projectCosts,
+  }: OrganizationCostBreakdownProps) {
     const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(
       null,
     );
+    const [showAllProjects, setShowAllProjects] = useState(false);
 
     const runtimesPercent =
       totalMonthlyCost > 0 ? (totalRuntimesCost / totalMonthlyCost) * 100 : 0;
@@ -181,11 +250,28 @@ export const OrganizationCostBreakdown = memo(
             cost,
             percent: totalMonthlyCost > 0 ? (cost / totalMonthlyCost) * 100 : 0,
             color: DONUT_COLORS[index % DONUT_COLORS.length],
+            name: project.name,
           };
         })
         .filter((item) => item.cost > 0)
         .sort((a, b) => b.cost - a.cost);
     }, [projects, projectCosts, totalMonthlyCost]);
+
+    const visibleProjects = showAllProjects
+      ? projectCostData
+      : projectCostData.slice(0, MAX_VISIBLE_PROJECTS);
+    const hiddenCount = projectCostData.length - MAX_VISIBLE_PROJECTS;
+
+    // Donnees pour le BarChart horizontal
+    const resourceBarData = useMemo((): ResourceBarData[] => {
+      return [
+        {
+          name: "Ressources",
+          runtimes: totalRuntimesCost,
+          addons: totalAddonsCost,
+        },
+      ];
+    }, [totalRuntimesCost, totalAddonsCost]);
 
     const showDonutChart = projectCostData.length > 1;
 
@@ -211,42 +297,56 @@ export const OrganizationCostBreakdown = memo(
 
           {/* Donut chart par projet */}
           {showDonutChart && (
-            <div className="flex flex-col lg:flex-row items-center gap-6 mb-6">
+            <div className="flex flex-col lg:flex-row items-start gap-4 mb-6">
               <DonutChart
                 data={projectCostData}
                 total={totalMonthlyCost}
                 hoveredId={hoveredProjectId}
                 onHover={setHoveredProjectId}
               />
-              {/* Legende des projets */}
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                {projectCostData.map((item) => (
-                  <button
-                    key={item.project.id}
-                    type="button"
-                    className={`
-                    flex items-center gap-2 p-2 rounded-lg text-left transition-all
-                    hover:bg-base-200 cursor-pointer
-                    ${hoveredProjectId === item.project.id ? "bg-base-200 ring-1 ring-base-300" : ""}
-                  `}
-                    onMouseEnter={() => setHoveredProjectId(item.project.id)}
-                    onMouseLeave={() => setHoveredProjectId(null)}
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: item.color }}
-                      aria-hidden="true"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
+              {/* Liste des projets compacte */}
+              <div className="flex-1 w-full">
+                <div className="flex flex-col gap-1">
+                  {visibleProjects.map((item) => (
+                    <button
+                      key={item.project.id}
+                      type="button"
+                      className={`
+                        flex items-center gap-2 px-2 py-1.5 rounded text-left transition-all
+                        hover:bg-base-200 cursor-pointer
+                        ${hoveredProjectId === item.project.id ? "bg-base-200" : ""}
+                      `}
+                      onMouseEnter={() => setHoveredProjectId(item.project.id)}
+                      onMouseLeave={() => setHoveredProjectId(null)}
+                    >
+                      <div
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: item.color }}
+                        aria-hidden="true"
+                      />
+                      <span className="flex-1 text-sm truncate min-w-0">
                         {item.project.name}
-                      </p>
-                      <p className="text-xs text-base-content/60">
-                        {formatPrice(item.cost)} ({item.percent.toFixed(1)}%)
-                      </p>
-                    </div>
+                      </span>
+                      <span className="text-xs text-base-content/60 tabular-nums flex-shrink-0">
+                        {item.percent.toFixed(0)}%
+                      </span>
+                      <span className="text-sm font-medium tabular-nums flex-shrink-0 w-20 text-right">
+                        {formatPrice(item.cost)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {hiddenCount > 0 && (
+                  <button
+                    type="button"
+                    className="mt-2 text-xs text-primary hover:text-primary-focus transition-colors pl-2"
+                    onClick={() => setShowAllProjects(!showAllProjects)}
+                  >
+                    {showAllProjects
+                      ? "Voir moins"
+                      : `Voir ${hiddenCount} autre${hiddenCount > 1 ? "s" : ""}`}
                   </button>
-                ))}
+                )}
               </div>
             </div>
           )}
@@ -258,68 +358,56 @@ export const OrganizationCostBreakdown = memo(
             </h4>
           )}
 
-          {/* Barre de progression */}
-          <div className="h-4 bg-base-200 rounded-full overflow-hidden flex">
-            {runtimesPercent > 0 && (
-              <div
-                className="bg-primary h-full transition-all duration-700 ease-out"
-                style={{ width: `${runtimesPercent}%` }}
-                role="progressbar"
-                aria-valuenow={runtimesPercent}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label={`Runtimes: ${runtimesPercent.toFixed(0)}%`}
-              />
-            )}
-            {addonsPercent > 0 && (
-              <div
-                className="bg-secondary h-full transition-all duration-700 ease-out"
-                style={{ width: `${addonsPercent}%` }}
-                role="progressbar"
-                aria-valuenow={addonsPercent}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label={`Addons: ${addonsPercent.toFixed(0)}%`}
-              />
-            )}
-          </div>
-
-          {/* Legende */}
-          <div className="flex flex-wrap gap-4 sm:gap-6 mt-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full bg-primary"
-                  aria-hidden="true"
+          {/* BarChart horizontal stacke */}
+          <div
+            className="w-full"
+            role="img"
+            aria-label={`Repartition: Runtimes ${runtimesPercent.toFixed(0)}%, Addons ${addonsPercent.toFixed(0)}%`}
+          >
+            <ResponsiveContainer width="100%" height={60}>
+              <BarChart
+                data={resourceBarData}
+                layout="vertical"
+                margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+              >
+                <XAxis type="number" hide domain={[0, totalMonthlyCost]} />
+                <YAxis type="category" dataKey="name" hide />
+                <Legend
+                  content={
+                    <CustomBarLegend
+                      runtimesPercent={runtimesPercent}
+                      addonsPercent={addonsPercent}
+                      totalRuntimesCost={totalRuntimesCost}
+                      totalAddonsCost={totalAddonsCost}
+                    />
+                  }
                 />
-                <span className="text-sm font-medium">Runtimes</span>
-              </div>
-              <div className="text-right">
-                <span className="text-sm font-bold text-primary">
-                  {formatPrice(totalRuntimesCost)}
-                </span>
-                <span className="text-xs text-base-content/50 ml-1">
-                  ({runtimesPercent.toFixed(0)}%)
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full bg-secondary"
-                  aria-hidden="true"
-                />
-                <span className="text-sm font-medium">Addons</span>
-              </div>
-              <div className="text-right">
-                <span className="text-sm font-bold text-secondary">
-                  {formatPrice(totalAddonsCost)}
-                </span>
-                <span className="text-xs text-base-content/50 ml-1">
-                  ({addonsPercent.toFixed(0)}%)
-                </span>
-              </div>
-            </div>
+                {totalRuntimesCost > 0 && (
+                  <Bar
+                    dataKey="runtimes"
+                    stackId="a"
+                    fill="hsl(var(--p))"
+                    name="Runtimes"
+                    radius={totalAddonsCost > 0 ? [8, 0, 0, 8] : [8, 8, 8, 8]}
+                    animationBegin={0}
+                    animationDuration={700}
+                    animationEasing="ease-out"
+                  />
+                )}
+                {totalAddonsCost > 0 && (
+                  <Bar
+                    dataKey="addons"
+                    stackId="a"
+                    fill="hsl(var(--s))"
+                    name="Addons"
+                    radius={totalRuntimesCost > 0 ? [0, 8, 8, 0] : [8, 8, 8, 8]}
+                    animationBegin={0}
+                    animationDuration={700}
+                    animationEasing="ease-out"
+                  />
+                )}
+              </BarChart>
+            </ResponsiveContainer>
           </div>
 
           {/* Indicateur de scaling */}

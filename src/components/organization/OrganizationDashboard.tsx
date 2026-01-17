@@ -42,7 +42,6 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
     let totalAddonsCost = 0;
     let totalMinCost = 0;
     let totalMaxCost = 0;
-    let totalBaseCost = 0;
     let totalScalingCost = 0;
 
     for (const project of projects) {
@@ -60,10 +59,6 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
         totalMaxCost +=
           cost.runtimesDetail.reduce((s, r) => s + r.maxMonthlyCost, 0) +
           cost.addonsCost;
-        // Calcul des couts base/scaling
-        totalBaseCost +=
-          cost.runtimesDetail.reduce((s, r) => s + r.baseMonthlyCost, 0) +
-          cost.addonsCost;
         totalScalingCost += cost.runtimesDetail.reduce(
           (s, r) => s + r.estimatedScalingCost,
           0,
@@ -80,7 +75,6 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
       totalAddonsCost,
       totalMinCost,
       totalMaxCost,
-      totalBaseCost,
       totalScalingCost,
     };
   }, [projects, projectCosts]);
@@ -208,7 +202,6 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
                 totalRuntimesCost={stats.totalRuntimesCost}
                 totalAddonsCost={stats.totalAddonsCost}
                 totalMonthlyCost={stats.totalMonthlyCost}
-                totalBaseCost={stats.totalBaseCost}
                 totalScalingCost={stats.totalScalingCost}
                 projects={projects}
                 projectCosts={projectCosts}
