@@ -28,14 +28,14 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
 
   return (
     <div className="space-y-6 animate-cost-fade-in">
-      {/* Carte principale de projection */}
+      {/* Carte principale d'estimation */}
       <div className="card bg-gradient-to-br from-base-100 to-base-200 border border-base-300">
         <div className="card-body p-4 sm:p-6">
           {/* Header avec selecteur de duree */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <h3 className="font-semibold flex items-center gap-2">
               <Icons.TrendingUp className="w-5 h-5 text-primary" />
-              Projections
+              Estimations
             </h3>
             <div className="flex flex-wrap gap-1">
               {DURATION_OPTIONS.map((option) => (
@@ -74,7 +74,7 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
               )}
             </div>
 
-            {/* Projection */}
+            {/* Estimation */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-base-content/60 text-sm">
                 <Icons.Calendar className="w-4 h-4" />
@@ -226,7 +226,7 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
             <Icons.TrendingUp className="w-12 h-12 text-base-content/20 mb-4" />
             <h3 className="font-semibold text-lg">Aucun element a facturer</h3>
             <p className="text-base-content/60">
-              Ajoutez des runtimes ou des addons pour voir la projection des
+              Ajoutez des runtimes ou des addons pour voir l'estimation des
               couts.
             </p>
           </div>

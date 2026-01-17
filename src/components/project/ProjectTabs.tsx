@@ -7,7 +7,7 @@ interface ProjectTabsProps {
   orgId: string;
 }
 
-type TabKey = "runtimes" | "addons" | "projection";
+type TabKey = "runtimes" | "addons" | "estimation";
 
 const tabConfig: Record<
   TabKey,
@@ -15,15 +15,15 @@ const tabConfig: Record<
 > = {
   runtimes: { icon: Icons.Server, label: "Runtimes", color: "primary" },
   addons: { icon: Icons.Puzzle, label: "Addons", color: "secondary" },
-  projection: { icon: Icons.TrendingUp, label: "Projection", color: "accent" },
+  estimation: { icon: Icons.TrendingUp, label: "Estimation", color: "accent" },
 };
 
 export function ProjectTabs({ project, orgId }: ProjectTabsProps) {
   const { pathname } = useLocation();
   const activeTab: TabKey = pathname.endsWith("/addons")
     ? "addons"
-    : pathname.endsWith("/projection")
-      ? "projection"
+    : pathname.endsWith("/estimation")
+      ? "estimation"
       : "runtimes";
 
   return (
@@ -32,7 +32,7 @@ export function ProjectTabs({ project, orgId }: ProjectTabsProps) {
       aria-label="Sections du projet"
       className="flex bg-base-200 p-1 gap-1"
     >
-      {(["runtimes", "addons", "projection"] as const).map((tab) => {
+      {(["runtimes", "addons", "estimation"] as const).map((tab) => {
         const isActive = activeTab === tab;
         const { icon: Icon, label, color } = tabConfig[tab];
         const count =

@@ -15,7 +15,7 @@ import { Route as OrgOrgIdIndexRouteImport } from './routes/org/$orgId/index'
 import { Route as OrgOrgIdProjectProjectIdRouteImport } from './routes/org/$orgId/project/$projectId'
 import { Route as OrgOrgIdProjectProjectIdIndexRouteImport } from './routes/org/$orgId/project/$projectId/index'
 import { Route as OrgOrgIdProjectProjectIdRuntimesRouteImport } from './routes/org/$orgId/project/$projectId/runtimes'
-import { Route as OrgOrgIdProjectProjectIdProjectionRouteImport } from './routes/org/$orgId/project/$projectId/projection'
+import { Route as OrgOrgIdProjectProjectIdEstimationRouteImport } from './routes/org/$orgId/project/$projectId/estimation'
 import { Route as OrgOrgIdProjectProjectIdAddonsRouteImport } from './routes/org/$orgId/project/$projectId/addons'
 
 const IndexRoute = IndexRouteImport.update({
@@ -51,10 +51,10 @@ const OrgOrgIdProjectProjectIdRuntimesRoute =
     path: '/runtimes',
     getParentRoute: () => OrgOrgIdProjectProjectIdRoute,
   } as any)
-const OrgOrgIdProjectProjectIdProjectionRoute =
-  OrgOrgIdProjectProjectIdProjectionRouteImport.update({
-    id: '/projection',
-    path: '/projection',
+const OrgOrgIdProjectProjectIdEstimationRoute =
+  OrgOrgIdProjectProjectIdEstimationRouteImport.update({
+    id: '/estimation',
+    path: '/estimation',
     getParentRoute: () => OrgOrgIdProjectProjectIdRoute,
   } as any)
 const OrgOrgIdProjectProjectIdAddonsRoute =
@@ -70,7 +70,7 @@ export interface FileRoutesByFullPath {
   '/org/$orgId/': typeof OrgOrgIdIndexRoute
   '/org/$orgId/project/$projectId': typeof OrgOrgIdProjectProjectIdRouteWithChildren
   '/org/$orgId/project/$projectId/addons': typeof OrgOrgIdProjectProjectIdAddonsRoute
-  '/org/$orgId/project/$projectId/projection': typeof OrgOrgIdProjectProjectIdProjectionRoute
+  '/org/$orgId/project/$projectId/estimation': typeof OrgOrgIdProjectProjectIdEstimationRoute
   '/org/$orgId/project/$projectId/runtimes': typeof OrgOrgIdProjectProjectIdRuntimesRoute
   '/org/$orgId/project/$projectId/': typeof OrgOrgIdProjectProjectIdIndexRoute
 }
@@ -78,7 +78,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/org/$orgId': typeof OrgOrgIdIndexRoute
   '/org/$orgId/project/$projectId/addons': typeof OrgOrgIdProjectProjectIdAddonsRoute
-  '/org/$orgId/project/$projectId/projection': typeof OrgOrgIdProjectProjectIdProjectionRoute
+  '/org/$orgId/project/$projectId/estimation': typeof OrgOrgIdProjectProjectIdEstimationRoute
   '/org/$orgId/project/$projectId/runtimes': typeof OrgOrgIdProjectProjectIdRuntimesRoute
   '/org/$orgId/project/$projectId': typeof OrgOrgIdProjectProjectIdIndexRoute
 }
@@ -89,7 +89,7 @@ export interface FileRoutesById {
   '/org/$orgId/': typeof OrgOrgIdIndexRoute
   '/org/$orgId/project/$projectId': typeof OrgOrgIdProjectProjectIdRouteWithChildren
   '/org/$orgId/project/$projectId/addons': typeof OrgOrgIdProjectProjectIdAddonsRoute
-  '/org/$orgId/project/$projectId/projection': typeof OrgOrgIdProjectProjectIdProjectionRoute
+  '/org/$orgId/project/$projectId/estimation': typeof OrgOrgIdProjectProjectIdEstimationRoute
   '/org/$orgId/project/$projectId/runtimes': typeof OrgOrgIdProjectProjectIdRuntimesRoute
   '/org/$orgId/project/$projectId/': typeof OrgOrgIdProjectProjectIdIndexRoute
 }
@@ -101,7 +101,7 @@ export interface FileRouteTypes {
     | '/org/$orgId/'
     | '/org/$orgId/project/$projectId'
     | '/org/$orgId/project/$projectId/addons'
-    | '/org/$orgId/project/$projectId/projection'
+    | '/org/$orgId/project/$projectId/estimation'
     | '/org/$orgId/project/$projectId/runtimes'
     | '/org/$orgId/project/$projectId/'
   fileRoutesByTo: FileRoutesByTo
@@ -109,7 +109,7 @@ export interface FileRouteTypes {
     | '/'
     | '/org/$orgId'
     | '/org/$orgId/project/$projectId/addons'
-    | '/org/$orgId/project/$projectId/projection'
+    | '/org/$orgId/project/$projectId/estimation'
     | '/org/$orgId/project/$projectId/runtimes'
     | '/org/$orgId/project/$projectId'
   id:
@@ -119,7 +119,7 @@ export interface FileRouteTypes {
     | '/org/$orgId/'
     | '/org/$orgId/project/$projectId'
     | '/org/$orgId/project/$projectId/addons'
-    | '/org/$orgId/project/$projectId/projection'
+    | '/org/$orgId/project/$projectId/estimation'
     | '/org/$orgId/project/$projectId/runtimes'
     | '/org/$orgId/project/$projectId/'
   fileRoutesById: FileRoutesById
@@ -173,11 +173,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgOrgIdProjectProjectIdRuntimesRouteImport
       parentRoute: typeof OrgOrgIdProjectProjectIdRoute
     }
-    '/org/$orgId/project/$projectId/projection': {
-      id: '/org/$orgId/project/$projectId/projection'
-      path: '/projection'
-      fullPath: '/org/$orgId/project/$projectId/projection'
-      preLoaderRoute: typeof OrgOrgIdProjectProjectIdProjectionRouteImport
+    '/org/$orgId/project/$projectId/estimation': {
+      id: '/org/$orgId/project/$projectId/estimation'
+      path: '/estimation'
+      fullPath: '/org/$orgId/project/$projectId/estimation'
+      preLoaderRoute: typeof OrgOrgIdProjectProjectIdEstimationRouteImport
       parentRoute: typeof OrgOrgIdProjectProjectIdRoute
     }
     '/org/$orgId/project/$projectId/addons': {
@@ -192,7 +192,7 @@ declare module '@tanstack/react-router' {
 
 interface OrgOrgIdProjectProjectIdRouteChildren {
   OrgOrgIdProjectProjectIdAddonsRoute: typeof OrgOrgIdProjectProjectIdAddonsRoute
-  OrgOrgIdProjectProjectIdProjectionRoute: typeof OrgOrgIdProjectProjectIdProjectionRoute
+  OrgOrgIdProjectProjectIdEstimationRoute: typeof OrgOrgIdProjectProjectIdEstimationRoute
   OrgOrgIdProjectProjectIdRuntimesRoute: typeof OrgOrgIdProjectProjectIdRuntimesRoute
   OrgOrgIdProjectProjectIdIndexRoute: typeof OrgOrgIdProjectProjectIdIndexRoute
 }
@@ -200,8 +200,8 @@ interface OrgOrgIdProjectProjectIdRouteChildren {
 const OrgOrgIdProjectProjectIdRouteChildren: OrgOrgIdProjectProjectIdRouteChildren =
   {
     OrgOrgIdProjectProjectIdAddonsRoute: OrgOrgIdProjectProjectIdAddonsRoute,
-    OrgOrgIdProjectProjectIdProjectionRoute:
-      OrgOrgIdProjectProjectIdProjectionRoute,
+    OrgOrgIdProjectProjectIdEstimationRoute:
+      OrgOrgIdProjectProjectIdEstimationRoute,
     OrgOrgIdProjectProjectIdRuntimesRoute:
       OrgOrgIdProjectProjectIdRuntimesRoute,
     OrgOrgIdProjectProjectIdIndexRoute: OrgOrgIdProjectProjectIdIndexRoute,

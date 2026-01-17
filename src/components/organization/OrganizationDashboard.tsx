@@ -13,12 +13,12 @@ import {
 import { useProjectStore } from "@/store/projectStore";
 import { OrganizationBudgetGauge } from "./OrganizationBudgetGauge";
 import { OrganizationCostBreakdown } from "./OrganizationCostBreakdown";
+import { OrganizationEstimations } from "./OrganizationEstimations";
 import { OrganizationHeader } from "./OrganizationHeader";
-import { OrganizationProjections } from "./OrganizationProjections";
 import { OrganizationProjectList } from "./OrganizationProjectList";
 import { OrganizationStats } from "./OrganizationStats";
 
-type TabType = "overview" | "projections";
+type TabType = "overview" | "estimations";
 
 export const OrganizationDashboard = memo(function OrganizationDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -134,7 +134,7 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
 
   const tabs = [
     { key: "overview", icon: Icons.Chart, label: "Vue d'ensemble" },
-    { key: "projections", icon: Icons.TrendingUp, label: "Projections" },
+    { key: "estimations", icon: Icons.TrendingUp, label: "Estimations" },
   ] as const;
 
   return (
@@ -225,12 +225,12 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
 
         <div
           role="tabpanel"
-          id="tabpanel-org-projections"
-          aria-labelledby="tab-org-projections"
-          hidden={activeTab !== "projections"}
+          id="tabpanel-org-estimations"
+          aria-labelledby="tab-org-estimations"
+          hidden={activeTab !== "estimations"}
         >
-          {activeTab === "projections" && (
-            <OrganizationProjections
+          {activeTab === "estimations" && (
+            <OrganizationEstimations
               projects={projects}
               projectCosts={projectCosts}
               budgetTarget={organization.budgetTarget}

@@ -7,20 +7,20 @@ import { Icons } from "@/components/ui";
 import { formatPrice } from "@/lib/costCalculator";
 import type { Project, ProjectCostSummary } from "@/types";
 
-interface ProjectProjectionItemProps {
+interface ProjectEstimationItemProps {
   project: Project;
   cost: ProjectCostSummary;
   selectedMonths: number;
   totalOrgCost: number;
 }
 
-const ProjectProjectionItem = memo(function ProjectProjectionItem({
+const ProjectEstimationItem = memo(function ProjectEstimationItem({
   project,
   cost,
   selectedMonths,
   totalOrgCost,
-}: ProjectProjectionItemProps) {
-  // Calcul des projections min/max pour ce projet
+}: ProjectEstimationItemProps) {
+  // Calcul des estimations min/max pour ce projet
   const minMonthlyCost =
     cost.runtimesDetail.reduce((sum, r) => sum + r.minMonthlyCost, 0) +
     cost.addonsCost;
@@ -32,7 +32,7 @@ const ProjectProjectionItem = memo(function ProjectProjectionItem({
   const estimatedCost = cost.totalMonthlyCost;
   const hasCostRange = minMonthlyCost !== maxMonthlyCost;
 
-  // Projection selon la duree selectionnee
+  // Estimation selon la duree selectionnee
   const projectedCost = estimatedCost * selectedMonths;
   const projectedMin = minMonthlyCost * selectedMonths;
   const projectedMax = maxMonthlyCost * selectedMonths;
@@ -66,7 +66,7 @@ const ProjectProjectionItem = memo(function ProjectProjectionItem({
             </div>
           </div>
 
-          {/* Projection */}
+          {/* Estimation */}
           <div className="text-right flex-shrink-0">
             <p className="font-bold text-primary tabular-nums">
               {formatPrice(projectedCost)}
@@ -110,17 +110,17 @@ const ProjectProjectionItem = memo(function ProjectProjectionItem({
   );
 });
 
-interface OrganizationProjectionsProps {
+interface OrganizationEstimationsProps {
   projects: Project[];
   projectCosts: Map<string, ProjectCostSummary>;
   budgetTarget?: number;
 }
 
-export const OrganizationProjections = memo(function OrganizationProjections({
+export const OrganizationEstimations = memo(function OrganizationEstimations({
   projects,
   projectCosts,
   budgetTarget,
-}: OrganizationProjectionsProps) {
+}: OrganizationEstimationsProps) {
   const [selectedMonths, setSelectedMonths] = useState(12);
 
   // Calcul des totaux globaux avec plages min/max
@@ -176,14 +176,14 @@ export const OrganizationProjections = memo(function OrganizationProjections({
 
   return (
     <div className="space-y-6">
-      {/* Carte principale de projection */}
+      {/* Carte principale d'estimation */}
       <div className="card bg-gradient-to-br from-base-100 to-base-200 border border-base-300">
         <div className="card-body p-4 sm:p-6">
           {/* Header avec selecteur de duree */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <h3 className="font-semibold flex items-center gap-2">
               <Icons.TrendingUp className="w-5 h-5 text-primary" />
-              Projections
+              Estimations
             </h3>
             <div className="flex flex-wrap gap-1">
               {DURATION_OPTIONS.map((option) => (
@@ -236,7 +236,7 @@ export const OrganizationProjections = memo(function OrganizationProjections({
                 )}
             </div>
 
-            {/* Fleche et projection */}
+            {/* Fleche et estimation */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-base-content/60 text-sm">
                 <Icons.Calendar className="w-4 h-4" />
@@ -268,12 +268,12 @@ export const OrganizationProjections = memo(function OrganizationProjections({
         </div>
       </div>
 
-      {/* Liste des projets avec projections */}
+      {/* Liste des projets avec estimations */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold flex items-center gap-2">
             <Icons.Folder className="w-4 h-4 text-primary" />
-            Projections par projet
+            Estimations par projet
             <span className="badge badge-primary badge-sm">
               {projectsWithCosts.length}
             </span>
@@ -286,7 +286,7 @@ export const OrganizationProjections = memo(function OrganizationProjections({
         {projectsWithCosts.length > 0 ? (
           <div className="grid gap-3">
             {projectsWithCosts.map(({ project, cost }) => (
-              <ProjectProjectionItem
+              <ProjectEstimationItem
                 key={project.id}
                 project={project}
                 cost={cost}
@@ -301,10 +301,10 @@ export const OrganizationProjections = memo(function OrganizationProjections({
               <div className="bg-base-200 rounded-full p-4 mb-4">
                 <Icons.Chart className="w-8 h-8 text-base-content/30" />
               </div>
-              <h4 className="font-semibold">Aucune projection</h4>
+              <h4 className="font-semibold">Aucune estimation</h4>
               <p className="text-sm text-base-content/60 max-w-xs">
                 Ajoutez des runtimes ou addons a vos projets pour voir les
-                projections de couts.
+                estimations de couts.
               </p>
             </div>
           </div>

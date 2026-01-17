@@ -19,7 +19,7 @@ export const CostSummarySkeleton = memo(function CostSummarySkeleton() {
         </div>
       </div>
 
-      {/* Section Projection - Cartes Mensuel et Projection */}
+      {/* Section Estimation - Cartes Mensuel et Estimation */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Carte Mensuel */}
         <div className="card bg-base-100 border border-base-300">
@@ -33,7 +33,7 @@ export const CostSummarySkeleton = memo(function CostSummarySkeleton() {
           </div>
         </div>
 
-        {/* Carte Projection */}
+        {/* Carte Estimation */}
         <div className="card bg-base-100 border border-base-300">
           <div className="card-body p-5">
             <div className="flex items-center gap-2 mb-3">
