@@ -40,7 +40,7 @@ export const USAGE_BASED_PRICING_REGISTRY: UsageBasedPricing[] = [
     ],
   },
   {
-    providerId: "fs-bucket-addon",
+    providerId: "fs-bucket",
     pricingDescription: "100 Mo gratuits, puis facturation au stockage",
     metrics: [
       {
