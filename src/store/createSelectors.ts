@@ -1,10 +1,12 @@
-import { useMemo } from 'react'
-import { useShallow } from 'zustand/shallow'
-import { useProjectStore } from './projectStore'
-import type { ProjectStore, ProjectState } from './projectStore'
+import { useMemo } from "react";
+import { useShallow } from "zustand/shallow";
+import type { ProjectState, ProjectStore } from "./projectStore";
+import { useProjectStore } from "./projectStore";
 
-type Selector<T> = (state: ProjectState) => T
-type SelectorFactory<TArgs extends unknown[], T> = (...args: TArgs) => Selector<T>
+type Selector<T> = (state: ProjectState) => T;
+type SelectorFactory<TArgs extends unknown[], T> = (
+	...args: TArgs
+) => Selector<T>;
 
 /**
  * Hook pour utiliser un selector simple avec le store
@@ -15,7 +17,7 @@ type SelectorFactory<TArgs extends unknown[], T> = (...args: TArgs) => Selector<
  * const activeProject = useSelector(selectActiveProject)
  */
 export function useSelector<T>(selector: Selector<T>): T {
-  return useProjectStore(selector)
+	return useProjectStore(selector);
 }
 
 /**
@@ -26,16 +28,16 @@ export function useSelector<T>(selector: Selector<T>): T {
  * const project = useSelectorWith(selectProjectById, projectId)
  */
 export function useSelectorWith<TArgs extends unknown[], T>(
-  selectorFactory: SelectorFactory<TArgs, T>,
-  ...args: TArgs
+	selectorFactory: SelectorFactory<TArgs, T>,
+	...args: TArgs
 ): T {
-  // Memorise le selector pour eviter de le recreer a chaque render
-  const selector = useMemo(
-    () => selectorFactory(...args),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectorFactory, ...args]
-  )
-  return useProjectStore(selector)
+	// Memorise le selector pour eviter de le recreer a chaque render
+	const selector = useMemo(
+		() => selectorFactory(...args),
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[selectorFactory, ...args],
+	);
+	return useProjectStore(selector);
 }
 
 /**
@@ -49,30 +51,30 @@ export function useSelectorWith<TArgs extends unknown[], T>(
  * }))
  */
 export function useSelectors<T extends object>(
-  selector: (state: ProjectState) => T
+	selector: (state: ProjectState) => T,
 ): T {
-  return useProjectStore(useShallow(selector))
+	return useProjectStore(useShallow(selector));
 }
 
 // Selector stable pour les actions (ne change jamais)
 const selectActions = (state: ProjectStore) => ({
-  // Organization actions
-  createOrganization: state.createOrganization,
-  updateOrganization: state.updateOrganization,
-  deleteOrganization: state.deleteOrganization,
-  setActiveOrganization: state.setActiveOrganization,
-  // Project actions
-  createProject: state.createProject,
-  updateProject: state.updateProject,
-  deleteProject: state.deleteProject,
-  setActiveProject: state.setActiveProject,
-  addRuntime: state.addRuntime,
-  updateRuntime: state.updateRuntime,
-  removeRuntime: state.removeRuntime,
-  addAddon: state.addAddon,
-  updateAddon: state.updateAddon,
-  removeAddon: state.removeAddon,
-})
+	// Organization actions
+	createOrganization: state.createOrganization,
+	updateOrganization: state.updateOrganization,
+	deleteOrganization: state.deleteOrganization,
+	setActiveOrganization: state.setActiveOrganization,
+	// Project actions
+	createProject: state.createProject,
+	updateProject: state.updateProject,
+	deleteProject: state.deleteProject,
+	setActiveProject: state.setActiveProject,
+	addRuntime: state.addRuntime,
+	updateRuntime: state.updateRuntime,
+	removeRuntime: state.removeRuntime,
+	addAddon: state.addAddon,
+	updateAddon: state.updateAddon,
+	removeAddon: state.removeAddon,
+});
 
 /**
  * Hook pour acceder aux actions du store
@@ -83,7 +85,7 @@ const selectActions = (state: ProjectStore) => ({
  * actions.createProject('Mon projet')
  */
 export function useProjectActions() {
-  return useProjectStore(useShallow(selectActions))
+	return useProjectStore(useShallow(selectActions));
 }
 
 /**
@@ -94,9 +96,9 @@ export function useProjectActions() {
  * createProject('Mon projet')
  */
 export function useProjectAction<K extends keyof ProjectStore>(
-  actionName: K
+	actionName: K,
 ): ProjectStore[K] {
-  return useProjectStore(state => state[actionName])
+	return useProjectStore((state) => state[actionName]);
 }
 
 /**
@@ -112,7 +114,7 @@ export function useProjectAction<K extends keyof ProjectStore>(
  * )
  */
 export function useProjectStoreSelective<T extends object>(
-  selector: (state: ProjectStore) => T
+	selector: (state: ProjectStore) => T,
 ): T {
-  return useProjectStore(useShallow(selector))
+	return useProjectStore(useShallow(selector));
 }

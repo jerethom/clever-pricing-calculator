@@ -1,1 +1,1 @@
-export { TimeSlotEditor } from './TimeSlotEditor'
+export { TimeSlotEditor } from "./TimeSlotEditor";

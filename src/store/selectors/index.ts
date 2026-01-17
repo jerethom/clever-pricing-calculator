@@ -1,2 +1,2 @@
-export * from './projectSelectors'
-export * from './organizationSelectors'
+export * from "./organizationSelectors";
+export * from "./projectSelectors";

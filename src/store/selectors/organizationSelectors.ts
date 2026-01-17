@@ -1,5 +1,5 @@
-import type { ProjectState } from '../projectStore'
-import type { Organization, Project } from '@/types'
+import type { Organization, Project } from "@/types";
+import type { ProjectState } from "../projectStore";
 
 // ============================================================================
 // Selectors de base Organisation
@@ -9,13 +9,15 @@ import type { Organization, Project } from '@/types'
  * Selectionne la liste de toutes les organisations
  */
 export const selectOrganizations = (state: ProjectState): Organization[] =>
-  state.organizations
+	state.organizations;
 
 /**
  * Selectionne l'organisation active ou null
  */
-export const selectActiveOrganization = (state: ProjectState): Organization | null =>
-  state.organizations.find(o => o.id === state.activeOrganizationId) ?? null
+export const selectActiveOrganization = (
+	state: ProjectState,
+): Organization | null =>
+	state.organizations.find((o) => o.id === state.activeOrganizationId) ?? null;
 
 // ============================================================================
 // Selectors derives Organisation -> Projets
@@ -24,5 +26,7 @@ export const selectActiveOrganization = (state: ProjectState): Organization | nu
 /**
  * Selectionne les projets de l'organisation active
  */
-export const selectActiveOrganizationProjects = (state: ProjectState): Project[] =>
-  state.projects.filter(p => p.organizationId === state.activeOrganizationId)
+export const selectActiveOrganizationProjects = (
+	state: ProjectState,
+): Project[] =>
+	state.projects.filter((p) => p.organizationId === state.activeOrganizationId);

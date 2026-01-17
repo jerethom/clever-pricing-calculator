@@ -1,1 +1,1 @@
-export { AddonList } from './AddonList'
+export { AddonList } from "./AddonList";
