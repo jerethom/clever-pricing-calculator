@@ -1,7 +1,6 @@
 import { memo, useState, useCallback } from 'react'
 import { Icons, NumberInput } from '@/components/ui'
 import { useRuntimeCardContext } from './RuntimeCardContext'
-import { toast } from '@/store/toastStore'
 import { formatPrice } from '@/lib/costCalculator'
 import { generateProfileId } from '@/lib/typeid'
 import type { RuntimeCardScalingProps } from './types'
@@ -76,11 +75,9 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
                 flavors={availableFlavors}
                 maxInstances={maxInst}
                 canDelete={canDelete}
-                onEdit={() => setEditingProfileId(profile.id)}
-                onSave={() => {
-                  setEditingProfileId(null)
-                  toast.success(`Profil "${profile.name}" mis à jour`)
-                }}
+                onToggleEdit={() => setEditingProfileId(
+                  editingProfileId === profile.id ? null : profile.id
+                )}
                 onUpdate={updates => onUpdateScalingProfile(profile.id, updates)}
                 onRemove={() => onRemoveScalingProfile(profile.id)}
               />
@@ -102,8 +99,7 @@ interface ProfileCardProps {
   flavors: InstanceFlavor[]
   maxInstances: number
   canDelete: boolean
-  onEdit: () => void
-  onSave: () => void
+  onToggleEdit: () => void
   onUpdate: (updates: Partial<ScalingProfile>) => void
   onRemove: () => void
 }
@@ -114,8 +110,7 @@ function ProfileCard({
   flavors,
   maxInstances,
   canDelete,
-  onEdit,
-  onSave,
+  onToggleEdit,
   onUpdate,
   onRemove,
 }: ProfileCardProps) {
@@ -145,8 +140,12 @@ function ProfileCard({
             placeholder="Nom du profil"
           />
           <div className="flex gap-1">
-            <button className="btn btn-ghost btn-xs text-success" onClick={onSave}>
-              <Icons.Check className="w-3 h-3" />
+            <button
+              className="btn btn-ghost btn-xs"
+              onClick={onToggleEdit}
+              title="Replier"
+            >
+              <Icons.ChevronUp className="w-3 h-3" />
             </button>
             <button
               className="btn btn-ghost btn-xs text-error"
@@ -199,27 +198,30 @@ function ProfileCard({
   }
 
   return (
-    <div className="flex items-center justify-between p-3 border border-base-300 bg-base-100 hover:border-primary/30 transition-colors group">
+    <button
+      type="button"
+      className="flex items-center justify-between p-3 border border-base-300 bg-base-100 hover:border-primary/30 transition-colors w-full text-left cursor-pointer"
+      onClick={onToggleEdit}
+    >
       <div className="flex-1 min-w-0">
         <div className="font-medium text-sm truncate">{profile.name}</div>
         <div className="text-xs text-base-content/60">
           {profile.minInstances}-{profile.maxInstances} inst. • {profile.minFlavorName}-{profile.maxFlavorName}
         </div>
       </div>
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-        <button className="btn btn-ghost btn-xs focus:opacity-100" onClick={onEdit} title="Modifier">
-          <Icons.Edit className="w-3 h-3" />
-        </button>
-        <button
-          className="btn btn-ghost btn-xs text-error focus:opacity-100"
-          onClick={onRemove}
-          disabled={!canDelete}
+      <div className="flex gap-1">
+        <span className="btn btn-ghost btn-xs">
+          <Icons.ChevronDown className="w-3 h-3" />
+        </span>
+        <span
+          className={`btn btn-ghost btn-xs text-error ${!canDelete ? 'btn-disabled' : ''}`}
+          onClick={e => { e.stopPropagation(); if (canDelete) onRemove() }}
           title={deleteTitle}
         >
           <Icons.Trash className="w-3 h-3" />
-        </button>
+        </span>
       </div>
-    </div>
+    </button>
   )
 }
 

@@ -267,7 +267,10 @@ export const OrganizationHeader = memo(function OrganizationHeader({
         confirmLabel="Supprimer"
         cancelLabel="Annuler"
         variant="error"
-        onConfirm={onDelete}
+        onConfirm={() => {
+          setShowDeleteConfirm(false)
+          onDelete()
+        }}
         onCancel={() => setShowDeleteConfirm(false)}
       />
     </div>

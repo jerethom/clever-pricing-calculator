@@ -1,11 +1,5 @@
-import { useMemo } from 'react'
-import { useActiveOrganizationCosts } from '@/hooks/useCostCalculation'
-import {
-  useSelector,
-  selectActiveOrganization,
-  selectActiveProject,
-} from '@/store'
-import { formatPrice } from '@/lib/costCalculator'
+import { Link } from '@tanstack/react-router'
+import { useSelector, selectActiveOrganization, selectActiveProject } from '@/store'
 import { Icons } from '@/components/ui'
 
 interface HeaderProps {
@@ -13,17 +7,8 @@ interface HeaderProps {
 }
 
 export function Header({ onToggleSidebar }: HeaderProps) {
-  const projectCosts = useActiveOrganizationCosts()
   const activeOrg = useSelector(selectActiveOrganization)
   const activeProject = useSelector(selectActiveProject)
-
-  // Calcul du total de l'organisation active
-  const total = useMemo(() => {
-    return Array.from(projectCosts.values()).reduce(
-      (acc, cost) => acc + cost.totalMonthlyCost,
-      0
-    )
-  }, [projectCosts])
 
   return (
     <div className="navbar bg-[#13172e] sticky top-0 z-50 border-b border-[#1c2045]">
@@ -39,7 +24,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
 
       <div className="flex-1 flex items-center gap-4">
         {/* Logo + Titre */}
-        <div className="flex items-center gap-3 px-4">
+        <Link to="/" className="flex items-center gap-3 px-4 hover:opacity-80 transition-opacity">
           <Icons.Logo className="w-8 h-8 flex-shrink-0" />
           <div className="flex flex-col leading-tight">
             <span className="text-base font-semibold text-white tracking-tight">
@@ -49,34 +34,34 @@ export function Header({ onToggleSidebar }: HeaderProps) {
               Pricing Calculator
             </span>
           </div>
-        </div>
+        </Link>
 
         {/* Breadcrumb organisation / projet */}
         {activeOrg && (
-          <div className="hidden sm:flex items-center gap-2 text-sm text-white/60 px-3 py-1 bg-white/5 rounded">
-            <Icons.Building className="w-3.5 h-3.5" />
-            <span className="truncate max-w-32">{activeOrg.name}</span>
+          <nav className="hidden sm:flex items-center gap-2 text-sm text-white/60 px-3 py-1 bg-white/5 rounded">
+            <Link
+              to="/org/$orgId"
+              params={{ orgId: activeOrg.id }}
+              className="flex items-center gap-2 hover:text-white transition-colors"
+            >
+              <Icons.Building className="w-3.5 h-3.5" />
+              <span className="truncate max-w-32">{activeOrg.name}</span>
+            </Link>
             {activeProject && (
               <>
                 <Icons.ChevronRight className="w-3 h-3 text-white/40" />
-                <Icons.Folder className="w-3.5 h-3.5 text-primary" />
-                <span className="truncate max-w-32 text-white/80">{activeProject.name}</span>
+                <Link
+                  to="/org/$orgId/project/$projectId/runtimes"
+                  params={{ orgId: activeOrg.id, projectId: activeProject.id }}
+                  className="flex items-center gap-2 hover:text-white transition-colors"
+                >
+                  <Icons.Folder className="w-3.5 h-3.5 text-primary" />
+                  <span className="truncate max-w-32 text-white/80">{activeProject.name}</span>
+                </Link>
               </>
             )}
-          </div>
+          </nav>
         )}
-      </div>
-
-      <div className="flex-none">
-        {/* Total - toujours visible */}
-        <div className="bg-white/10 px-3 sm:px-4 py-2 border border-white/20">
-          <div className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wide">
-            Total mensuel
-          </div>
-          <div className="text-lg sm:text-xl font-bold text-white tabular-nums">
-            {formatPrice(total)}
-          </div>
-        </div>
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import { Link, useParams } from '@tanstack/react-router'
+import { Link, useParams, useNavigate } from '@tanstack/react-router'
 import {
   useSelector,
   useProjectActions,
@@ -139,6 +139,7 @@ function OrganizationItem({
 }
 
 export function Sidebar({ onClose }: SidebarProps) {
+  const navigate = useNavigate()
   const organizations = useSelector(selectOrganizations)
   const allProjects = useSelector(selectProjects)
   const { createProject, createOrganization } = useProjectActions()
@@ -181,14 +182,21 @@ export function Sidebar({ onClose }: SidebarProps) {
     const name = `Organisation ${organizations.length + 1}`
     const newOrgId = createOrganization(name)
     setExpandedOrgs(prev => new Set(prev).add(newOrgId))
-  }, [organizations.length, createOrganization])
+    navigate({ to: '/org/$orgId', params: { orgId: newOrgId } })
+    onClose?.()
+  }, [organizations.length, createOrganization, navigate, onClose])
 
   const handleCreateProject = useCallback(() => {
     if (!activeOrgId) return
     const orgProjects = projectsByOrg.get(activeOrgId) ?? []
     const name = `Projet ${orgProjects.length + 1}`
-    createProject(activeOrgId, name)
-  }, [activeOrgId, projectsByOrg, createProject])
+    const newProjectId = createProject(activeOrgId, name)
+    navigate({
+      to: '/org/$orgId/project/$projectId/runtimes',
+      params: { orgId: activeOrgId, projectId: newProjectId },
+    })
+    onClose?.()
+  }, [activeOrgId, projectsByOrg, createProject, navigate, onClose])
 
   return (
     <div className="h-full bg-[#13172e] w-80 flex flex-col">

@@ -1,10 +1,12 @@
 import { memo, useMemo, useCallback, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { useShallow } from 'zustand/shallow'
 import {
   useSelector,
   useProjectActions,
   selectActiveOrganization,
   selectActiveOrganizationProjects,
+  selectOrganizations,
 } from '@/store'
 import { useProjectStore } from '@/store/projectStore'
 import { useActiveOrganizationCosts } from '@/hooks/useCostCalculation'
@@ -20,7 +22,9 @@ type TabType = 'overview' | 'projections'
 
 export const OrganizationDashboard = memo(function OrganizationDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
+  const navigate = useNavigate()
   const organization = useSelector(selectActiveOrganization)
+  const organizations = useSelector(selectOrganizations)
   // Utiliser useShallow pour éviter les re-renders quand le tableau est recréé mais identique
   const projects = useProjectStore(useShallow(selectActiveOrganizationProjects))
   const projectCosts = useActiveOrganizationCosts()
@@ -82,16 +86,27 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
 
   const handleDelete = useCallback(() => {
     if (organization) {
+      // Trouver une autre organisation vers laquelle naviguer
+      const otherOrg = organizations.find(o => o.id !== organization.id)
       deleteOrganization(organization.id)
+      if (otherOrg) {
+        navigate({ to: '/org/$orgId', params: { orgId: otherOrg.id } })
+      } else {
+        navigate({ to: '/' })
+      }
     }
-  }, [organization, deleteOrganization])
+  }, [organization, organizations, deleteOrganization, navigate])
 
   const handleCreateProject = useCallback(() => {
     if (organization) {
       const name = `Projet ${projects.length + 1}`
-      createProject(organization.id, name)
+      const newProjectId = createProject(organization.id, name)
+      navigate({
+        to: '/org/$orgId/project/$projectId/runtimes',
+        params: { orgId: organization.id, projectId: newProjectId },
+      })
     }
-  }, [organization, projects.length, createProject])
+  }, [organization, projects.length, createProject, navigate])
 
   const handleUpdateBudget = useCallback((budget: number | undefined) => {
     if (organization) {
