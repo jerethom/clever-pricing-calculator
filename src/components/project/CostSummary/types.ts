@@ -29,7 +29,6 @@ export interface CostAddonCardProps {
 }
 
 export const DURATION_OPTIONS: DurationOption[] = [
-  { months: 1, label: "1 mois", shortLabel: "1m" },
   { months: 3, label: "3 mois", shortLabel: "3m" },
   { months: 6, label: "6 mois", shortLabel: "6m" },
   { months: 12, label: "1 an", shortLabel: "1a" },

@@ -3,7 +3,7 @@ import {
   DURATION_OPTIONS,
   formatDurationLabel,
 } from "@/components/project/CostSummary/types";
-import { Icons } from "@/components/ui";
+import { Icons, PriceRange } from "@/components/ui";
 import { formatPrice } from "@/lib/costCalculator";
 import type { Project, ProjectCostSummary } from "@/types";
 
@@ -20,7 +20,6 @@ const ProjectEstimationItem = memo(function ProjectEstimationItem({
   selectedMonths,
   totalOrgCost,
 }: ProjectEstimationItemProps) {
-  // Calcul des estimations min/max pour ce projet
   const minMonthlyCost =
     cost.runtimesDetail.reduce((sum, r) => sum + r.minMonthlyCost, 0) +
     cost.addonsCost;
@@ -30,56 +29,39 @@ const ProjectEstimationItem = memo(function ProjectEstimationItem({
     cost.addonsCost;
 
   const estimatedCost = cost.totalMonthlyCost;
-  const hasCostRange = minMonthlyCost !== maxMonthlyCost;
 
-  // Estimation selon la duree selectionnee
   const projectedCost = estimatedCost * selectedMonths;
   const projectedMin = minMonthlyCost * selectedMonths;
   const projectedMax = maxMonthlyCost * selectedMonths;
 
-  // Pourcentage du cout total de l'organisation
   const percentage =
     totalOrgCost > 0 ? (estimatedCost / totalOrgCost) * 100 : 0;
 
   return (
     <div className="card bg-base-100 border border-base-300">
       <div className="card-body p-4">
-        <div className="flex items-start justify-between gap-3">
-          {/* Info projet */}
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Icons.Folder className="w-4 h-4 text-primary" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h4 className="font-semibold truncate text-sm">{project.name}</h4>
-              <div className="flex items-center gap-2 mt-1 text-xs text-base-content/60">
-                <span>
-                  {project.runtimes.length} runtime
-                  {project.runtimes.length !== 1 ? "s" : ""}
-                </span>
-                <span>-</span>
-                <span>
-                  {project.addons.length} addon
-                  {project.addons.length !== 1 ? "s" : ""}
-                </span>
-              </div>
-            </div>
+        {/* Header: Nom du projet + stats */}
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Icons.Folder className="w-4 h-4 text-primary" />
           </div>
-
-          {/* Estimation */}
-          <div className="text-right flex-shrink-0">
-            <p className="font-bold text-primary tabular-nums">
-              {formatPrice(projectedCost)}
-            </p>
-            {hasCostRange && (
-              <p className="text-xs text-base-content/50 tabular-nums">
-                {formatPrice(projectedMin)} - {formatPrice(projectedMax)}
-              </p>
-            )}
+          <div className="min-w-0 flex-1">
+            <h4 className="font-semibold truncate text-sm">{project.name}</h4>
+            <div className="flex items-center gap-2 mt-0.5 text-xs text-base-content/60">
+              <span>
+                {project.runtimes.length} runtime
+                {project.runtimes.length !== 1 ? "s" : ""}
+              </span>
+              <span>-</span>
+              <span>
+                {project.addons.length} addon
+                {project.addons.length !== 1 ? "s" : ""}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Barre de pourcentage */}
+        {/* Barre de progression */}
         <div className="mt-3">
           <div className="flex items-center justify-between text-xs text-base-content/60 mb-1">
             <span>Part du budget</span>
@@ -93,17 +75,32 @@ const ProjectEstimationItem = memo(function ProjectEstimationItem({
           </div>
         </div>
 
-        {/* Detail mensuel */}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-base-200 text-xs">
-          <span className="text-base-content/60">Cout mensuel estime</span>
-          <span className="font-medium tabular-nums">
-            {formatPrice(estimatedCost)}/mois
-            {hasCostRange && (
-              <span className="text-base-content/50 ml-1">
-                ({formatPrice(minMonthlyCost)} - {formatPrice(maxMonthlyCost)})
-              </span>
-            )}
-          </span>
+        {/* Couts: Mensuel puis projection */}
+        <div className="mt-3 space-y-1.5 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-base-content/60 flex items-center gap-1.5">
+              <Icons.Clock className="w-3.5 h-3.5" />
+              Mensuel
+            </span>
+            <PriceRange
+              min={minMonthlyCost}
+              estimated={estimatedCost}
+              max={maxMonthlyCost}
+              compact
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-base-content/60 flex items-center gap-1.5">
+              <Icons.Calendar className="w-3.5 h-3.5" />
+              {formatDurationLabel(selectedMonths)}
+            </span>
+            <PriceRange
+              min={projectedMin}
+              estimated={projectedCost}
+              max={projectedMax}
+              compact
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -214,15 +211,12 @@ export const OrganizationEstimations = memo(function OrganizationEstimations({
                 <Icons.Clock className="w-4 h-4" />
                 <span>Mensuel</span>
               </div>
-              <p className="text-3xl font-bold text-primary tabular-nums">
-                {formatPrice(totals.monthly)}
-              </p>
-              {totals.hasCostRange && (
-                <p className="text-sm text-base-content/50 tabular-nums">
-                  Plage: {formatPrice(totals.minMonthly)} -{" "}
-                  {formatPrice(totals.maxMonthly)}
-                </p>
-              )}
+              <PriceRange
+                min={totals.minMonthly}
+                estimated={totals.monthly}
+                max={totals.maxMonthly}
+                size="md"
+              />
               {budgetTarget &&
                 totals.hasCostRange &&
                 totals.maxMonthly > budgetTarget &&
@@ -242,15 +236,12 @@ export const OrganizationEstimations = memo(function OrganizationEstimations({
                 <Icons.Calendar className="w-4 h-4" />
                 <span>{formatDurationLabel(selectedMonths)}</span>
               </div>
-              <p className="text-3xl font-bold text-primary tabular-nums">
-                {formatPrice(projectedTotal)}
-              </p>
-              {totals.hasCostRange && (
-                <p className="text-sm text-base-content/50 tabular-nums">
-                  Plage: {formatPrice(projectedMin)} -{" "}
-                  {formatPrice(projectedMax)}
-                </p>
-              )}
+              <PriceRange
+                min={projectedMin}
+                estimated={projectedTotal}
+                max={projectedMax}
+                size="md"
+              />
               {budgetTarget &&
                 totals.hasCostRange &&
                 projectedMax > budgetTarget * selectedMonths &&

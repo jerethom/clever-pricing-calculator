@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { Icons } from "@/components/ui";
+import { Icons, PriceRange } from "@/components/ui";
 import { formatMonthlyPrice, formatPrice } from "@/lib/costCalculator";
 import type { ProjectCostSummary } from "@/types";
 import { CostAddonCard } from "./CostAddonCard";
@@ -20,7 +20,6 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
   const totalMaxCost =
     cost.runtimesDetail.reduce((sum, r) => sum + r.maxMonthlyCost, 0) +
     cost.addonsCost;
-  const hasCostRange = totalMinCost !== totalMaxCost;
 
   const projectedCost = cost.totalMonthlyCost * selectedMonths;
   const projectedMinCost = totalMinCost * selectedMonths;
@@ -63,15 +62,12 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
                 <Icons.Clock className="w-4 h-4" />
                 <span>Mensuel</span>
               </div>
-              <p className="text-3xl font-bold text-primary tabular-nums">
-                {formatPrice(cost.totalMonthlyCost)}
-              </p>
-              {hasCostRange && (
-                <p className="text-sm text-base-content/50 tabular-nums">
-                  Plage: {formatPrice(totalMinCost)} -{" "}
-                  {formatPrice(totalMaxCost)}
-                </p>
-              )}
+              <PriceRange
+                min={totalMinCost}
+                estimated={cost.totalMonthlyCost}
+                max={totalMaxCost}
+                size="md"
+              />
             </div>
 
             {/* Estimation */}
@@ -80,15 +76,12 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
                 <Icons.Calendar className="w-4 h-4" />
                 <span>{formatDurationLabel(selectedMonths)}</span>
               </div>
-              <p className="text-3xl font-bold text-primary tabular-nums">
-                {formatPrice(projectedCost)}
-              </p>
-              {hasCostRange && (
-                <p className="text-sm text-base-content/50 tabular-nums">
-                  Plage: {formatPrice(projectedMinCost)} -{" "}
-                  {formatPrice(projectedMaxCost)}
-                </p>
-              )}
+              <PriceRange
+                min={projectedMinCost}
+                estimated={projectedCost}
+                max={projectedMaxCost}
+                size="md"
+              />
             </div>
           </div>
         </div>

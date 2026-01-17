@@ -6,6 +6,7 @@ export { Icons } from "./Icons";
 export { MoveProjectDialog } from "./MoveProjectDialog";
 export { NumberInput } from "./NumberInput";
 export { Portal } from "./Portal";
+export { PriceRange } from "./PriceRange";
 export type { SkeletonProps, SkeletonShape } from "./Skeleton";
 export { CostSummarySkeleton, Skeleton } from "./Skeleton";
 export { ToastContainer } from "./Toast";

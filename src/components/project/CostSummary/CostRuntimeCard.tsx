@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Icons } from "@/components/ui";
+import { Icons, PriceRange } from "@/components/ui";
 import { formatHourlyPrice, formatPrice } from "@/lib/costCalculator";
 import type { CostRuntimeCardProps } from "./types";
 
@@ -87,21 +87,12 @@ export const CostRuntimeCard = memo(function CostRuntimeCard({
                 <Icons.Chart className="w-4 h-4 text-primary/70" />
                 <span className="text-xs font-medium">Fourchette de couts</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <div className="text-center">
-                  <div className="text-xs text-base-content/60">Min</div>
-                  <div className="font-medium">
-                    {formatPrice(runtime.minMonthlyCost)}
-                  </div>
-                </div>
-                <div className="flex-1 mx-3 h-1 bg-gradient-to-r from-success via-warning to-error rounded-full" />
-                <div className="text-center">
-                  <div className="text-xs text-base-content/60">Max</div>
-                  <div className="font-medium">
-                    {formatPrice(runtime.maxMonthlyCost)}
-                  </div>
-                </div>
-              </div>
+              <PriceRange
+                min={runtime.minMonthlyCost}
+                estimated={runtime.estimatedTotalCost}
+                max={runtime.maxMonthlyCost}
+                size="sm"
+              />
             </div>
           </>
         )}
