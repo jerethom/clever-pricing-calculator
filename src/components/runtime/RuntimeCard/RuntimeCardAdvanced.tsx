@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense } from "react";
+import { memo } from "react";
 import { useRuntimeCardContext } from "./RuntimeCardContext";
 import { RuntimeCardScaling } from "./RuntimeCardScaling";
 import { RuntimeCardSchedule } from "./RuntimeCardSchedule";
@@ -9,15 +9,10 @@ import {
 } from "./RuntimeCardShared";
 import type { RuntimeCardAdvancedProps } from "./types";
 
-const TimeSlotEditor = lazy(
-  () => import("@/components/timeSlot/TimeSlotEditor"),
-);
-
 export const RuntimeCardAdvanced = memo(function RuntimeCardAdvanced({
   className = "",
 }: RuntimeCardAdvancedProps) {
-  const { projectId, runtime, cost, showTimeSlots, activeScalingProfiles } =
-    useRuntimeCardContext();
+  const { runtime, cost, activeScalingProfiles } = useRuntimeCardContext();
 
   const isFixedMode = !runtime.scalingEnabled;
 
@@ -32,18 +27,6 @@ export const RuntimeCardAdvanced = memo(function RuntimeCardAdvanced({
             <>
               <RuntimeCardScaling />
               <RuntimeCardSchedule />
-
-              {showTimeSlots && (
-                <div className="p-4 bg-base-100 border border-base-300 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <Suspense fallback={null}>
-                    <TimeSlotEditor
-                      projectId={projectId}
-                      runtimeId={runtime.id}
-                      runtime={runtime}
-                    />
-                  </Suspense>
-                </div>
-              )}
             </>
           )}
 

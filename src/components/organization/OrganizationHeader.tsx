@@ -27,7 +27,9 @@ function exportToCSV(
   projects: Project[],
   projectCosts: Map<string, ProjectCostSummary>,
 ) {
-  const rows: string[][] = [["Projet", "Type", "Nom", "Cout mensuel (EUR)"]];
+  const rows: (string | number)[][] = [
+    ["Projet", "Type", "Nom", "Cout mensuel (EUR)"],
+  ];
 
   for (const project of projects) {
     const cost = projectCosts.get(project.id);
@@ -39,7 +41,7 @@ function exportToCSV(
         project.name,
         "Runtime",
         runtime.runtimeName,
-        runtime.estimatedTotalCost.toFixed(2),
+        Math.round(runtime.estimatedTotalCost * 100) / 100,
       ]);
     }
 
@@ -49,14 +51,18 @@ function exportToCSV(
         project.name,
         "Addon",
         addon.planName,
-        addon.monthlyPrice.toFixed(2),
+        Math.round(addon.monthlyPrice * 100) / 100,
       ]);
     }
   }
 
-  // Convertir en CSV
+  // Convertir en CSV (guillemets uniquement pour les chaînes)
+  const formatCell = (cell: string | number): string => {
+    if (typeof cell === "number") return String(cell);
+    return `"${cell.replace(/"/g, '""')}"`;
+  };
   const csvContent = rows
-    .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","))
+    .map((row) => row.map(formatCell).join(","))
     .join("\n");
 
   // Creer et telecharger le fichier
