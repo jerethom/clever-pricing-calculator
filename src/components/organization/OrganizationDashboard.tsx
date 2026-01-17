@@ -1,5 +1,5 @@
-import { useNavigate } from "@tanstack/react-router";
-import { memo, useCallback, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { memo, type ReactNode, useCallback } from "react";
 import { useShallow } from "zustand/shallow";
 import { Icons } from "@/components/ui";
 import { useActiveOrganizationCosts } from "@/hooks/useCostCalculation";
@@ -11,73 +11,31 @@ import {
   useSelector,
 } from "@/store";
 import { useProjectStore } from "@/store/projectStore";
-import { OrganizationBudgetGauge } from "./OrganizationBudgetGauge";
-import { OrganizationCostBreakdown } from "./OrganizationCostBreakdown";
-import { OrganizationEstimations } from "./OrganizationEstimations";
 import { OrganizationHeader } from "./OrganizationHeader";
-import { OrganizationProjectList } from "./OrganizationProjectList";
-import { OrganizationStats } from "./OrganizationStats";
 
 type TabType = "overview" | "estimations";
 
-export const OrganizationDashboard = memo(function OrganizationDashboard() {
-  const [activeTab, setActiveTab] = useState<TabType>("overview");
+interface OrganizationDashboardProps {
+  children?: ReactNode;
+}
+
+export const OrganizationDashboard = memo(function OrganizationDashboard({
+  children,
+}: OrganizationDashboardProps) {
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const organization = useSelector(selectActiveOrganization);
   const organizations = useSelector(selectOrganizations);
-  // Utiliser useShallow pour éviter les re-renders quand le tableau est recréé mais identique
   const projects = useProjectStore(
     useShallow(selectActiveOrganizationProjects),
   );
   const projectCosts = useActiveOrganizationCosts();
-  const { updateOrganization, deleteOrganization, createProject } =
-    useProjectActions();
+  const { updateOrganization, deleteOrganization } = useProjectActions();
 
-  // Calculer les statistiques (une seule itération)
-  const stats = useMemo(() => {
-    let totalRuntimes = 0;
-    let totalAddons = 0;
-    let totalMonthlyCost = 0;
-    let totalRuntimesCost = 0;
-    let totalAddonsCost = 0;
-    let totalMinCost = 0;
-    let totalMaxCost = 0;
-    let totalScalingCost = 0;
-
-    for (const project of projects) {
-      totalRuntimes += project.runtimes.length;
-      totalAddons += project.addons.length;
-      const cost = projectCosts.get(project.id);
-      if (cost) {
-        totalMonthlyCost += cost.totalMonthlyCost;
-        totalRuntimesCost += cost.runtimesCost;
-        totalAddonsCost += cost.addonsCost;
-        // Calcul des plages min/max
-        totalMinCost +=
-          cost.runtimesDetail.reduce((s, r) => s + r.minMonthlyCost, 0) +
-          cost.addonsCost;
-        totalMaxCost +=
-          cost.runtimesDetail.reduce((s, r) => s + r.maxMonthlyCost, 0) +
-          cost.addonsCost;
-        totalScalingCost += cost.runtimesDetail.reduce(
-          (s, r) => s + r.estimatedScalingCost,
-          0,
-        );
-      }
-    }
-
-    return {
-      projectsCount: projects.length,
-      runtimesCount: totalRuntimes,
-      addonsCount: totalAddons,
-      totalMonthlyCost,
-      totalRuntimesCost,
-      totalAddonsCost,
-      totalMinCost,
-      totalMaxCost,
-      totalScalingCost,
-    };
-  }, [projects, projectCosts]);
+  // Detecter l'onglet actif via le pathname
+  const activeTab: TabType = pathname.endsWith("/estimations")
+    ? "estimations"
+    : "overview";
 
   // Handlers
   const handleUpdateName = useCallback(
@@ -102,34 +60,18 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
     }
   }, [organization, organizations, deleteOrganization, navigate]);
 
-  const handleCreateProject = useCallback(() => {
-    if (organization) {
-      const name = `Projet ${projects.length + 1}`;
-      const newProjectId = createProject(organization.id, name);
-      navigate({
-        to: "/org/$orgId/project/$projectId/runtimes",
-        params: { orgId: organization.id, projectId: newProjectId },
-      });
-    }
-  }, [organization, projects.length, createProject, navigate]);
-
-  const handleUpdateBudget = useCallback(
-    (budget: number | undefined) => {
-      if (organization) {
-        updateOrganization(organization.id, { budgetTarget: budget });
-      }
-    },
-    [organization, updateOrganization],
-  );
-
   if (!organization) {
     return null;
   }
 
   const tabs = [
-    { key: "overview", icon: Icons.Chart, label: "Vue d'ensemble" },
-    { key: "estimations", icon: Icons.TrendingUp, label: "Estimations" },
-  ] as const;
+    { key: "overview" as const, icon: Icons.Chart, label: "Vue d'ensemble" },
+    {
+      key: "estimations" as const,
+      icon: Icons.TrendingUp,
+      label: "Estimations",
+    },
+  ];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -149,9 +91,10 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
         {tabs.map(({ key, icon: Icon, label }) => {
           const isActive = activeTab === key;
           return (
-            <button
+            <Link
               key={key}
-              type="button"
+              to={`/org/$orgId/${key}`}
+              params={{ orgId: organization.id }}
               role="tab"
               id={`tab-org-${key}`}
               aria-selected={isActive}
@@ -165,72 +108,15 @@ export const OrganizationDashboard = memo(function OrganizationDashboard() {
                     : "text-base-content/60 hover:text-base-content hover:bg-base-100/50"
                 }
               `}
-              onClick={() => setActiveTab(key)}
             >
               <Icon className={`w-4 h-4 ${isActive ? "text-primary" : ""}`} />
               <span>{label}</span>
-            </button>
+            </Link>
           );
         })}
       </div>
 
-      <div className="mt-2">
-        <div
-          role="tabpanel"
-          id="tabpanel-org-overview"
-          aria-labelledby="tab-org-overview"
-          hidden={activeTab !== "overview"}
-        >
-          {activeTab === "overview" && (
-            <div className="space-y-6">
-              <OrganizationBudgetGauge
-                currentCost={stats.totalMonthlyCost}
-                minCost={stats.totalMinCost}
-                maxCost={stats.totalMaxCost}
-                budgetTarget={organization.budgetTarget}
-                onUpdateBudget={handleUpdateBudget}
-              />
-              <OrganizationStats
-                projectsCount={stats.projectsCount}
-                runtimesCount={stats.runtimesCount}
-                addonsCount={stats.addonsCount}
-                totalMonthlyCost={stats.totalMonthlyCost}
-                minMonthlyCost={stats.totalMinCost}
-                maxMonthlyCost={stats.totalMaxCost}
-              />
-              <OrganizationCostBreakdown
-                totalRuntimesCost={stats.totalRuntimesCost}
-                totalAddonsCost={stats.totalAddonsCost}
-                totalMonthlyCost={stats.totalMonthlyCost}
-                totalScalingCost={stats.totalScalingCost}
-                projects={projects}
-                projectCosts={projectCosts}
-              />
-              <OrganizationProjectList
-                projects={projects}
-                projectCosts={projectCosts}
-                orgId={organization.id}
-                onCreateProject={handleCreateProject}
-              />
-            </div>
-          )}
-        </div>
-
-        <div
-          role="tabpanel"
-          id="tabpanel-org-estimations"
-          aria-labelledby="tab-org-estimations"
-          hidden={activeTab !== "estimations"}
-        >
-          {activeTab === "estimations" && (
-            <OrganizationEstimations
-              projects={projects}
-              projectCosts={projectCosts}
-              budgetTarget={organization.budgetTarget}
-            />
-          )}
-        </div>
-      </div>
+      <div className="mt-2">{children}</div>
     </div>
   );
 });

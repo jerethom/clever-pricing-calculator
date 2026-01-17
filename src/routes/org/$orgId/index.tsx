@@ -1,6 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { OrganizationDashboard } from "@/components/organization";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/org/$orgId/")({
-  component: OrganizationDashboard,
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: "/org/$orgId/overview",
+      params: { orgId: params.orgId },
+    });
+  },
 });

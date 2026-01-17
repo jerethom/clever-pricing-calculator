@@ -12,7 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OrgOrgIdRouteImport } from './routes/org/$orgId'
 import { Route as OrgOrgIdIndexRouteImport } from './routes/org/$orgId/index'
+import { Route as OrgOrgIdDashboardRouteImport } from './routes/org/$orgId/_dashboard'
 import { Route as OrgOrgIdProjectProjectIdRouteImport } from './routes/org/$orgId/project/$projectId'
+import { Route as OrgOrgIdDashboardOverviewRouteImport } from './routes/org/$orgId/_dashboard/overview'
+import { Route as OrgOrgIdDashboardEstimationsRouteImport } from './routes/org/$orgId/_dashboard/estimations'
 import { Route as OrgOrgIdProjectProjectIdIndexRouteImport } from './routes/org/$orgId/project/$projectId/index'
 import { Route as OrgOrgIdProjectProjectIdRuntimesRouteImport } from './routes/org/$orgId/project/$projectId/runtimes'
 import { Route as OrgOrgIdProjectProjectIdEstimationRouteImport } from './routes/org/$orgId/project/$projectId/estimation'
@@ -33,11 +36,27 @@ const OrgOrgIdIndexRoute = OrgOrgIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => OrgOrgIdRoute,
 } as any)
+const OrgOrgIdDashboardRoute = OrgOrgIdDashboardRouteImport.update({
+  id: '/_dashboard',
+  getParentRoute: () => OrgOrgIdRoute,
+} as any)
 const OrgOrgIdProjectProjectIdRoute =
   OrgOrgIdProjectProjectIdRouteImport.update({
     id: '/project/$projectId',
     path: '/project/$projectId',
     getParentRoute: () => OrgOrgIdRoute,
+  } as any)
+const OrgOrgIdDashboardOverviewRoute =
+  OrgOrgIdDashboardOverviewRouteImport.update({
+    id: '/overview',
+    path: '/overview',
+    getParentRoute: () => OrgOrgIdDashboardRoute,
+  } as any)
+const OrgOrgIdDashboardEstimationsRoute =
+  OrgOrgIdDashboardEstimationsRouteImport.update({
+    id: '/estimations',
+    path: '/estimations',
+    getParentRoute: () => OrgOrgIdDashboardRoute,
   } as any)
 const OrgOrgIdProjectProjectIdIndexRoute =
   OrgOrgIdProjectProjectIdIndexRouteImport.update({
@@ -66,8 +85,10 @@ const OrgOrgIdProjectProjectIdAddonsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/org/$orgId': typeof OrgOrgIdRouteWithChildren
+  '/org/$orgId': typeof OrgOrgIdDashboardRouteWithChildren
   '/org/$orgId/': typeof OrgOrgIdIndexRoute
+  '/org/$orgId/estimations': typeof OrgOrgIdDashboardEstimationsRoute
+  '/org/$orgId/overview': typeof OrgOrgIdDashboardOverviewRoute
   '/org/$orgId/project/$projectId': typeof OrgOrgIdProjectProjectIdRouteWithChildren
   '/org/$orgId/project/$projectId/addons': typeof OrgOrgIdProjectProjectIdAddonsRoute
   '/org/$orgId/project/$projectId/estimation': typeof OrgOrgIdProjectProjectIdEstimationRoute
@@ -77,6 +98,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/org/$orgId': typeof OrgOrgIdIndexRoute
+  '/org/$orgId/estimations': typeof OrgOrgIdDashboardEstimationsRoute
+  '/org/$orgId/overview': typeof OrgOrgIdDashboardOverviewRoute
   '/org/$orgId/project/$projectId/addons': typeof OrgOrgIdProjectProjectIdAddonsRoute
   '/org/$orgId/project/$projectId/estimation': typeof OrgOrgIdProjectProjectIdEstimationRoute
   '/org/$orgId/project/$projectId/runtimes': typeof OrgOrgIdProjectProjectIdRuntimesRoute
@@ -86,7 +109,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/org/$orgId': typeof OrgOrgIdRouteWithChildren
+  '/org/$orgId/_dashboard': typeof OrgOrgIdDashboardRouteWithChildren
   '/org/$orgId/': typeof OrgOrgIdIndexRoute
+  '/org/$orgId/_dashboard/estimations': typeof OrgOrgIdDashboardEstimationsRoute
+  '/org/$orgId/_dashboard/overview': typeof OrgOrgIdDashboardOverviewRoute
   '/org/$orgId/project/$projectId': typeof OrgOrgIdProjectProjectIdRouteWithChildren
   '/org/$orgId/project/$projectId/addons': typeof OrgOrgIdProjectProjectIdAddonsRoute
   '/org/$orgId/project/$projectId/estimation': typeof OrgOrgIdProjectProjectIdEstimationRoute
@@ -99,6 +125,8 @@ export interface FileRouteTypes {
     | '/'
     | '/org/$orgId'
     | '/org/$orgId/'
+    | '/org/$orgId/estimations'
+    | '/org/$orgId/overview'
     | '/org/$orgId/project/$projectId'
     | '/org/$orgId/project/$projectId/addons'
     | '/org/$orgId/project/$projectId/estimation'
@@ -108,6 +136,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/org/$orgId'
+    | '/org/$orgId/estimations'
+    | '/org/$orgId/overview'
     | '/org/$orgId/project/$projectId/addons'
     | '/org/$orgId/project/$projectId/estimation'
     | '/org/$orgId/project/$projectId/runtimes'
@@ -116,7 +146,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/org/$orgId'
+    | '/org/$orgId/_dashboard'
     | '/org/$orgId/'
+    | '/org/$orgId/_dashboard/estimations'
+    | '/org/$orgId/_dashboard/overview'
     | '/org/$orgId/project/$projectId'
     | '/org/$orgId/project/$projectId/addons'
     | '/org/$orgId/project/$projectId/estimation'
@@ -152,12 +185,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgOrgIdIndexRouteImport
       parentRoute: typeof OrgOrgIdRoute
     }
+    '/org/$orgId/_dashboard': {
+      id: '/org/$orgId/_dashboard'
+      path: ''
+      fullPath: '/org/$orgId'
+      preLoaderRoute: typeof OrgOrgIdDashboardRouteImport
+      parentRoute: typeof OrgOrgIdRoute
+    }
     '/org/$orgId/project/$projectId': {
       id: '/org/$orgId/project/$projectId'
       path: '/project/$projectId'
       fullPath: '/org/$orgId/project/$projectId'
       preLoaderRoute: typeof OrgOrgIdProjectProjectIdRouteImport
       parentRoute: typeof OrgOrgIdRoute
+    }
+    '/org/$orgId/_dashboard/overview': {
+      id: '/org/$orgId/_dashboard/overview'
+      path: '/overview'
+      fullPath: '/org/$orgId/overview'
+      preLoaderRoute: typeof OrgOrgIdDashboardOverviewRouteImport
+      parentRoute: typeof OrgOrgIdDashboardRoute
+    }
+    '/org/$orgId/_dashboard/estimations': {
+      id: '/org/$orgId/_dashboard/estimations'
+      path: '/estimations'
+      fullPath: '/org/$orgId/estimations'
+      preLoaderRoute: typeof OrgOrgIdDashboardEstimationsRouteImport
+      parentRoute: typeof OrgOrgIdDashboardRoute
     }
     '/org/$orgId/project/$projectId/': {
       id: '/org/$orgId/project/$projectId/'
@@ -190,6 +244,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface OrgOrgIdDashboardRouteChildren {
+  OrgOrgIdDashboardEstimationsRoute: typeof OrgOrgIdDashboardEstimationsRoute
+  OrgOrgIdDashboardOverviewRoute: typeof OrgOrgIdDashboardOverviewRoute
+}
+
+const OrgOrgIdDashboardRouteChildren: OrgOrgIdDashboardRouteChildren = {
+  OrgOrgIdDashboardEstimationsRoute: OrgOrgIdDashboardEstimationsRoute,
+  OrgOrgIdDashboardOverviewRoute: OrgOrgIdDashboardOverviewRoute,
+}
+
+const OrgOrgIdDashboardRouteWithChildren =
+  OrgOrgIdDashboardRoute._addFileChildren(OrgOrgIdDashboardRouteChildren)
+
 interface OrgOrgIdProjectProjectIdRouteChildren {
   OrgOrgIdProjectProjectIdAddonsRoute: typeof OrgOrgIdProjectProjectIdAddonsRoute
   OrgOrgIdProjectProjectIdEstimationRoute: typeof OrgOrgIdProjectProjectIdEstimationRoute
@@ -213,11 +280,13 @@ const OrgOrgIdProjectProjectIdRouteWithChildren =
   )
 
 interface OrgOrgIdRouteChildren {
+  OrgOrgIdDashboardRoute: typeof OrgOrgIdDashboardRouteWithChildren
   OrgOrgIdIndexRoute: typeof OrgOrgIdIndexRoute
   OrgOrgIdProjectProjectIdRoute: typeof OrgOrgIdProjectProjectIdRouteWithChildren
 }
 
 const OrgOrgIdRouteChildren: OrgOrgIdRouteChildren = {
+  OrgOrgIdDashboardRoute: OrgOrgIdDashboardRouteWithChildren,
   OrgOrgIdIndexRoute: OrgOrgIdIndexRoute,
   OrgOrgIdProjectProjectIdRoute: OrgOrgIdProjectProjectIdRouteWithChildren,
 }
