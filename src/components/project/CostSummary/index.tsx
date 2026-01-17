@@ -5,8 +5,7 @@ import type { ProjectCostSummary } from "@/types";
 import { CostAddonCard } from "./CostAddonCard";
 import { CostBreakdownBar } from "./CostBreakdownBar";
 import { CostRuntimeCard } from "./CostRuntimeCard";
-import { DurationSelector } from "./DurationSelector";
-import { ProjectionCard } from "./ProjectionCard";
+import { DURATION_OPTIONS, formatDurationLabel } from "./types";
 
 interface CostSummaryProps {
 	cost: ProjectCostSummary;
@@ -29,37 +28,69 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
 
 	return (
 		<div className="space-y-6 animate-cost-fade-in">
-			{/* Selecteur de duree */}
-			<div className="card bg-base-100 border border-base-300">
-				<div className="card-body p-4">
-					<DurationSelector
-						selectedMonths={selectedMonths}
-						onSelect={setSelectedMonths}
-					/>
+			{/* Carte principale de projection */}
+			<div className="card bg-gradient-to-br from-base-100 to-base-200 border border-base-300">
+				<div className="card-body p-4 sm:p-6">
+					{/* Header avec selecteur de duree */}
+					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+						<h3 className="font-semibold flex items-center gap-2">
+							<Icons.TrendingUp className="w-5 h-5 text-primary" />
+							Projections
+						</h3>
+						<div className="flex flex-wrap gap-1">
+							{DURATION_OPTIONS.map((option) => (
+								<button
+									key={option.months}
+									type="button"
+									onClick={() => setSelectedMonths(option.months)}
+									className={`px-3 py-1.5 text-xs font-medium transition-all rounded ${
+										selectedMonths === option.months
+											? "bg-primary text-primary-content"
+											: "bg-base-200 text-base-content/70 hover:bg-base-300"
+									}`}
+								>
+									{option.label}
+								</button>
+							))}
+						</div>
+					</div>
+
+					{/* Grille mensuel / projection */}
+					<div className="grid sm:grid-cols-2 gap-6">
+						{/* Cout mensuel */}
+						<div className="space-y-1">
+							<div className="flex items-center gap-2 text-base-content/60 text-sm">
+								<Icons.Clock className="w-4 h-4" />
+								<span>Mensuel</span>
+							</div>
+							<p className="text-3xl font-bold text-primary tabular-nums">
+								{formatPrice(cost.totalMonthlyCost)}
+							</p>
+							{hasCostRange && (
+								<p className="text-sm text-base-content/50 tabular-nums">
+									Plage: {formatPrice(totalMinCost)} - {formatPrice(totalMaxCost)}
+								</p>
+							)}
+						</div>
+
+						{/* Projection */}
+						<div className="space-y-1">
+							<div className="flex items-center gap-2 text-base-content/60 text-sm">
+								<Icons.Calendar className="w-4 h-4" />
+								<span>{formatDurationLabel(selectedMonths)}</span>
+							</div>
+							<p className="text-3xl font-bold text-primary tabular-nums">
+								{formatPrice(projectedCost)}
+							</p>
+							{hasCostRange && (
+								<p className="text-sm text-base-content/50 tabular-nums">
+									Plage: {formatPrice(projectedMinCost)} -{" "}
+									{formatPrice(projectedMaxCost)}
+								</p>
+							)}
+						</div>
+					</div>
 				</div>
-			</div>
-
-			{/* Section Projection - Cartes Mensuel et Projection */}
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-				{/* Carte Mensuel - Reference fixe */}
-				<ProjectionCard
-					type="monthly"
-					cost={cost.totalMonthlyCost}
-					selectedMonths={selectedMonths}
-					hasCostRange={hasCostRange}
-					minCost={totalMinCost}
-					maxCost={totalMaxCost}
-				/>
-
-				{/* Carte Projection - Dynamique selon la duree selectionnee */}
-				<ProjectionCard
-					type="projection"
-					cost={projectedCost}
-					selectedMonths={selectedMonths}
-					hasCostRange={hasCostRange}
-					minCost={projectedMinCost}
-					maxCost={projectedMaxCost}
-				/>
 			</div>
 
 			{/* Stats rapides et repartition */}

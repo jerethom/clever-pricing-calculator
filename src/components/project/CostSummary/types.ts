@@ -14,11 +14,6 @@ export interface DurationOption {
 	shortLabel: string;
 }
 
-export interface DurationSelectorProps {
-	selectedMonths: number;
-	onSelect: (months: number) => void;
-}
-
 export interface CostBreakdownBarProps {
 	runtimesCost: number;
 	addonsCost: number;
@@ -31,15 +26,6 @@ export interface CostRuntimeCardProps {
 
 export interface CostAddonCardProps {
 	addon: AddonCostDetail;
-}
-
-export interface ProjectionCardProps {
-	type: "monthly" | "projection";
-	cost: number;
-	selectedMonths: number;
-	hasCostRange: boolean;
-	minCost: number;
-	maxCost: number;
 }
 
 export const DURATION_OPTIONS: DurationOption[] = [

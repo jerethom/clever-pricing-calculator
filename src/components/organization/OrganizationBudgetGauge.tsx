@@ -182,7 +182,6 @@ export const OrganizationBudgetGauge = memo(function OrganizationBudgetGauge({
 					size="lg"
 					suffix="€"
 					onKeyDown={handleKeyDown}
-					autoFocus
 				/>
 
 				<div className="flex items-center gap-2">
