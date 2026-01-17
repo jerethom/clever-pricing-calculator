@@ -1,4 +1,4 @@
-import { memo, useCallback, useState, useRef } from 'react'
+import { memo, useCallback, useState, useRef, Fragment } from 'react'
 import { createPortal } from 'react-dom'
 import type { WeeklySchedule, DayOfWeek, LoadLevel } from '@/types'
 import { DAYS_OF_WEEK, createFilledSchedule, createHourlyConfig } from '@/types'
@@ -87,12 +87,9 @@ const PresetTooltip = memo(function PresetTooltip({
 
         {/* 4 blocs de 6 heures */}
         {[0, 6, 12, 18].map(startHour => (
-          <>
+          <Fragment key={startHour}>
             {/* Label horaire */}
-            <div
-              key={`hour-${startHour}`}
-              className="text-[9px] text-base-content/50 text-right pr-1 flex items-center justify-end"
-            >
+            <div className="text-[9px] text-base-content/50 text-right pr-1 flex items-center justify-end">
               {startHour}h
             </div>
             {/* Cellules pour chaque jour */}
@@ -114,7 +111,7 @@ const PresetTooltip = memo(function PresetTooltip({
                 />
               )
             })}
-          </>
+          </Fragment>
         ))}
       </div>
     </div>
