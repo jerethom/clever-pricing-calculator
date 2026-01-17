@@ -1,3 +1,4 @@
+export * from "./addonPricing";
 export * from "./organization";
 export * from "./pricing";
 export * from "./project";

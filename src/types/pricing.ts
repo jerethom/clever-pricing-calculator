@@ -1,3 +1,5 @@
+import type { UsageMetricCostDetail } from "./addonPricing";
+
 export interface RuntimeCostDetail {
   runtimeId: string;
   runtimeName: string;
@@ -25,6 +27,14 @@ export interface AddonCostDetail {
   providerName: string;
   planName: string;
   monthlyPrice: number;
+  /** Indique si l'addon a une tarification à l'usage */
+  isUsageBased?: boolean;
+  /** Coût estimé basé sur l'usage (si usage-based) */
+  usageCost?: number;
+  /** Détail des coûts par métrique */
+  usageDetails?: UsageMetricCostDetail[];
+  /** Indique que le coût est une estimation */
+  isEstimate?: boolean;
 }
 
 export interface ProjectCostSummary {

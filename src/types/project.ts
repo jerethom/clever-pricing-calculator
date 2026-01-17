@@ -1,3 +1,4 @@
+import type { UsageEstimate } from "./addonPricing";
 import type { ScalingProfile } from "./scaling";
 import type { WeeklySchedule } from "./timeSlot";
 
@@ -32,6 +33,10 @@ export interface AddonConfig {
   planId: string;
   planName: string;
   monthlyPrice: number;
+  /** Indique si l'addon a une tarification à l'usage */
+  isUsageBased?: boolean;
+  /** Estimations d'usage saisies par l'utilisateur */
+  usageEstimates?: UsageEstimate[];
 }
 
 export interface Project {

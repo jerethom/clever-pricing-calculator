@@ -1,10 +1,16 @@
-import { lazy, memo, Suspense, useCallback, useMemo, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useState } from "react";
 import { ConfirmDialog, Icons } from "@/components/ui";
 import { useAddons } from "@/hooks/useAddons";
+import { calculateAddonCost } from "@/lib/addonCostCalculator";
+import {
+  getDefaultUsageEstimates,
+  isUsageBasedAddon,
+} from "@/lib/addonPricingRegistry";
 import { sortFeaturesByPriority } from "@/lib/addonUtils";
-import { formatMonthlyPrice } from "@/lib/costCalculator";
+import { formatMonthlyPrice, formatPrice } from "@/lib/costCalculator";
 import { useProjectActions } from "@/store";
-import type { AddonConfig } from "@/types";
+import type { AddonConfig, UsageEstimate } from "@/types";
+import { UsageEstimateForm } from "./UsageEstimateForm";
 
 const AddonForm = lazy(() => import("./AddonForm"));
 
@@ -24,47 +30,26 @@ export const AddonCard = memo(function AddonCard({
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState("");
 
-  // Memo: provider (recherche dans addonProviders)
-  const provider = useMemo(
-    () => addonProviders?.find((p) => p.id === addon.providerId),
-    [addonProviders, addon.providerId],
-  );
+  const provider = addonProviders?.find((p) => p.id === addon.providerId);
+  const defaultName = provider?.name ?? addon.providerId;
+  const plan = provider?.plans.find((p) => p.id === addon.planId);
+  const features = plan?.features ? sortFeaturesByPriority(plan.features) : [];
+  const mainFeatures = features.slice(0, 2);
+  const mainFeatureText = mainFeatures.map((f) => f.value).join(" - ");
+  const isUsageBased = isUsageBasedAddon(addon.providerId);
+  const addonCost = calculateAddonCost(addon);
+  const isFree = addon.monthlyPrice === 0 && !isUsageBased;
+  const displayPrice = isUsageBased
+    ? addonCost.monthlyPrice
+    : addon.monthlyPrice;
+  const estimates =
+    addon.usageEstimates ?? getDefaultUsageEstimates(addon.providerId) ?? [];
 
-  // Memo: defaultName et isNameModified
-  const defaultName = useMemo(
-    () => provider?.name ?? addon.providerId,
-    [provider?.name, addon.providerId],
-  );
-
-  // Memo: plan et features (recherche et tri)
-  const plan = useMemo(
-    () => provider?.plans.find((p) => p.id === addon.planId),
-    [provider?.plans, addon.planId],
-  );
-
-  const features = useMemo(
-    () => (plan?.features ? sortFeaturesByPriority(plan.features) : []),
-    [plan],
-  );
-
-  // Memo: mainFeatures et mainFeatureText
-  const mainFeatures = useMemo(() => features.slice(0, 2), [features]);
-
-  const mainFeatureText = useMemo(
-    () => mainFeatures.map((f) => f.value).join(" - "),
-    [mainFeatures],
-  );
-
-  // Memo: isFree
-  const isFree = useMemo(() => addon.monthlyPrice === 0, [addon.monthlyPrice]);
-
-  // Callback: handleStartEditName
   const handleStartEditName = useCallback(() => {
     setEditName(addon.providerName);
     setIsEditingName(true);
   }, [addon.providerName]);
 
-  // Callback: handleSaveEditName
   const handleSaveEditName = useCallback(() => {
     if (editName.trim()) {
       updateAddon(projectId, addon.id, { providerName: editName.trim() });
@@ -72,22 +57,29 @@ export const AddonCard = memo(function AddonCard({
     setIsEditingName(false);
   }, [editName, updateAddon, projectId, addon.id]);
 
-  // Callback: handleCancelEditName
   const handleCancelEditName = useCallback(() => {
     setIsEditingName(false);
   }, []);
 
-  // Callback: handleResetName
   const handleResetName = useCallback(() => {
     updateAddon(projectId, addon.id, { providerName: defaultName });
     setIsEditingName(false);
   }, [updateAddon, projectId, addon.id, defaultName]);
 
-  // Callback: handleDelete
   const handleDelete = useCallback(() => {
     removeAddon(projectId, addon.id);
     setShowDeleteConfirm(false);
   }, [removeAddon, projectId, addon.id]);
+
+  const handleUsageEstimateChange = useCallback(
+    (newEstimates: UsageEstimate[]) => {
+      updateAddon(projectId, addon.id, {
+        usageEstimates: newEstimates,
+        isUsageBased: true,
+      });
+    },
+    [updateAddon, projectId, addon.id],
+  );
 
   return (
     <div className="card bg-base-100 border border-base-300 hover:border-primary/30 transition-all hover:shadow-lg hover:shadow-primary/5">
@@ -180,11 +172,15 @@ export const AddonCard = memo(function AddonCard({
                 <span className="badge badge-sm badge-ghost">
                   {addon.planName}
                 </span>
-                {isFree && (
+                {isUsageBased ? (
+                  <span className="badge badge-sm badge-warning badge-outline">
+                    Variable
+                  </span>
+                ) : isFree ? (
                   <span className="badge badge-sm badge-success badge-outline">
                     Gratuit
                   </span>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -222,7 +218,11 @@ export const AddonCard = memo(function AddonCard({
             </div>
             <div className="flex flex-col items-end gap-0.5">
               <span className="text-secondary font-bold">
-                {isFree ? "Gratuit" : formatMonthlyPrice(addon.monthlyPrice)}
+                {isFree
+                  ? "Gratuit"
+                  : isUsageBased
+                    ? `~${formatPrice(displayPrice)}/mois`
+                    : formatMonthlyPrice(addon.monthlyPrice)}
               </span>
               <span className="text-xs text-base-content/60">
                 <Icons.Edit className="w-3 h-3 inline mr-1" />
@@ -242,22 +242,65 @@ export const AddonCard = memo(function AddonCard({
                   Estimation mensuelle
                 </p>
                 <p className="text-2xl font-bold text-secondary">
-                  {isFree ? "Gratuit" : formatMonthlyPrice(addon.monthlyPrice)}
+                  {isFree
+                    ? "Gratuit"
+                    : isUsageBased
+                      ? `~${formatPrice(displayPrice)}`
+                      : formatMonthlyPrice(addon.monthlyPrice)}
                 </p>
               </div>
-              {isFree && (
+              {isUsageBased ? (
+                <span className="badge badge-info badge-sm">
+                  <Icons.Info className="w-3 h-3 mr-1" />
+                  Estimation
+                </span>
+              ) : isFree ? (
                 <span className="badge badge-success badge-sm">
                   <Icons.Check className="w-3 h-3 mr-1" />
                   Inclus
                 </span>
-              )}
+              ) : null}
             </div>
           </div>
+
+          {/* Section estimation d'usage pour les addons usage-based */}
+          {isUsageBased && (
+            <details className="group">
+              <summary className="px-4 py-2 bg-base-200 cursor-pointer flex items-center justify-between hover:bg-base-300 transition-colors list-none border-t border-base-300">
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <Icons.Chart className="w-4 h-4 text-warning" />
+                  Estimer mon usage
+                </span>
+                <svg
+                  className="w-4 h-4 transition-transform group-open:rotate-180"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </summary>
+
+              <div className="p-4 bg-base-100 border-t border-base-300">
+                <UsageEstimateForm
+                  providerId={addon.providerId}
+                  estimates={estimates}
+                  onChange={handleUsageEstimateChange}
+                />
+              </div>
+            </details>
+          )}
 
           {/* Detail collapse avec features */}
           {features.length > 0 && (
             <details className="group">
-              <summary className="px-4 py-2 bg-base-200 cursor-pointer flex items-center justify-between hover:bg-base-300 transition-colors list-none">
+              <summary className="px-4 py-2 bg-base-200 cursor-pointer flex items-center justify-between hover:bg-base-300 transition-colors list-none border-t border-base-300">
                 <span className="text-sm font-medium">
                   Voir les caracteristiques
                 </span>

@@ -8,6 +8,7 @@ import type {
   RuntimeCostDetail,
 } from "@/types";
 import { createEmptySchedule, DAYS_OF_WEEK, getBaseConfig } from "@/types";
+import { calculateAddonCost } from "./addonCostCalculator";
 import {
   calculateMaxScalingCost,
   calculateScalingAtLevel,
@@ -292,13 +293,10 @@ export function calculateProjectCost(
     0,
   );
 
-  // Calculer les coûts des addons (prix mensuel fixe)
-  const addonsDetail: AddonCostDetail[] = project.addons.map((addon) => ({
-    addonId: addon.id,
-    providerName: addon.providerName,
-    planName: addon.planName,
-    monthlyPrice: addon.monthlyPrice,
-  }));
+  // Calculer les coûts des addons (utilise le nouveau calculateur pour les addons usage-based)
+  const addonsDetail: AddonCostDetail[] = project.addons.map((addon) =>
+    calculateAddonCost(addon),
+  );
 
   const addonsCost = addonsDetail.reduce((sum, a) => sum + a.monthlyPrice, 0);
 

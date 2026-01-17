@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Portal } from "@/components/ui";
 import { useAddons } from "@/hooks/useAddons";
+import {
+  getDefaultUsageEstimates,
+  isUsageBasedAddon,
+} from "@/lib/addonPricingRegistry";
 import { sortFeaturesByPriority } from "@/lib/addonUtils";
 import { formatMonthlyPrice } from "@/lib/costCalculator";
 import { useProjectActions } from "@/store";
@@ -87,6 +91,9 @@ function AddonForm({ projectId, onClose, editingAddon }: AddonFormProps) {
         monthlyPrice: selectedPlan.price,
       });
     } else {
+      const isUsageBased = isUsageBasedAddon(selectedProvider.id);
+      const defaultEstimates = getDefaultUsageEstimates(selectedProvider.id);
+
       addAddon(projectId, {
         providerId: selectedProvider.id,
         providerName: selectedProvider.name,
@@ -94,6 +101,8 @@ function AddonForm({ projectId, onClose, editingAddon }: AddonFormProps) {
         planId: selectedPlan.id,
         planName: selectedPlan.name,
         monthlyPrice: selectedPlan.price,
+        isUsageBased,
+        usageEstimates: defaultEstimates,
       });
     }
 

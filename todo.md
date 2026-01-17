@@ -1,0 +1,2 @@
+- [ ] /feature-react Afficher les prix min, estimé et max dans les endroits où sont affichés les prix pour qu'il soit mieux visible.
+- [ ] 
