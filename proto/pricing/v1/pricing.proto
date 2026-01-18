@@ -1,0 +1,41 @@
+syntax = "proto3";
+package pricing.v1;
+
+option go_package = "github.com/c18t-com/clever-pricing-calculator/backend/gen/proto/pricing/v1;pricingv1";
+
+message Instance {
+  string type = 1;
+  string name = 2;
+  string version = 3;
+  repeated Flavor flavors = 4;
+}
+
+message Flavor {
+  string name = 1;
+  int32 mem = 2;
+  int32 cpus = 3;
+  double price_per_hour = 4;
+  bool available = 5;
+}
+
+message CostEstimation {
+  string id = 1;
+  string project_id = 2;
+  double min_monthly_cost = 3;
+  double max_monthly_cost = 4;
+  repeated RuntimeCost runtime_costs = 5;
+  repeated AddonCost addon_costs = 6;
+}
+
+message RuntimeCost {
+  string runtime_id = 1;
+  string name = 2;
+  double min_cost = 3;
+  double max_cost = 4;
+}
+
+message AddonCost {
+  string addon_id = 1;
+  string name = 2;
+  double cost = 3;
+}

@@ -1,0 +1,64 @@
+syntax = "proto3";
+package pricing.v1;
+
+import "pricing/v1/pricing.proto";
+
+option go_package = "github.com/c18t-com/clever-pricing-calculator/backend/gen/proto/pricing/v1;pricingv1";
+
+service PricingService {
+  // Queries (lecture)
+  rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse);
+  rpc GetEstimation(GetEstimationRequest) returns (GetEstimationResponse);
+
+  // Commands (ecriture)
+  rpc CalculateCost(CalculateCostRequest) returns (CalculateCostResponse);
+  rpc SaveEstimation(SaveEstimationRequest) returns (SaveEstimationResponse);
+}
+
+// Query messages
+message ListInstancesRequest {
+  string zone_id = 1;
+}
+
+message ListInstancesResponse {
+  repeated Instance instances = 1;
+}
+
+message GetEstimationRequest {
+  string estimation_id = 1;
+}
+
+message GetEstimationResponse {
+  CostEstimation estimation = 1;
+}
+
+// Command messages
+message CalculateCostRequest {
+  string project_id = 1;
+  repeated RuntimeSpec runtime_specs = 2;
+  repeated AddonSpec addon_specs = 3;
+}
+
+message RuntimeSpec {
+  string instance_type = 1;
+  string flavor_name = 2;
+  int32 min_instances = 3;
+  int32 max_instances = 4;
+}
+
+message AddonSpec {
+  string provider_id = 1;
+  string plan_id = 2;
+}
+
+message CalculateCostResponse {
+  CostEstimation estimation = 1;
+}
+
+message SaveEstimationRequest {
+  CostEstimation estimation = 1;
+}
+
+message SaveEstimationResponse {
+  string estimation_id = 1;
+}

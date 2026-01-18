@@ -1,9 +1,86 @@
 [tools]
 node = "lts"
 pnpm = "10.28.0"
+go = "1.24"
+buf = "latest"
 
-[tasks]
-dev = "pnpm run dev"
-build = "pnpm run build"
-lint = "pnpm run lint"
-format = "pnpm run format"
+# --- Frontend ---
+[tasks.dev]
+description = "Start frontend dev server"
+run = "pnpm run dev"
+dir = "frontend"
+
+[tasks.lint]
+description = "Lint frontend code"
+run = "pnpm run lint"
+dir = "frontend"
+
+[tasks.format]
+description = "Format frontend code"
+run = "pnpm run format"
+dir = "frontend"
+
+[tasks.install]
+description = "Install frontend dependencies"
+run = "pnpm install"
+dir = "frontend"
+
+# --- Backend ---
+[tasks."go:dev"]
+description = "Start backend dev server"
+run = "go run ./cmd/server"
+dir = "backend"
+
+[tasks."go:build"]
+description = "Build backend binary"
+run = "go build -o bin/server ./cmd/server"
+dir = "backend"
+
+[tasks."go:test"]
+description = "Run backend tests"
+run = "go test ./..."
+dir = "backend"
+
+[tasks."go:tidy"]
+description = "Tidy backend dependencies"
+run = "go mod tidy"
+dir = "backend"
+
+# --- Proto ---
+[tasks."proto:gen"]
+description = "Generate code from proto files"
+run = "buf generate"
+
+[tasks."proto:lint"]
+description = "Lint proto files"
+run = "buf lint"
+
+[tasks."proto:format"]
+description = "Format proto files"
+run = "buf format -w"
+
+# --- Build ---
+[tasks."build:frontend"]
+description = "Build frontend for production"
+run = "pnpm run build"
+dir = "frontend"
+
+[tasks."build:embed"]
+description = "Copy frontend build to backend"
+run = "rm -rf backend/cmd/server/web && cp -r frontend/dist backend/cmd/server/web"
+depends = ["build:frontend"]
+
+[tasks."build:backend"]
+description = "Build backend for production"
+run = "go build -o bin/server ./cmd/server"
+dir = "backend"
+depends = ["build:embed"]
+
+[tasks.build]
+description = "Build everything for production"
+depends = ["proto:gen", "build:backend"]
+
+# --- Clean ---
+[tasks.clean]
+description = "Clean all generated files"
+run = "rm -rf frontend/dist backend/bin backend/cmd/server/web frontend/src/gen/proto backend/gen/proto"

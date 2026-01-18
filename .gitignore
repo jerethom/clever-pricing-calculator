@@ -4,6 +4,7 @@
 .playwright-mcp/
 .codegraphcontext/
 .tanstack/
+.vite/
 CLAUDE.md
 .mcp.json
 
@@ -17,8 +18,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
-dist-ssr
+dist/
+dist-ssr/
 *.local
 
 # Editor directories and files
@@ -31,3 +32,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Go
+backend/bin/
+backend/cmd/server/web/
+
+# Generated code by buf
+frontend/src/gen/proto/
+backend/gen/proto/
+buf.lock
+
+# Environment
+.env

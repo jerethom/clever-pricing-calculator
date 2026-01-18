@@ -1,0 +1,11 @@
+.claude/
+.codegraphcontext/
+.demongrep.db/
+.fastembed_cache/
+node_modules/
+tmp/
+.idea/
+.vscode/
+.expo/
+.env*
+.git/
