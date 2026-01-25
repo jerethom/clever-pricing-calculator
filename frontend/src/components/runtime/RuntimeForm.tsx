@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { memo, useState } from "react";
 import type { Instance, InstanceFlavor } from "@/api/types";
-import { Icons, NumberInput } from "@/components/ui";
+import { Icons, ModalBase, NumberInput } from "@/components/ui";
 import { useInstances } from "@/hooks/useInstances";
 import { formatHourlyPrice, formatMonthlyPrice } from "@/lib/costCalculator";
 import { useProjectAction } from "@/store";
@@ -8,6 +8,7 @@ import { useProjectAction } from "@/store";
 const HOURS_PER_MONTH = 720; // 30j × 24h (standard Clever Cloud)
 
 interface RuntimeFormProps {
+  isOpen: boolean;
   projectId: string;
   onClose: () => void;
 }
@@ -20,7 +21,11 @@ const STEPS: { id: Step; label: string; shortLabel: string }[] = [
   { id: "scaling", label: "Nombre d'instances", shortLabel: "Instances" },
 ];
 
-function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
+const RuntimeForm = memo(function RuntimeForm({
+  isOpen,
+  projectId,
+  onClose,
+}: RuntimeFormProps) {
   const { data: instances, isLoading } = useInstances();
   const addRuntime = useProjectAction("addRuntime");
 
@@ -36,23 +41,6 @@ function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
   const selectedFlavorData = selectedInstance?.flavors.find(
     (f) => f.name === selectedFlavor,
   );
-
-  // Handle keyboard navigation
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    },
-    [onClose],
-  );
-
-  useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [handleKeyDown]);
 
   // Grouper les instances par type de deploiement
   const groupedInstances = instances
@@ -159,345 +147,334 @@ function RuntimeForm({ projectId, onClose }: RuntimeFormProps) {
   const currentStepIndex = STEPS.findIndex((s) => s.id === currentStep);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-[#13172e]/80"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+    <ModalBase
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth="3xl"
+      className="max-h-[90vh] flex flex-col"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 sm:p-6 border-b border-base-300">
+        <div>
+          <h2 className="text-lg sm:text-xl font-bold">Ajouter un runtime</h2>
+          <p className="text-sm text-base-content/60 mt-0.5 hidden sm:block">
+            {STEPS[currentStepIndex].label}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm btn-square"
+          onClick={onClose}
+          aria-label="Fermer"
+        >
+          <Icons.X className="w-5 h-5" />
+        </button>
+      </div>
 
-      {/* Modal */}
-      <div className="relative bg-base-100 w-full max-w-3xl border border-base-300 animate-in max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-base-300">
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold">Ajouter un runtime</h2>
-            <p className="text-sm text-base-content/60 mt-0.5 hidden sm:block">
-              {STEPS[currentStepIndex].label}
+      {/* Stepper */}
+      <div className="px-4 sm:px-6 py-3 bg-base-200 border-b border-base-300">
+        <ul className="steps steps-horizontal w-full">
+          {STEPS.map((step, index) => {
+            const isCompleted = index < currentStepIndex;
+            const isCurrent = index === currentStepIndex;
+            const isClickable =
+              index === 0 ||
+              (index === 1 && selectedVariantId) ||
+              (index === 2 && selectedVariantId && selectedFlavor);
+
+            return (
+              <li
+                key={step.id}
+                className={`step transition-colors ${
+                  isCompleted || isCurrent ? "step-primary" : ""
+                } ${isClickable ? "cursor-pointer hover:text-primary" : "opacity-50 cursor-not-allowed"}`}
+                onClick={() => isClickable && goToStep(step.id)}
+                onKeyDown={(e) => {
+                  if ((e.key === "Enter" || e.key === " ") && isClickable) {
+                    e.preventDefault();
+                    goToStep(step.id);
+                  }
+                }}
+                data-content={isCompleted ? "\u2713" : index + 1}
+              >
+                <span className="hidden sm:inline">{step.label}</span>
+                <span className="sm:hidden text-xs">{step.shortLabel}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <span className="loading loading-spinner loading-lg text-primary"></span>
+            <p className="mt-4 text-base-content/60">
+              Chargement des runtimes...
             </p>
           </div>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm btn-square"
-            onClick={onClose}
-            aria-label="Fermer"
-          >
-            <Icons.X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Stepper */}
-        <div className="px-4 sm:px-6 py-3 bg-base-200 border-b border-base-300">
-          <ul className="steps steps-horizontal w-full">
-            {STEPS.map((step, index) => {
-              const isCompleted = index < currentStepIndex;
-              const isCurrent = index === currentStepIndex;
-              const isClickable =
-                index === 0 ||
-                (index === 1 && selectedVariantId) ||
-                (index === 2 && selectedVariantId && selectedFlavor);
-
-              return (
-                <li
-                  key={step.id}
-                  className={`step transition-colors ${
-                    isCompleted || isCurrent ? "step-primary" : ""
-                  } ${isClickable ? "cursor-pointer hover:text-primary" : "opacity-50 cursor-not-allowed"}`}
-                  onClick={() => isClickable && goToStep(step.id)}
-                  onKeyDown={(e) => {
-                    if ((e.key === "Enter" || e.key === " ") && isClickable) {
-                      e.preventDefault();
-                      goToStep(step.id);
-                    }
-                  }}
-                  data-content={isCompleted ? "\u2713" : index + 1}
-                >
-                  <span className="hidden sm:inline">{step.label}</span>
-                  <span className="sm:hidden text-xs">{step.shortLabel}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <span className="loading loading-spinner loading-lg text-primary"></span>
-              <p className="mt-4 text-base-content/60">
-                Chargement des runtimes...
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Step 1: Runtime Selection */}
-              {currentStep === "runtime" && (
-                <div className="space-y-4">
-                  {/* Search */}
-                  <div className="form-control">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Rechercher un runtime..."
-                        className="input input-bordered w-full pl-10"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+        ) : (
+          <>
+            {/* Step 1: Runtime Selection */}
+            {currentStep === "runtime" && (
+              <div className="space-y-4">
+                {/* Search */}
+                <div className="form-control">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Rechercher un runtime..."
+                      className="input input-bordered w-full pl-10"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <svg
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                       />
-                      <svg
-                        className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                        />
-                      </svg>
-                    </div>
+                    </svg>
                   </div>
-
-                  {/* Runtime Grid */}
-                  {filteredGroups &&
-                  Object.entries(filteredGroups).length > 0 ? (
-                    Object.entries(filteredGroups).map(
-                      ([deployType, group]) => (
-                        <div key={deployType}>
-                          <h3 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">
-                            {deployType}
-                          </h3>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-                            {group.map((instance) => (
-                              <RuntimeCard
-                                key={instance.variant.id}
-                                instance={instance}
-                                isSelected={
-                                  selectedVariantId === instance.variant.id
-                                }
-                                onClick={() =>
-                                  handleVariantSelect(instance.variant.id)
-                                }
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      ),
-                    )
-                  ) : (
-                    <div className="text-center py-8 text-base-content/60">
-                      <Icons.Server className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                      <p>Aucun runtime trouve pour "{searchQuery}"</p>
-                    </div>
-                  )}
                 </div>
-              )}
 
-              {/* Step 2: Flavor Selection */}
-              {currentStep === "flavor" && selectedInstance && (
+                {/* Runtime Grid */}
+                {filteredGroups && Object.entries(filteredGroups).length > 0 ? (
+                  Object.entries(filteredGroups).map(([deployType, group]) => (
+                    <div key={deployType}>
+                      <h3 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">
+                        {deployType}
+                      </h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                        {group.map((instance) => (
+                          <RuntimeCard
+                            key={instance.variant.id}
+                            instance={instance}
+                            isSelected={
+                              selectedVariantId === instance.variant.id
+                            }
+                            onClick={() =>
+                              handleVariantSelect(instance.variant.id)
+                            }
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-base-content/60">
+                    <Icons.Server className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>Aucun runtime trouve pour "{searchQuery}"</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 2: Flavor Selection */}
+            {currentStep === "flavor" && selectedInstance && (
+              <div className="space-y-6">
+                {/* Selected Runtime Preview */}
+                <div className="flex items-center gap-4 p-4 bg-base-200 border border-base-300">
+                  {selectedInstance.variant.logo && (
+                    <img
+                      src={selectedInstance.variant.logo}
+                      alt=""
+                      className="w-12 h-12 object-contain"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold truncate">
+                      {selectedInstance.name}
+                    </h3>
+                    <p className="text-sm text-base-content/60 truncate">
+                      {selectedInstance.description}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setCurrentStep("runtime")}
+                  >
+                    Modifier
+                  </button>
+                </div>
+
+                {/* Flavor Grid */}
+                <div>
+                  <h3 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">
+                    Choisir une configuration
+                  </h3>
+                  <div className="grid gap-2">
+                    {selectedInstance.flavors
+                      .filter((f) => f.available)
+                      .map((flavor) => (
+                        <FlavorCard
+                          key={flavor.name}
+                          flavor={flavor}
+                          isSelected={selectedFlavor === flavor.name}
+                          isDefault={
+                            selectedInstance.defaultFlavor.name === flavor.name
+                          }
+                          maxCpus={Math.max(
+                            ...selectedInstance.flavors.map((f) => f.cpus),
+                          )}
+                          onClick={() => handleFlavorSelect(flavor.name)}
+                        />
+                      ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Instance Count */}
+            {currentStep === "scaling" &&
+              selectedInstance &&
+              selectedFlavorData && (
                 <div className="space-y-6">
-                  {/* Selected Runtime Preview */}
+                  {/* Selected Runtime + Flavor Preview */}
                   <div className="flex items-center gap-4 p-4 bg-base-200 border border-base-300">
                     {selectedInstance.variant.logo && (
                       <img
                         src={selectedInstance.variant.logo}
                         alt=""
-                        className="w-12 h-12 object-contain"
+                        className="w-10 h-10 object-contain"
                       />
                     )}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold truncate">
                         {selectedInstance.name}
                       </h3>
-                      <p className="text-sm text-base-content/60 truncate">
-                        {selectedInstance.description}
+                      <p className="text-sm text-base-content/60">
+                        {selectedFlavor} - {selectedFlavorData.memory.formatted}{" "}
+                        / {selectedFlavorData.cpus} vCPU
                       </p>
                     </div>
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm"
-                      onClick={() => setCurrentStep("runtime")}
+                      onClick={() => setCurrentStep("flavor")}
                     >
                       Modifier
                     </button>
                   </div>
 
-                  {/* Flavor Grid */}
-                  <div>
-                    <h3 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">
-                      Choisir une configuration
+                  {/* Instance Count Configuration */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider">
+                      Nombre d'instances
                     </h3>
-                    <div className="grid gap-2">
-                      {selectedInstance.flavors
-                        .filter((f) => f.available)
-                        .map((flavor) => (
-                          <FlavorCard
-                            key={flavor.name}
-                            flavor={flavor}
-                            isSelected={selectedFlavor === flavor.name}
-                            isDefault={
-                              selectedInstance.defaultFlavor.name ===
-                              flavor.name
-                            }
-                            maxCpus={Math.max(
-                              ...selectedInstance.flavors.map((f) => f.cpus),
-                            )}
-                            onClick={() => handleFlavorSelect(flavor.name)}
-                          />
-                        ))}
-                    </div>
-                  </div>
-                </div>
-              )}
 
-              {/* Step 3: Instance Count */}
-              {currentStep === "scaling" &&
-                selectedInstance &&
-                selectedFlavorData && (
-                  <div className="space-y-6">
-                    {/* Selected Runtime + Flavor Preview */}
-                    <div className="flex items-center gap-4 p-4 bg-base-200 border border-base-300">
-                      {selectedInstance.variant.logo && (
-                        <img
-                          src={selectedInstance.variant.logo}
-                          alt=""
-                          className="w-10 h-10 object-contain"
+                    {/* Visual Instance Representation */}
+                    <div className="p-4 bg-base-200 border border-base-300">
+                      {/* Instance Blocks Visualization */}
+                      <div className="flex items-center gap-1 mb-4">
+                        {Array.from({
+                          length: Math.min(instanceCount, 12),
+                        }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="flex-1 h-10 bg-primary text-primary-content transition-all duration-200 flex items-center justify-center text-sm font-bold"
+                          >
+                            {i + 1}
+                          </div>
+                        ))}
+                        {instanceCount > 12 && (
+                          <span className="text-sm text-base-content/50 ml-2">
+                            +{instanceCount - 12}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Instance Count Control */}
+                      <div className="flex items-center justify-center">
+                        <NumberInput
+                          label=""
+                          value={instanceCount}
+                          onChange={setInstanceCount}
+                          min={1}
+                          max={selectedInstance.maxInstances}
+                          size="lg"
                         />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold truncate">
-                          {selectedInstance.name}
-                        </h3>
-                        <p className="text-sm text-base-content/60">
-                          {selectedFlavor} -{" "}
-                          {selectedFlavorData.memory.formatted} /{" "}
-                          {selectedFlavorData.cpus} vCPU
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-base-content/60 text-center">
+                      Vous pourrez activer le scaling automatique après la
+                      création du runtime.
+                    </p>
+                  </div>
+
+                  {/* Cost Estimation */}
+                  {estimatedCost !== null && (
+                    <div className="p-4 bg-primary/5 border border-primary/20">
+                      <h3 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">
+                        Estimation mensuelle
+                      </h3>
+                      <div>
+                        <p className="text-3xl font-bold text-primary">
+                          {formatMonthlyPrice(estimatedCost)}
+                        </p>
+                        <p className="text-sm text-base-content/60 mt-1">
+                          {instanceCount} instance
+                          {instanceCount > 1 ? "s" : ""} ×{" "}
+                          {formatHourlyPrice(selectedFlavorData.price)}/h × 720h
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => setCurrentStep("flavor")}
-                      >
-                        Modifier
-                      </button>
                     </div>
+                  )}
+                </div>
+              )}
+          </>
+        )}
+      </div>
 
-                    {/* Instance Count Configuration */}
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider">
-                        Nombre d'instances
-                      </h3>
+      {/* Footer */}
+      <div className="flex items-center justify-between gap-4 p-4 sm:p-6 bg-base-200 border-t border-base-300">
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={currentStep === "runtime" ? onClose : goBack}
+        >
+          {currentStep === "runtime" ? "Annuler" : "Retour"}
+        </button>
 
-                      {/* Visual Instance Representation */}
-                      <div className="p-4 bg-base-200 border border-base-300">
-                        {/* Instance Blocks Visualization */}
-                        <div className="flex items-center gap-1 mb-4">
-                          {Array.from({
-                            length: Math.min(instanceCount, 12),
-                          }).map((_, i) => (
-                            <div
-                              key={i}
-                              className="flex-1 h-10 bg-primary text-primary-content transition-all duration-200 flex items-center justify-center text-sm font-bold"
-                            >
-                              {i + 1}
-                            </div>
-                          ))}
-                          {instanceCount > 12 && (
-                            <span className="text-sm text-base-content/50 ml-2">
-                              +{instanceCount - 12}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Instance Count Control */}
-                        <div className="flex items-center justify-center">
-                          <NumberInput
-                            label=""
-                            value={instanceCount}
-                            onChange={setInstanceCount}
-                            min={1}
-                            max={selectedInstance.maxInstances}
-                            size="lg"
-                          />
-                        </div>
-                      </div>
-
-                      <p className="text-sm text-base-content/60 text-center">
-                        Vous pourrez activer le scaling automatique après la
-                        création du runtime.
-                      </p>
-                    </div>
-
-                    {/* Cost Estimation */}
-                    {estimatedCost !== null && (
-                      <div className="p-4 bg-primary/5 border border-primary/20">
-                        <h3 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">
-                          Estimation mensuelle
-                        </h3>
-                        <div>
-                          <p className="text-3xl font-bold text-primary">
-                            {formatMonthlyPrice(estimatedCost)}
-                          </p>
-                          <p className="text-sm text-base-content/60 mt-1">
-                            {instanceCount} instance
-                            {instanceCount > 1 ? "s" : ""} ×{" "}
-                            {formatHourlyPrice(selectedFlavorData.price)}/h ×
-                            720h
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-            </>
+        <div className="flex items-center gap-2">
+          {currentStep !== "scaling" ? (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={goNext}
+              disabled={
+                (currentStep === "runtime" && !selectedVariantId) ||
+                (currentStep === "flavor" && !selectedFlavor)
+              }
+            >
+              Continuer
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleSubmit}
+              disabled={!selectedVariantId || !selectedFlavor}
+            >
+              <Icons.Plus className="w-4 h-4 mr-2" />
+              Ajouter le runtime
+            </button>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between gap-4 p-4 sm:p-6 bg-base-200 border-t border-base-300">
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={currentStep === "runtime" ? onClose : goBack}
-          >
-            {currentStep === "runtime" ? "Annuler" : "Retour"}
-          </button>
-
-          <div className="flex items-center gap-2">
-            {currentStep !== "scaling" ? (
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={goNext}
-                disabled={
-                  (currentStep === "runtime" && !selectedVariantId) ||
-                  (currentStep === "flavor" && !selectedFlavor)
-                }
-              >
-                Continuer
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleSubmit}
-                disabled={!selectedVariantId || !selectedFlavor}
-              >
-                <Icons.Plus className="w-4 h-4 mr-2" />
-                Ajouter le runtime
-              </button>
-            )}
-          </div>
-        </div>
       </div>
-    </div>
+    </ModalBase>
   );
-}
+});
 
 // Sub-component: Runtime Card
 interface RuntimeCardProps {

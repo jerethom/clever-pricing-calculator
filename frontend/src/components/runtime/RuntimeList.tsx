@@ -305,11 +305,13 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
         )}
 
       {/* Modal d'ajout de runtime */}
-      {showForm && (
-        <Suspense fallback={null}>
-          <RuntimeForm projectId={projectId} onClose={handleCloseForm} />
-        </Suspense>
-      )}
+      <Suspense fallback={null}>
+        <RuntimeForm
+          isOpen={showForm}
+          projectId={projectId}
+          onClose={handleCloseForm}
+        />
+      </Suspense>
     </div>
   );
 }

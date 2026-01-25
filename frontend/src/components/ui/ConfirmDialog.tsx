@@ -1,6 +1,6 @@
-import { useCallback, useEffect } from "react";
+import { memo } from "react";
 import { Icons } from "./Icons";
-import { Portal } from "./Portal";
+import { ModalBase } from "./ModalBase";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -13,7 +13,7 @@ interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-export function ConfirmDialog({
+export const ConfirmDialog = memo(function ConfirmDialog({
   isOpen,
   title,
   message,
@@ -23,26 +23,6 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
-    },
-    [onCancel],
-  );
-
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.removeEventListener("keydown", handleKeyDown);
-        document.body.style.overflow = "";
-      };
-    }
-  }, [isOpen, handleKeyDown]);
-
-  if (!isOpen) return null;
-
   const variantStyles = {
     error: {
       button: "bg-red-600 hover:bg-red-700 text-white",
@@ -61,41 +41,30 @@ export function ConfirmDialog({
   const styles = variantStyles[variant];
 
   return (
-    <Portal>
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        {/* Backdrop */}
-        <div
-          className="absolute inset-0 bg-[#13172e]/80"
-          onClick={onCancel}
-          aria-hidden="true"
-        />
-        {/* Dialog */}
-        <div className="relative bg-base-100 max-w-md w-full mx-4 border border-base-300 animate-in">
-          <div className="p-6">
-            <h3 className="font-bold text-lg flex items-center gap-2">
-              <Icons.Warning className={`w-6 h-6 ${styles.icon}`} />
-              {title}
-            </h3>
-            <p className="py-4 text-base-content/80">{message}</p>
-          </div>
-          <div className="flex justify-end gap-2 px-6 py-4 bg-base-200 border-t border-base-300">
-            <button
-              type="button"
-              className="btn btn-ghost hover:bg-base-300"
-              onClick={onCancel}
-            >
-              {cancelLabel}
-            </button>
-            <button
-              type="button"
-              className={`btn ${styles.button}`}
-              onClick={onConfirm}
-            >
-              {confirmLabel}
-            </button>
-          </div>
-        </div>
+    <ModalBase isOpen={isOpen} onClose={onCancel} maxWidth="md">
+      <div className="p-6">
+        <h3 className="font-bold text-lg flex items-center gap-2">
+          <Icons.Warning className={`w-6 h-6 ${styles.icon}`} />
+          {title}
+        </h3>
+        <p className="py-4 text-base-content/80">{message}</p>
       </div>
-    </Portal>
+      <div className="flex justify-end gap-2 px-6 py-4 bg-base-200 border-t border-base-300">
+        <button
+          type="button"
+          className="btn btn-ghost hover:bg-base-300"
+          onClick={onCancel}
+        >
+          {cancelLabel}
+        </button>
+        <button
+          type="button"
+          className={`btn ${styles.button}`}
+          onClick={onConfirm}
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </ModalBase>
   );
-}
+});

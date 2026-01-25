@@ -269,11 +269,13 @@ export function AddonList({ projectId }: AddonListProps) {
         )}
 
       {/* Modal d'ajout d'addon */}
-      {showForm && (
-        <Suspense fallback={null}>
-          <AddonForm projectId={projectId} onClose={handleCloseForm} />
-        </Suspense>
-      )}
+      <Suspense fallback={null}>
+        <AddonForm
+          isOpen={showForm}
+          projectId={projectId}
+          onClose={handleCloseForm}
+        />
+      </Suspense>
     </div>
   );
 }
