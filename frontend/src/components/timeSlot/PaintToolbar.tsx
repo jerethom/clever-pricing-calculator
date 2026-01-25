@@ -26,22 +26,17 @@ export function PaintToolbar({
         </div>
 
         {/* Sélecteur de valeur visuel */}
-        <div
-          className="flex items-center gap-1"
-          role="radiogroup"
-          aria-label="Valeur du pinceau"
-        >
+        <fieldset className="flex items-center gap-1">
+          <legend className="sr-only">Valeur du pinceau</legend>
           {options.map((value) => {
             const isSelected = paintValue === value;
             const isEraser = value === 0;
+            const inputId = `paint-value-${value}`;
 
             return (
-              <button
+              <label
                 key={value}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                onClick={() => onChange(value)}
+                htmlFor={inputId}
                 className={`
                   relative flex items-center justify-center
                   w-10 h-10 border-2 transition-all cursor-pointer
@@ -59,15 +54,24 @@ export function PaintToolbar({
                     : `+${value} instance${value > 1 ? "s" : ""}`
                 }
               >
+                <input
+                  type="radio"
+                  id={inputId}
+                  name="paint-value"
+                  value={value}
+                  checked={isSelected}
+                  onChange={() => onChange(value)}
+                  className="sr-only"
+                />
                 {isEraser ? (
                   <Icons.X className="w-4 h-4 text-error" />
                 ) : (
                   <span>+{value}</span>
                 )}
-              </button>
+              </label>
             );
           })}
-        </div>
+        </fieldset>
 
         {/* Séparateur */}
         <div className="w-px h-8 bg-base-300" />

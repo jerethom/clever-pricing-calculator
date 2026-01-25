@@ -69,7 +69,7 @@ export const SelectionIndicator = memo(function SelectionIndicator({
 
   return (
     <Portal>
-      <div
+      <output
         className="
           fixed bottom-4 left-1/2 -translate-x-1/2 z-50
           bg-accent text-accent-content
@@ -77,7 +77,6 @@ export const SelectionIndicator = memo(function SelectionIndicator({
           flex items-center gap-3
           animate-in
         "
-        role="status"
         aria-live="polite"
       >
         <div className="text-sm">
@@ -96,7 +95,7 @@ export const SelectionIndicator = memo(function SelectionIndicator({
         <div className="text-sm opacity-70">
           {totalCells} créneau{totalCells > 1 ? "x" : ""}
         </div>
-      </div>
+      </output>
     </Portal>
   );
 });
