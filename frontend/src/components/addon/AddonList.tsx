@@ -1,13 +1,7 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from "react";
-import {
-  EmptyState,
-  FilterDropdown,
-  Icons,
-  SearchInput,
-  ViewToggle,
-} from "@/components/ui";
+import { EmptyState, Icons, ListToolbar, PriceRange } from "@/components/ui";
 import { type SortOption, useListFilters } from "@/hooks/useListFilters";
-import { formatPrice } from "@/lib/costCalculator";
+import { calculateAddonCost } from "@/lib/addonCostCalculator";
 import { selectProjectById, useSelectorWith } from "@/store";
 import { AddonCard } from "./AddonCard";
 
@@ -51,8 +45,14 @@ export function AddonList({ projectId }: AddonListProps) {
       return { total: 0, count: 0 };
     }
 
+    let total = 0;
+    for (const addon of project.addons) {
+      const cost = calculateAddonCost(addon);
+      total += cost.monthlyPrice;
+    }
+
     return {
-      total: project.addons.reduce((sum, addon) => sum + addon.monthlyPrice, 0),
+      total: Math.round(total * 100) / 100,
       count: project.addons.length,
     };
   }, [project]);
@@ -120,7 +120,6 @@ export function AddonList({ projectId }: AddonListProps) {
   if (!project) return null;
 
   const hasAddons = project.addons.length > 0;
-  const hasSearchOrFilter = searchQuery !== "" || filterValue !== "all";
 
   return (
     <div className="space-y-4">
@@ -147,28 +146,32 @@ export function AddonList({ projectId }: AddonListProps) {
       {/* Resume des couts (visible uniquement s'il y a des addons) */}
       {hasAddons && (
         <div className="card bg-gradient-to-r from-base-200 to-base-100 border border-base-300">
-          <div className="card-body p-4">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              {/* Cout total */}
-              <div className="flex items-center gap-4">
-                <div className="bg-secondary/10 p-3 rounded-lg">
-                  <Icons.Puzzle className="w-6 h-6 text-secondary" />
+          <div className="card-body p-3">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Label + Icone */}
+              <div className="flex items-center gap-3">
+                <div className="bg-secondary/10 p-2 rounded-lg">
+                  <Icons.Puzzle className="w-5 h-5 text-secondary" />
                 </div>
-                <div>
-                  <p className="text-sm text-base-content/60 font-medium">
-                    Cout mensuel total
-                  </p>
-                  <p className="text-2xl font-bold text-secondary">
-                    {formatPrice(costSummary.total)}
-                  </p>
-                </div>
+                <span className="text-sm text-base-content/60 font-medium">
+                  Estimation mensuelle
+                </span>
               </div>
 
-              {/* Stats rapides */}
-              <div className="flex gap-4">
-                <div className="text-center px-4 border-l border-base-300">
-                  <p className="text-2xl font-bold">{providers.length}</p>
-                  <p className="text-xs text-base-content/60">Provider(s)</p>
+              {/* PriceRange + Stats */}
+              <div className="flex items-center gap-6 flex-1 justify-end">
+                <div className="w-full max-w-sm">
+                  <PriceRange
+                    min={costSummary.total}
+                    estimated={costSummary.total}
+                    max={costSummary.total}
+                    size="sm"
+                    allowSingle
+                  />
+                </div>
+                <div className="hidden sm:flex items-center gap-2 text-sm border-l border-base-300 pl-4">
+                  <span className="font-bold text-lg">{costSummary.count}</span>
+                  <span className="text-base-content/60">addon(s)</span>
                 </div>
               </div>
             </div>
@@ -178,142 +181,28 @@ export function AddonList({ projectId }: AddonListProps) {
 
       {/* Barre d'outils (filtrage/tri) - visible si addons existent */}
       {hasAddons && (
-        <div className="bg-base-100 border border-base-300">
-          <div className="flex flex-col lg:flex-row gap-3 p-3">
-            {/* Section gauche: Filtres et recherche */}
-            <div className="flex flex-wrap gap-2 items-center flex-1">
-              <SearchInput
-                value={searchQuery}
-                onChange={setSearchQuery}
-                onClear={clearSearch}
-                placeholder="Rechercher un addon..."
-                colorClass="secondary"
-              />
-
-              {/* Separateur visuel */}
-              <div className="hidden sm:block w-px h-6 bg-base-300" />
-
-              {/* Filtre par provider */}
-              <FilterDropdown
-                value={filterValue}
-                options={filterOptions}
-                onChange={setFilterValue}
-                icon={<Icons.Puzzle className="w-4 h-4" />}
-                label="Provider"
-                allLabel="Tous les providers"
-                colorClass="secondary"
-              />
-
-              {/* Tri avec dropdown */}
-              <div className="dropdown dropdown-bottom">
-                <button
-                  type="button"
-                  className={`btn btn-sm gap-2 cursor-pointer ${
-                    sortBy !== "name"
-                      ? "btn-accent"
-                      : "btn-ghost border border-base-300 hover:border-base-content/20"
-                  }`}
-                >
-                  <Icons.Chart className="w-4 h-4" />
-                  <span className="hidden sm:inline">
-                    {SORT_OPTIONS.find((o) => o.value === sortBy)?.label ??
-                      "Trier"}
-                  </span>
-                  <Icons.ChevronDown className="w-3 h-3 opacity-60" />
-                </button>
-                <ul className="dropdown-content menu bg-base-100 border border-base-300 shadow-lg z-10 w-48 p-2 mt-1">
-                  {SORT_OPTIONS.map((option) => (
-                    <li key={option.value}>
-                      <button
-                        type="button"
-                        className={`cursor-pointer ${sortBy === option.value ? "active" : ""}`}
-                        onClick={() => setSortBy(option.value)}
-                      >
-                        <Icons.Check
-                          className={`w-4 h-4 ${sortBy === option.value ? "opacity-100" : "opacity-0"}`}
-                        />
-                        {option.label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Bouton reset (visible si filtres actifs) */}
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  className="btn btn-sm btn-ghost text-base-content/60 hover:text-error gap-1 cursor-pointer"
-                  onClick={resetAll}
-                  aria-label="Reinitialiser tous les filtres"
-                >
-                  <Icons.X className="w-4 h-4" />
-                  <span className="hidden sm:inline">Reset</span>
-                </button>
-              )}
-            </div>
-
-            {/* Section droite: Toggle vue + indicateur filtres */}
-            <div className="flex items-center gap-3">
-              {/* Indicateur de filtres actifs */}
-              {hasSearchOrFilter && (
-                <div className="hidden md:flex items-center gap-2 text-sm text-base-content/60 px-2">
-                  <span className="font-medium">
-                    {filteredAndSortedAddons.length}
-                  </span>
-                  <span>sur {project.addons.length}</span>
-                </div>
-              )}
-
-              {/* Separateur */}
-              {hasSearchOrFilter && (
-                <div className="hidden md:block w-px h-6 bg-base-300" />
-              )}
-
-              {/* Toggle vue */}
-              <ViewToggle
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                colorClass="secondary"
-              />
-            </div>
-          </div>
-
-          {/* Barre d'indicateurs de filtres actifs */}
-          {hasSearchOrFilter && (
-            <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-base-200/50 border-t border-base-300">
-              <span className="text-xs text-base-content/50 uppercase tracking-wide">
-                Filtres:
-              </span>
-              {searchQuery && (
-                <span className="badge badge-sm gap-1 bg-base-100">
-                  Recherche: "{searchQuery}"
-                  <button
-                    type="button"
-                    className="hover:text-error cursor-pointer"
-                    onClick={clearSearch}
-                    aria-label="Supprimer le filtre de recherche"
-                  >
-                    <Icons.X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {filterValue !== "all" && (
-                <span className="badge badge-sm gap-1 bg-secondary/10 text-secondary border-secondary/20">
-                  Provider: {filterValue}
-                  <button
-                    type="button"
-                    className="hover:text-error cursor-pointer"
-                    onClick={() => setFilterValue("all")}
-                    aria-label="Supprimer le filtre de provider"
-                  >
-                    <Icons.X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+        <ListToolbar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onSearchClear={clearSearch}
+          searchPlaceholder="Rechercher un addon..."
+          filterValue={filterValue}
+          filterOptions={filterOptions}
+          onFilterChange={setFilterValue}
+          filterIcon={<Icons.Puzzle className="w-4 h-4" />}
+          filterLabel="Provider"
+          filterAllLabel="Tous les providers"
+          sortBy={sortBy}
+          sortOptions={SORT_OPTIONS}
+          onSortChange={(value) => setSortBy(value as SortOption)}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          hasActiveFilters={hasActiveFilters}
+          onResetAll={resetAll}
+          filteredCount={filteredAndSortedAddons.length}
+          totalCount={project.addons.length}
+          colorClass="secondary"
+        />
       )}
 
       {/* Contenu principal */}

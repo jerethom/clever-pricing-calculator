@@ -5,12 +5,7 @@ import type { DropdownMenuItem } from "@/components/ui";
 import { DropdownMenu, Icons } from "@/components/ui";
 import { useActiveOrganizationCostsWithDescendants } from "@/hooks/useCostCalculation";
 import { formatPrice } from "@/lib/costCalculator";
-import {
-  selectActiveOrganizationProjects,
-  selectActiveProject,
-  useProjectActions,
-  useSelector,
-} from "@/store";
+import { selectActiveOrganizationProjects, useProjectActions } from "@/store";
 import { useProjectStore } from "@/store/projectStore";
 import type { Project, ProjectCostSummary } from "@/types";
 
@@ -34,6 +29,7 @@ interface ProjectTreeItemProps {
   onToggleExpand: (projectId: string) => void;
   onCloseDropdown: () => void;
   onCreateSubProject: (parentProjectId: string) => void;
+  onDeleteProject: (projectId: string) => void;
 }
 
 interface ProjectItemFlatProps {
@@ -87,6 +83,7 @@ const ProjectTreeItem = memo(function ProjectTreeItem({
   onToggleExpand,
   onCloseDropdown,
   onCreateSubProject,
+  onDeleteProject,
 }: ProjectTreeItemProps) {
   const childProjects = useMemo(
     () => allProjects.filter((p) => p.parentProjectId === project.id),
@@ -107,8 +104,14 @@ const ProjectTreeItem = memo(function ProjectTreeItem({
         icon: <Icons.Plus className="w-4 h-4" />,
         onClick: () => onCreateSubProject(project.id),
       },
+      {
+        label: "Supprimer",
+        icon: <Icons.Trash className="w-4 h-4" />,
+        onClick: () => onDeleteProject(project.id),
+        variant: "danger",
+      },
     ],
-    [onCreateSubProject, project.id],
+    [onCreateSubProject, onDeleteProject, project.id],
   );
 
   return (
@@ -224,6 +227,7 @@ const ProjectTreeItem = memo(function ProjectTreeItem({
             onToggleExpand={onToggleExpand}
             onCloseDropdown={onCloseDropdown}
             onCreateSubProject={onCreateSubProject}
+            onDeleteProject={onDeleteProject}
           />
         ))}
     </>
@@ -327,9 +331,8 @@ export const ProjectTreeDropdown = memo(function ProjectTreeDropdown({
   const projects = useProjectStore(
     useShallow(selectActiveOrganizationProjects),
   );
-  const activeProject = useSelector(selectActiveProject);
   const projectCosts = useActiveOrganizationCostsWithDescendants();
-  const { createProject } = useProjectActions();
+  const { createProject, deleteProject } = useProjectActions();
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -447,6 +450,19 @@ export const ProjectTreeDropdown = memo(function ProjectTreeDropdown({
     [projects],
   );
 
+  const currentProject = useMemo(
+    () => projects.find((p) => p.id === activeProjectId) ?? null,
+    [projects, activeProjectId],
+  );
+
+  const displayName = useMemo(() => {
+    if (!currentProject) return "Selectionner un projet";
+    const breadcrumb = buildBreadcrumb(currentProject);
+    return breadcrumb
+      ? `${breadcrumb} > ${currentProject.name}`
+      : currentProject.name;
+  }, [currentProject, buildBreadcrumb]);
+
   const rootProjects = useMemo(() => {
     const roots = projects.filter((p) => !p.parentProjectId);
     return sortProjects(roots, sortOption, projectCosts);
@@ -498,6 +514,28 @@ export const ProjectTreeDropdown = memo(function ProjectTreeDropdown({
     [activeOrgId, projects, createProject, navigate, handleCloseDropdown],
   );
 
+  const handleDeleteProject = useCallback(
+    (projectId: string) => {
+      if (!activeOrgId) return;
+      const isActiveProject = projectId === activeProjectId;
+      deleteProject(projectId);
+      if (isActiveProject) {
+        navigate({
+          to: "/org/$orgId",
+          params: { orgId: activeOrgId },
+        });
+      }
+      handleCloseDropdown();
+    },
+    [
+      activeOrgId,
+      activeProjectId,
+      deleteProject,
+      navigate,
+      handleCloseDropdown,
+    ],
+  );
+
   const handleClearSearch = useCallback(() => {
     setSearchQuery("");
   }, []);
@@ -509,8 +547,14 @@ export const ProjectTreeDropdown = memo(function ProjectTreeDropdown({
         icon: <Icons.Plus className="w-4 h-4" />,
         onClick: () => handleCreateSubProject(project.id),
       },
+      {
+        label: "Supprimer",
+        icon: <Icons.Trash className="w-4 h-4" />,
+        onClick: () => handleDeleteProject(project.id),
+        variant: "danger",
+      },
     ],
-    [handleCreateSubProject],
+    [handleCreateSubProject, handleDeleteProject],
   );
 
   const sortMenuItems: DropdownMenuItem[] = useMemo(
@@ -548,7 +592,7 @@ export const ProjectTreeDropdown = memo(function ProjectTreeDropdown({
       >
         <Icons.Folder className="w-4 h-4" />
         <span className="text-sm font-medium truncate max-w-[200px]">
-          {activeProject ? activeProject.name : "Selectionner un projet"}
+          {displayName}
         </span>
         <Icons.ChevronDown
           className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
@@ -757,6 +801,7 @@ export const ProjectTreeDropdown = memo(function ProjectTreeDropdown({
                       onToggleExpand={toggleProjectExpand}
                       onCloseDropdown={handleCloseDropdown}
                       onCreateSubProject={handleCreateSubProject}
+                      onDeleteProject={handleDeleteProject}
                     />
                   );
                 })}

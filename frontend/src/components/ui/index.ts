@@ -6,6 +6,8 @@ export { EmptyState } from "./EmptyState";
 export type { FilterOption } from "./FilterDropdown";
 export { FilterDropdown } from "./FilterDropdown";
 export { Icons } from "./Icons";
+export type { ListToolbarProps, SortOption } from "./ListToolbar";
+export { ListToolbar } from "./ListToolbar";
 export { MoveProjectDialog } from "./MoveProjectDialog";
 export { NumberInput } from "./NumberInput";
 export { OrganizationSelector } from "./OrganizationSelector";

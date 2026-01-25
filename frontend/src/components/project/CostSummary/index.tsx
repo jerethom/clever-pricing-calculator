@@ -5,7 +5,7 @@ import type { ProjectCostSummary } from "@/types";
 import { CostAddonCard } from "./CostAddonCard";
 import { CostBreakdownBar } from "./CostBreakdownBar";
 import { CostRuntimeCard } from "./CostRuntimeCard";
-import { DURATION_OPTIONS, formatDurationLabel } from "./types";
+import { DURATION_OPTIONS } from "./types";
 
 interface CostSummaryProps {
   cost: ProjectCostSummary;
@@ -22,27 +22,25 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
     cost.addonsCost;
 
   const projectedCost = cost.totalMonthlyCost * selectedMonths;
-  const projectedMinCost = totalMinCost * selectedMonths;
-  const projectedMaxCost = totalMaxCost * selectedMonths;
 
   return (
     <div className="space-y-6 animate-cost-fade-in">
-      {/* Carte principale d'estimation */}
+      {/* 1. Estimation principale */}
       <div className="card bg-gradient-to-br from-base-100 to-base-200 border border-base-300">
-        <div className="card-body p-4 sm:p-6">
-          {/* Header avec selecteur de duree */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="card-body p-5">
+          {/* Header: titre + selecteur duree */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <h3 className="font-semibold flex items-center gap-2">
               <Icons.TrendingUp className="w-5 h-5 text-primary" />
-              Estimations
+              Estimation
             </h3>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex gap-1">
               {DURATION_OPTIONS.map((option) => (
                 <button
                   key={option.months}
                   type="button"
                   onClick={() => setSelectedMonths(option.months)}
-                  className={`px-3 py-1.5 text-xs font-medium transition-all rounded ${
+                  className={`px-2.5 py-1 text-xs font-medium transition-all rounded ${
                     selectedMonths === option.months
                       ? "bg-primary text-primary-content"
                       : "bg-base-200 text-base-content/70 hover:bg-base-300"
@@ -54,44 +52,38 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
             </div>
           </div>
 
-          {/* Grille mensuel / projection */}
-          <div className="grid sm:grid-cols-2 gap-6">
-            {/* Cout mensuel */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-base-content/60 text-sm">
-                <Icons.Clock className="w-4 h-4" />
-                <span>Mensuel</span>
-              </div>
-              <PriceRange
-                min={totalMinCost}
-                estimated={cost.totalMonthlyCost}
-                max={totalMaxCost}
-                size="md"
-              />
-            </div>
+          {/* Estimation mensuelle mise en valeur */}
+          <div className="text-center py-4">
+            <p className="text-3xl sm:text-4xl font-bold text-primary tabular-nums">
+              {formatPrice(cost.totalMonthlyCost)}
+            </p>
+            <p className="text-sm text-base-content/60 mt-1">par mois</p>
+          </div>
 
-            {/* Estimation */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-base-content/60 text-sm">
-                <Icons.Calendar className="w-4 h-4" />
-                <span>{formatDurationLabel(selectedMonths)}</span>
-              </div>
-              <PriceRange
-                min={projectedMinCost}
-                estimated={projectedCost}
-                max={projectedMaxCost}
-                size="md"
-              />
-            </div>
+          {/* PriceRange compact */}
+          <PriceRange
+            min={totalMinCost}
+            estimated={cost.totalMonthlyCost}
+            max={totalMaxCost}
+            size="sm"
+          />
+
+          {/* Projection */}
+          <div className="bg-base-200 rounded-lg p-3 mt-4 text-center">
+            <span className="text-base-content/70 text-sm">
+              Sur {selectedMonths} mois :{" "}
+            </span>
+            <span className="font-bold text-base tabular-nums">
+              {formatPrice(projectedCost)}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Stats rapides et repartition */}
-      <div className="card bg-base-100 border border-base-300 overflow-hidden">
-        <div className="card-body p-5">
-          {/* Stats rapides */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-center gap-6 mb-6">
+      {/* 2. Repartition runtimes/addons */}
+      <div className="card bg-base-100 border border-base-300">
+        <div className="card-body p-4">
+          <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <Icons.Server className="w-4 h-4 text-primary" />
@@ -99,15 +91,13 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
                   Runtimes
                 </span>
               </div>
-              <div className="font-bold text-2xl text-primary">
+              <div className="font-bold text-xl text-primary tabular-nums">
                 {formatPrice(cost.runtimesCost)}
               </div>
               <div className="text-xs text-base-content/50">
                 {cost.runtimesDetail.length} instance(s)
               </div>
             </div>
-            <div className="hidden sm:block divider divider-horizontal mx-0 h-16" />
-            <div className="sm:hidden divider my-0" />
             <div className="text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <Icons.Puzzle className="w-4 h-4 text-secondary" />
@@ -115,7 +105,7 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
                   Addons
                 </span>
               </div>
-              <div className="font-bold text-2xl text-secondary">
+              <div className="font-bold text-xl text-secondary tabular-nums">
                 {formatPrice(cost.addonsCost)}
               </div>
               <div className="text-xs text-base-content/50">
@@ -126,21 +116,18 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
 
           {/* Barre de repartition */}
           {cost.totalMonthlyCost > 0 && (
-            <>
-              <div className="divider my-2" />
-              <CostBreakdownBar
-                runtimesCost={cost.runtimesCost}
-                addonsCost={cost.addonsCost}
-                total={cost.totalMonthlyCost}
-              />
-            </>
+            <CostBreakdownBar
+              runtimesCost={cost.runtimesCost}
+              addonsCost={cost.addonsCost}
+              total={cost.totalMonthlyCost}
+            />
           )}
         </div>
       </div>
 
-      {/* Detail des runtimes */}
+      {/* 3. Details Runtimes */}
       {cost.runtimesDetail.length > 0 && (
-        <div
+        <section
           className="space-y-4 animate-cost-slide-up"
           style={{ animationDelay: "0.1s" }}
         >
@@ -151,7 +138,7 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
               {cost.runtimesDetail.length}
             </span>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             {cost.runtimesDetail.map((runtime, index) => (
               <div
                 key={runtime.runtimeId}
@@ -172,12 +159,12 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
               </span>
             </div>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Detail des addons */}
+      {/* 4. Details Addons */}
       {cost.addonsDetail.length > 0 && (
-        <div
+        <section
           className="space-y-4 animate-cost-slide-up"
           style={{ animationDelay: "0.2s" }}
         >
@@ -188,7 +175,7 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
               {cost.addonsDetail.length}
             </span>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             {cost.addonsDetail.map((addon, index) => (
               <div
                 key={addon.addonId}
@@ -209,7 +196,7 @@ const CostSummary = memo(function CostSummary({ cost }: CostSummaryProps) {
               </span>
             </div>
           </div>
-        </div>
+        </section>
       )}
 
       {/* Message si vide */}

@@ -1,12 +1,5 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from "react";
-import {
-  EmptyState,
-  FilterDropdown,
-  Icons,
-  PriceRange,
-  SearchInput,
-  ViewToggle,
-} from "@/components/ui";
+import { EmptyState, Icons, ListToolbar, PriceRange } from "@/components/ui";
 import { useInstances } from "@/hooks/useInstances";
 import { type SortOption, useListFilters } from "@/hooks/useListFilters";
 import {
@@ -161,7 +154,6 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
   if (!project) return null;
 
   const hasRuntimes = project.runtimes.length > 0;
-  const hasSearchOrFilter = searchQuery !== "" || filterValue !== "all";
 
   return (
     <div className="space-y-4">
@@ -188,36 +180,34 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
       {/* Resume des couts (visible uniquement s'il y a des runtimes) */}
       {hasRuntimes && (
         <div className="card bg-gradient-to-r from-base-200 to-base-100 border border-base-300">
-          <div className="card-body p-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
-              {/* Estimation avec PriceRange */}
-              <div className="flex items-center gap-4">
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <Icons.Chart className="w-6 h-6 text-primary" />
+          <div className="card-body p-3">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Label + Icone */}
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 p-2 rounded-lg">
+                  <Icons.Chart className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-sm text-base-content/60 font-medium">
-                  Estimation mensuelle totale
-                </p>
+                <span className="text-sm text-base-content/60 font-medium">
+                  Estimation mensuelle
+                </span>
               </div>
 
-              {/* PriceRange standard */}
-              <div className="w-full max-w-md justify-self-center">
-                <PriceRange
-                  min={costSummary.min}
-                  estimated={costSummary.total}
-                  max={costSummary.max}
-                  size="md"
-                  allowSingle
-                />
-              </div>
-
-              {/* Stats rapides */}
-              <div className="justify-self-center lg:justify-self-end">
-                <div className="text-center px-4 lg:border-l border-base-300">
-                  <p className="text-2xl font-bold">{costSummary.instances}</p>
-                  <p className="text-xs text-base-content/60">
-                    Instance(s) max
-                  </p>
+              {/* PriceRange + Stats */}
+              <div className="flex items-center gap-6 flex-1 justify-end">
+                <div className="w-full max-w-sm">
+                  <PriceRange
+                    min={costSummary.min}
+                    estimated={costSummary.total}
+                    max={costSummary.max}
+                    size="sm"
+                    allowSingle
+                  />
+                </div>
+                <div className="hidden sm:flex items-center gap-2 text-sm border-l border-base-300 pl-4">
+                  <span className="font-bold text-lg">
+                    {costSummary.instances}
+                  </span>
+                  <span className="text-base-content/60">instance(s)</span>
                 </div>
               </div>
             </div>
@@ -227,142 +217,28 @@ export function RuntimeList({ projectId }: RuntimeListProps) {
 
       {/* Barre d'outils (filtrage/tri) - visible si runtimes existent */}
       {hasRuntimes && (
-        <div className="bg-base-100 border border-base-300">
-          <div className="flex flex-col lg:flex-row gap-3 p-3">
-            {/* Section gauche: Filtres et recherche */}
-            <div className="flex flex-wrap gap-2 items-center flex-1">
-              <SearchInput
-                value={searchQuery}
-                onChange={setSearchQuery}
-                onClear={clearSearch}
-                placeholder="Rechercher un runtime..."
-                colorClass="primary"
-              />
-
-              {/* Separateur visuel */}
-              <div className="hidden sm:block w-px h-6 bg-base-300" />
-
-              {/* Filtre par type */}
-              <FilterDropdown
-                value={filterValue}
-                options={filterOptions}
-                onChange={setFilterValue}
-                icon={<Icons.Server className="w-4 h-4" />}
-                label="Type"
-                allLabel="Tous les types"
-                colorClass="primary"
-              />
-
-              {/* Tri avec dropdown */}
-              <div className="dropdown dropdown-bottom">
-                <button
-                  type="button"
-                  className={`btn btn-sm gap-2 cursor-pointer ${
-                    sortBy !== "name"
-                      ? "btn-secondary"
-                      : "btn-ghost border border-base-300 hover:border-base-content/20"
-                  }`}
-                >
-                  <Icons.Chart className="w-4 h-4" />
-                  <span className="hidden sm:inline">
-                    {SORT_OPTIONS.find((o) => o.value === sortBy)?.label ??
-                      "Trier"}
-                  </span>
-                  <Icons.ChevronDown className="w-3 h-3 opacity-60" />
-                </button>
-                <ul className="dropdown-content menu bg-base-100 border border-base-300 shadow-lg z-10 w-48 p-2 mt-1">
-                  {SORT_OPTIONS.map((option) => (
-                    <li key={option.value}>
-                      <button
-                        type="button"
-                        className={`cursor-pointer ${sortBy === option.value ? "active" : ""}`}
-                        onClick={() => setSortBy(option.value)}
-                      >
-                        <Icons.Check
-                          className={`w-4 h-4 ${sortBy === option.value ? "opacity-100" : "opacity-0"}`}
-                        />
-                        {option.label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Bouton reset (visible si filtres actifs) */}
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  className="btn btn-sm btn-ghost text-base-content/60 hover:text-error gap-1 cursor-pointer"
-                  onClick={resetAll}
-                  aria-label="Reinitialiser tous les filtres"
-                >
-                  <Icons.X className="w-4 h-4" />
-                  <span className="hidden sm:inline">Reset</span>
-                </button>
-              )}
-            </div>
-
-            {/* Section droite: Toggle vue + indicateur filtres */}
-            <div className="flex items-center gap-3">
-              {/* Indicateur de filtres actifs */}
-              {hasSearchOrFilter && (
-                <div className="hidden md:flex items-center gap-2 text-sm text-base-content/60 px-2">
-                  <span className="font-medium">
-                    {filteredAndSortedRuntimes.length}
-                  </span>
-                  <span>sur {project.runtimes.length}</span>
-                </div>
-              )}
-
-              {/* Separateur */}
-              {hasSearchOrFilter && (
-                <div className="hidden md:block w-px h-6 bg-base-300" />
-              )}
-
-              {/* Toggle vue */}
-              <ViewToggle
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                colorClass="primary"
-              />
-            </div>
-          </div>
-
-          {/* Barre d'indicateurs de filtres actifs */}
-          {hasSearchOrFilter && (
-            <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-base-200/50 border-t border-base-300">
-              <span className="text-xs text-base-content/50 uppercase tracking-wide">
-                Filtres:
-              </span>
-              {searchQuery && (
-                <span className="badge badge-sm gap-1 bg-base-100">
-                  Recherche: "{searchQuery}"
-                  <button
-                    type="button"
-                    className="hover:text-error cursor-pointer"
-                    onClick={clearSearch}
-                    aria-label="Supprimer le filtre de recherche"
-                  >
-                    <Icons.X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {filterValue !== "all" && (
-                <span className="badge badge-sm gap-1 bg-primary/10 text-primary border-primary/20">
-                  Type: {filterValue}
-                  <button
-                    type="button"
-                    className="hover:text-error cursor-pointer"
-                    onClick={() => setFilterValue("all")}
-                    aria-label="Supprimer le filtre de type"
-                  >
-                    <Icons.X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+        <ListToolbar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onSearchClear={clearSearch}
+          searchPlaceholder="Rechercher un runtime..."
+          filterValue={filterValue}
+          filterOptions={filterOptions}
+          onFilterChange={setFilterValue}
+          filterIcon={<Icons.Server className="w-4 h-4" />}
+          filterLabel="Type"
+          filterAllLabel="Tous les types"
+          sortBy={sortBy}
+          sortOptions={SORT_OPTIONS}
+          onSortChange={(value) => setSortBy(value as SortOption)}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          hasActiveFilters={hasActiveFilters}
+          onResetAll={resetAll}
+          filteredCount={filteredAndSortedRuntimes.length}
+          totalCount={project.runtimes.length}
+          colorClass="primary"
+        />
       )}
 
       {/* Contenu principal */}

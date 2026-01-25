@@ -22,36 +22,6 @@ interface ProjectHeaderProps {
   project: Project;
 }
 
-interface StatItemProps {
-  icon: typeof Icons.Server;
-  iconColor: string;
-  count: number;
-  label: string;
-  price?: number;
-}
-
-function StatItem({
-  icon: Icon,
-  iconColor,
-  count,
-  label,
-  price,
-}: StatItemProps) {
-  return (
-    <div className="flex items-center gap-2">
-      <Icon className={`w-4 h-4 ${iconColor}`} />
-      <span className="font-medium">{count}</span>
-      <span className="text-base-content/60">
-        {label}
-        {count !== 1 ? "s" : ""}
-      </span>
-      <span className="text-base-content/40">
-        ({price !== undefined ? formatPrice(price) : "..."})
-      </span>
-    </div>
-  );
-}
-
 export function ProjectHeader({ project }: ProjectHeaderProps) {
   const navigate = useNavigate();
   const activeOrg = useSelector(selectActiveOrganization);
@@ -200,134 +170,86 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
             )}
           </div>
 
-          {/* Actions desktop */}
+          {/* Menu actions dropdown */}
           {!isEditing && (
-            <div className="hidden sm:flex items-center gap-1">
-              {/* Bouton Dupliquer */}
-              <div
-                className="tooltip tooltip-bottom"
-                data-tip="Dupliquer ce projet"
+            <div className="dropdown dropdown-end">
+              <button
+                type="button"
+                tabIndex={0}
+                className="btn btn-ghost btn-sm btn-square"
+                aria-label="Actions du projet"
               >
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm text-base-content/50 hover:text-primary hover:bg-primary/10"
-                  onClick={() => setShowCloneDialog(true)}
-                  aria-label={`Dupliquer le projet ${project.name}`}
-                >
-                  <Icons.Copy className="w-4 h-4" />
-                </button>
-              </div>
-              {/* Bouton Deplacer */}
-              {organizations.length > 1 && (
-                <div
-                  className="tooltip tooltip-bottom"
-                  data-tip="Deplacer vers une autre organisation"
-                >
+                <Icons.MoreHorizontal className="w-5 h-5" />
+              </button>
+              <ul className="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow-lg border border-base-200">
+                <li>
                   <button
                     type="button"
-                    className="btn btn-ghost btn-sm text-base-content/50 hover:text-primary hover:bg-primary/10"
-                    onClick={() => setShowMoveDialog(true)}
-                    aria-label={`Deplacer le projet ${project.name}`}
+                    onClick={() => setShowCloneDialog(true)}
+                    className="gap-2"
                   >
-                    <Icons.Move className="w-4 h-4" />
+                    <Icons.Copy className="w-4 h-4" />
+                    Dupliquer
                   </button>
-                </div>
-              )}
-              {/* Bouton Supprimer */}
-              <div
-                className="tooltip tooltip-left"
-                data-tip="Supprimer ce projet"
-              >
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm text-base-content/50 hover:text-error hover:bg-error/10"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  aria-label={`Supprimer le projet ${project.name}`}
-                >
-                  <Icons.Trash className="w-4 h-4" />
-                </button>
-              </div>
+                </li>
+                {organizations.length > 1 && (
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => setShowMoveDialog(true)}
+                      className="gap-2"
+                    >
+                      <Icons.Move className="w-4 h-4" />
+                      Deplacer
+                    </button>
+                  </li>
+                )}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="gap-2 text-error hover:bg-error/10"
+                  >
+                    <Icons.Trash className="w-4 h-4" />
+                    Supprimer
+                  </button>
+                </li>
+              </ul>
             </div>
           )}
         </div>
 
+        {/* Stats compactes */}
         {!isEditing && (
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-            <StatItem
-              icon={Icons.Server}
-              iconColor="text-primary"
-              count={project.runtimes.length}
-              label="runtime"
-              price={cost?.runtimesCost}
-            />
-            <span className="hidden sm:block text-base-300" aria-hidden="true">
-              |
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <span className="badge badge-primary gap-1.5">
+              <Icons.Server className="w-3.5 h-3.5" />
+              {project.runtimes.length}
             </span>
-            <StatItem
-              icon={Icons.Puzzle}
-              iconColor="text-secondary"
-              count={project.addons.length}
-              label="addon"
-              price={cost?.addonsCost}
-            />
-            <span className="hidden sm:block text-base-300" aria-hidden="true">
-              |
+            <span className="badge badge-secondary gap-1.5">
+              <Icons.Puzzle className="w-3.5 h-3.5" />
+              {project.addons.length}
             </span>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <Icons.Chart className="w-4 h-4 text-primary" />
-                <span className="font-bold text-primary text-base">
-                  {cost ? formatPrice(cost.totalMonthlyCost) : "..."}
-                </span>
-                <span className="text-base-content/60">/mois</span>
-              </div>
-              {cost && (
-                <PriceRange
-                  min={minCost}
-                  estimated={estimatedCost}
-                  max={maxCost}
-                  compact
-                  size="sm"
-                  className="text-xs mt-1"
-                />
-              )}
+            <div className="divider divider-horizontal mx-0 hidden sm:flex" />
+            <div className="flex items-baseline gap-1">
+              <span className="font-bold text-primary text-lg">
+                {cost ? formatPrice(cost.totalMonthlyCost) : "..."}
+              </span>
+              <span className="text-base-content/60 text-sm">/mois</span>
             </div>
           </div>
         )}
 
-        {/* Actions mobile */}
-        {!isEditing && (
-          <div className="sm:hidden pt-1 flex flex-col gap-1">
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm text-base-content/50 hover:text-primary hover:bg-primary/10 w-full justify-center gap-2"
-              onClick={() => setShowCloneDialog(true)}
-              aria-label={`Dupliquer le projet ${project.name}`}
-            >
-              <Icons.Copy className="w-4 h-4" />
-              Dupliquer ce projet
-            </button>
-            {organizations.length > 1 && (
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm text-base-content/50 hover:text-primary hover:bg-primary/10 w-full justify-center gap-2"
-                onClick={() => setShowMoveDialog(true)}
-                aria-label={`Deplacer le projet ${project.name}`}
-              >
-                <Icons.Move className="w-4 h-4" />
-                Deplacer ce projet
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm text-base-content/50 hover:text-error hover:bg-error/10 w-full justify-center gap-2"
-              onClick={() => setShowDeleteConfirm(true)}
-              aria-label={`Supprimer le projet ${project.name}`}
-            >
-              <Icons.Trash className="w-4 h-4" />
-              Supprimer ce projet
-            </button>
-          </div>
+        {/* PriceRange si min/max different */}
+        {!isEditing && cost && minCost !== maxCost && (
+          <PriceRange
+            min={minCost}
+            estimated={estimatedCost}
+            max={maxCost}
+            compact
+            size="sm"
+            className="text-xs"
+          />
         )}
       </div>
 
