@@ -59,55 +59,46 @@ export const RuntimeCardScaling = memo(function RuntimeCardScaling({
   const canDelete = activeScalingProfiles.length > 1;
 
   return (
-    <div
-      className={`space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 ${className}`}
-    >
-      <div>
-        <div className="flex items-center justify-between">
-          <div className="label py-1">
-            <span className="label-text text-xs font-medium uppercase tracking-wider text-base-content/60">
-              Profils de scaling
-            </span>
-          </div>
-          <button
-            type="button"
-            className="btn btn-ghost btn-xs gap-1"
-            onClick={handleAddProfile}
-          >
-            <Icons.Plus className="w-3 h-3" />
-            Ajouter
-          </button>
-        </div>
-
-        {activeScalingProfiles.length > 0 ? (
-          <div className="space-y-2">
-            {activeScalingProfiles.map((profile) => (
-              <ProfileCard
-                key={profile.id}
-                profile={profile}
-                isEditing={editingProfileId === profile.id}
-                flavors={availableFlavors}
-                maxInstances={maxInst}
-                canDelete={canDelete}
-                onToggleEdit={() =>
-                  setEditingProfileId(
-                    editingProfileId === profile.id ? null : profile.id,
-                  )
-                }
-                onUpdate={(updates) =>
-                  onUpdateScalingProfile(profile.id, updates)
-                }
-                onRemove={() => onRemoveScalingProfile(profile.id)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-sm text-base-content/50 p-3 bg-base-200 border border-base-300">
-            Aucun profil de scaling configure. Le runtime reste sur la
-            configuration de base 24/7.
-          </div>
-        )}
+    <div className={className}>
+      <div className="flex items-center justify-end mb-2">
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs gap-1"
+          onClick={handleAddProfile}
+        >
+          <Icons.Plus className="w-3 h-3" />
+          Ajouter un profil
+        </button>
       </div>
+
+      {activeScalingProfiles.length > 0 ? (
+        <div className="space-y-2">
+          {activeScalingProfiles.map((profile) => (
+            <ProfileCard
+              key={profile.id}
+              profile={profile}
+              isEditing={editingProfileId === profile.id}
+              flavors={availableFlavors}
+              maxInstances={maxInst}
+              canDelete={canDelete}
+              onToggleEdit={() =>
+                setEditingProfileId(
+                  editingProfileId === profile.id ? null : profile.id,
+                )
+              }
+              onUpdate={(updates) =>
+                onUpdateScalingProfile(profile.id, updates)
+              }
+              onRemove={() => onRemoveScalingProfile(profile.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-sm text-base-content/50 p-3 bg-base-100 border border-base-300">
+          Aucun profil de scaling configure. Le runtime reste sur la
+          configuration de base 24/7.
+        </div>
+      )}
     </div>
   );
 });

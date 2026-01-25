@@ -81,22 +81,9 @@ export interface RuntimeCardScheduleProps {
 }
 
 /**
- * Props pour RuntimeCardIdentity
+ * Props pour RuntimeCardModal
  */
-export interface RuntimeCardIdentityProps {
-  className?: string;
-}
-
-/**
- * Props pour RuntimeCardQuickConfig
- */
-export interface RuntimeCardQuickConfigProps {
-  className?: string;
-}
-
-/**
- * Props pour RuntimeCardAdvanced
- */
-export interface RuntimeCardAdvancedProps {
-  className?: string;
+export interface RuntimeCardModalProps {
+  isOpen: boolean;
+  onClose: () => void;
 }
