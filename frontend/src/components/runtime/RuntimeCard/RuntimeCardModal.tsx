@@ -103,8 +103,8 @@ export const RuntimeCardModal = memo(function RuntimeCardModal({
           aria-hidden="true"
         />
 
-        <div className="relative bg-base-100 w-full max-w-5xl max-h-[90vh] flex flex-col border border-base-300 animate-in">
-          <div className="p-6 border-b border-base-300 flex items-center justify-between">
+        <div className="relative bg-base-100 w-full max-w-6xl max-h-[90vh] flex flex-col border border-base-300 animate-in">
+          <div className="p-4 sm:p-6 border-b border-base-300 flex items-center justify-between">
             <div className="flex items-center gap-4 min-w-0 flex-1">
               {runtime.variantLogo ? (
                 <div className="flex-shrink-0">
@@ -179,30 +179,48 @@ export const RuntimeCardModal = memo(function RuntimeCardModal({
                     </button>
                   </div>
                 )}
-                <span className="badge badge-sm badge-ghost mt-1">
-                  {runtime.instanceType}
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="badge badge-sm badge-ghost">
+                    {runtime.instanceType}
+                  </span>
+                  <span
+                    className={`badge badge-sm ${isScalingMode ? "badge-warning" : "badge-info"}`}
+                  >
+                    {isScalingMode ? "Scaling" : "24/7"}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm btn-square"
-              onClick={onClose}
-              aria-label="Fermer"
-            >
-              <Icons.X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-baseline gap-1">
+                <span className="text-2xl font-bold text-primary">
+                  {formatPrice(cost.estimatedTotalCost)}
+                </span>
+                <span className="text-base-content/50 text-sm">/mois</span>
+              </div>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm btn-square"
+                onClick={onClose}
+                aria-label="Fermer"
+              >
+                <Icons.X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="space-y-6">
-              <div className="bg-base-200 p-4">
-                <h3 className="text-sm font-medium mb-4">Configuration</h3>
+          <div className="flex-1 overflow-hidden flex">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+              <section className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Icons.Server className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold">Ressources</h3>
+                </div>
 
                 <label
                   htmlFor={toggleId}
-                  className="flex items-center justify-between p-3 bg-base-100 border border-base-300 cursor-pointer hover:bg-base-300/50 transition-colors mb-4"
+                  className="flex items-center justify-between p-3 bg-base-200 border border-base-300 cursor-pointer hover:bg-base-300/50 transition-colors"
                 >
                   <div>
                     <div className="font-medium text-sm">
@@ -276,6 +294,35 @@ export const RuntimeCardModal = memo(function RuntimeCardModal({
                     </div>
                   </div>
                 )}
+              </section>
+
+              {isScalingMode && (
+                <>
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Icons.TrendingUp className="w-5 h-5 text-warning" />
+                      <h3 className="font-semibold">Profils de scaling</h3>
+                    </div>
+                    <RuntimeCardScaling />
+                  </section>
+
+                  <section className="space-y-4">
+                    <RuntimeCardSchedule />
+                  </section>
+                </>
+              )}
+            </div>
+
+            <div className="hidden lg:block w-80 xl:w-96 border-l border-base-300 bg-base-200 p-4 sm:p-6 overflow-y-auto">
+              <div className="sticky top-0 space-y-4">
+                <h3 className="font-semibold text-sm">Estimation mensuelle</h3>
+
+                <div className="text-center py-4">
+                  <span className="text-4xl font-bold text-primary">
+                    {formatPrice(cost.estimatedTotalCost)}
+                  </span>
+                  <span className="text-base-content/50 ml-1">/mois</span>
+                </div>
 
                 {isScalingMode && (
                   <CostGauge
@@ -284,26 +331,50 @@ export const RuntimeCardModal = memo(function RuntimeCardModal({
                     position={gaugePosition}
                   />
                 )}
+
+                <div className="space-y-2 text-sm">
+                  {isScalingMode ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-base-content/60">Minimum</span>
+                        <span className="font-mono">
+                          {formatPrice(cost.minMonthlyCost)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-base-content/60">Maximum</span>
+                        <span className="font-mono">
+                          {formatPrice(cost.maxMonthlyCost)}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between">
+                      <span className="text-base-content/60">
+                        Configuration fixe
+                      </span>
+                      <span className="font-mono">
+                        {formatPrice(cost.estimatedTotalCost)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4 border-t border-base-300 text-xs text-base-content/50 space-y-1">
+                  <div className="flex justify-between">
+                    <span>Instances</span>
+                    <span>{baseConfig.instances}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Flavor</span>
+                    <span>{baseConfig.flavorName}</span>
+                  </div>
+                </div>
               </div>
-
-              {isScalingMode && (
-                <>
-                  <div className="bg-base-200 p-4">
-                    <h3 className="text-sm font-medium mb-4">
-                      Profils de scaling
-                    </h3>
-                    <RuntimeCardScaling />
-                  </div>
-
-                  <div className="bg-base-200 p-4">
-                    <RuntimeCardSchedule />
-                  </div>
-                </>
-              )}
             </div>
           </div>
 
-          <div className="p-4 border-t border-base-300 bg-base-200 flex justify-between items-center">
+          <div className="p-4 border-t border-base-300 flex justify-between items-center">
             <button
               type="button"
               className="btn btn-ghost btn-sm text-error hover:bg-error/10"
@@ -316,46 +387,20 @@ export const RuntimeCardModal = memo(function RuntimeCardModal({
               Supprimer
             </button>
 
-            <div className="flex items-center gap-6">
-              {isScalingMode ? (
-                <>
-                  <div className="text-right">
-                    <span className="text-xs text-base-content/50 block">
-                      Min
-                    </span>
-                    <span className="font-mono text-sm">
-                      {formatPrice(cost.minMonthlyCost)}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs text-base-content/50 block">
-                      Estime
-                    </span>
-                    <span className="font-mono text-lg font-bold text-primary">
-                      {formatPrice(cost.estimatedTotalCost)}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs text-base-content/50 block">
-                      Max
-                    </span>
-                    <span className="font-mono text-sm">
-                      {formatPrice(cost.maxMonthlyCost)}
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <div className="text-right">
-                  <span className="text-xs text-base-content/50 block">
-                    Total mensuel
-                  </span>
-                  <span className="font-mono text-lg font-bold text-primary">
-                    {formatPrice(cost.estimatedTotalCost)}
-                  </span>
-                </div>
-              )}
+            <div className="lg:hidden flex items-center gap-2">
+              <span className="text-xl font-bold text-primary">
+                {formatPrice(cost.estimatedTotalCost)}
+              </span>
               <span className="text-xs text-base-content/50">/mois</span>
             </div>
+
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={onClose}
+            >
+              Fermer
+            </button>
           </div>
         </div>
 
