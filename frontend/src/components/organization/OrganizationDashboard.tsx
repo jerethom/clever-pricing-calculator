@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { memo, type ReactNode, useCallback } from "react";
 import { useShallow } from "zustand/shallow";
 import { Icons } from "@/components/ui";
-import { useActiveOrganizationCosts } from "@/hooks/useCostCalculation";
+import { useActiveOrganizationCostsWithDescendants } from "@/hooks/useCostCalculation";
 import {
   selectActiveOrganization,
   selectActiveOrganizationProjects,
@@ -29,15 +29,13 @@ export const OrganizationDashboard = memo(function OrganizationDashboard({
   const projects = useProjectStore(
     useShallow(selectActiveOrganizationProjects),
   );
-  const projectCosts = useActiveOrganizationCosts();
+  const projectCosts = useActiveOrganizationCostsWithDescendants();
   const { updateOrganization, deleteOrganization } = useProjectActions();
 
-  // Detecter l'onglet actif via le pathname
   const activeTab: TabType = pathname.endsWith("/estimations")
     ? "estimations"
     : "overview";
 
-  // Handlers
   const handleUpdateName = useCallback(
     (name: string) => {
       if (organization) {

@@ -7,6 +7,7 @@
 .vite/
 CLAUDE.md
 .mcp.json
+neo4j_data/
 
 # Logs
 logs
@@ -44,3 +45,46 @@ buf.lock
 
 # Environment
 .env
+
+# >>> Claude Setup - CGC ignore >>>
+**/.claude/
+**/.demongrep.db/
+**/.fastembed_cache/
+**/.playwright-mcp/
+**/.codegraphcontext/
+**/.tanstack/
+**/.vite/
+**/CLAUDE.md
+**/.mcp.json
+**/neo4j_data/
+**/.nx/
+
+# Logs
+**/logs
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+**/lerna-debug.log*
+
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/*.local
+
+# Editor directories and files
+**/.vscode/*
+!.vscode/extensions.json
+**/.idea
+**/.DS_Store
+**/*.suo
+**/*.ntvs*
+**/*.njsproj
+**/*.sln
+**/*.sw?
+
+# Environment
+**/.env
+**/.git
+# <<< Claude Setup - CGC ignore <<<

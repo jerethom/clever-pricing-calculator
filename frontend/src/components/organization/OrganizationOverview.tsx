@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo } from "react";
 import { useShallow } from "zustand/shallow";
-import { useActiveOrganizationCosts } from "@/hooks/useCostCalculation";
+import { useActiveOrganizationCostsWithDescendants } from "@/hooks/useCostCalculation";
 import {
   selectActiveOrganization,
   selectActiveOrganizationProjects,
@@ -18,10 +18,9 @@ export const OrganizationOverview = memo(function OrganizationOverview() {
   const projects = useProjectStore(
     useShallow(selectActiveOrganizationProjects),
   );
-  const projectCosts = useActiveOrganizationCosts();
+  const projectCosts = useActiveOrganizationCostsWithDescendants();
   const { updateOrganization, createProject } = useProjectActions();
 
-  // Calculer les statistiques (une seule iteration)
   const stats = useMemo(() => {
     let totalRuntimes = 0;
     let totalAddons = 0;
@@ -76,12 +75,28 @@ export const OrganizationOverview = memo(function OrganizationOverview() {
     [organization, updateOrganization],
   );
 
-  const handleCreateProject = useCallback(() => {
-    if (organization) {
-      const name = `Projet ${projects.length + 1}`;
-      createProject(organization.id, name);
-    }
-  }, [organization, projects.length, createProject]);
+  const handleCreateProject = useCallback(
+    (parentProjectId?: string) => {
+      if (!organization) return;
+
+      let name: string;
+      if (parentProjectId) {
+        const parentProject = projects.find((p) => p.id === parentProjectId);
+        const siblingCount = projects.filter(
+          (p) => p.parentProjectId === parentProjectId,
+        ).length;
+        name = `${parentProject?.name ?? "Projet"} - ${siblingCount + 1}`;
+      } else {
+        const rootProjectsCount = projects.filter(
+          (p) => !p.parentProjectId,
+        ).length;
+        name = `Projet ${rootProjectsCount + 1}`;
+      }
+
+      createProject(organization.id, name, parentProjectId);
+    },
+    [organization, projects, createProject],
+  );
 
   if (!organization) {
     return null;

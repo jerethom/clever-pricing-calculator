@@ -8,7 +8,7 @@ import {
   Icons,
   MoveProjectDialog,
 } from "@/components/ui";
-import { useAllProjectsCosts } from "@/hooks/useCostCalculation";
+import { useAllProjectsCostsWithDescendants } from "@/hooks/useCostCalculation";
 import { formatPrice } from "@/lib/costCalculator";
 import {
   selectOrganizations,
@@ -38,10 +38,154 @@ interface OrganizationItemProps {
   onCloneProject: (project: Project) => void;
   onMoveProject: (project: Project) => void;
   onDeleteProject: (project: Project) => void;
+  onCreateSubProject: (parentProjectId: string) => void;
+  expandedProjects: Set<string>;
+  onToggleProjectExpand: (projectId: string) => void;
 }
 
 const getBudgetStatusColor = (percent: number): string =>
   percent > 90 ? "bg-error" : percent >= 70 ? "bg-warning" : "bg-success";
+
+interface ProjectItemProps {
+  project: Project;
+  organization: Organization;
+  allProjects: Project[];
+  cost?: number;
+  isActive: boolean;
+  onClose?: () => void;
+  menuItems: DropdownMenuItem[];
+  depth: number;
+  isExpanded: boolean;
+  hasChildren: boolean;
+  onToggleExpand: () => void;
+  projectCosts: Map<string, ProjectCostSummary>;
+  getProjectMenuItems: (project: Project) => DropdownMenuItem[];
+  activeProjectId: string | null;
+  expandedProjects: Set<string>;
+  onToggleProjectExpand: (projectId: string) => void;
+}
+
+function ProjectItem({
+  project,
+  organization,
+  allProjects,
+  cost,
+  isActive,
+  onClose,
+  menuItems,
+  depth,
+  isExpanded,
+  hasChildren,
+  onToggleExpand,
+  projectCosts,
+  getProjectMenuItems,
+  activeProjectId,
+  expandedProjects,
+  onToggleProjectExpand,
+}: ProjectItemProps) {
+  const childProjects = useMemo(
+    () => allProjects.filter((p) => p.parentProjectId === project.id),
+    [allProjects, project.id],
+  );
+
+  return (
+    <li>
+      <div
+        className={`
+          flex items-center gap-2 w-full text-left px-3 py-2 cursor-pointer transition-all duration-150
+          ${
+            isActive
+              ? "bg-[#5754aa] border-l-2 border-l-white"
+              : "border-l-2 border-l-transparent hover:bg-white/5 hover:border-l-white/30"
+          }
+        `}
+        style={{ paddingLeft: `${12 + depth * 12}px` }}
+      >
+        {hasChildren ? (
+          <button
+            type="button"
+            className="p-0.5 hover:bg-white/10 rounded transition-colors flex-shrink-0"
+            onClick={onToggleExpand}
+            aria-label={isExpanded ? "Replier" : "Deplier"}
+          >
+            <Icons.ChevronRight
+              className={`w-3 h-3 text-white/50 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+            />
+          </button>
+        ) : (
+          <span className="w-4 flex-shrink-0" />
+        )}
+        <Link
+          to="/org/$orgId/project/$projectId/runtimes"
+          params={{ orgId: organization.id, projectId: project.id }}
+          className="flex-1 flex items-center gap-2 min-w-0"
+          onClick={onClose}
+          aria-current={isActive ? "page" : undefined}
+        >
+          <Icons.Folder
+            className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-white" : "text-white/40"}`}
+          />
+          <span
+            className={`truncate text-sm ${isActive ? "text-white font-medium" : "text-white/70"}`}
+          >
+            {project.name}
+          </span>
+        </Link>
+        <span
+          className={`text-xs tabular-nums flex-shrink-0 ${isActive ? "text-white" : "text-white/50"}`}
+        >
+          {cost !== undefined ? formatPrice(cost) : "..."}
+        </span>
+        <DropdownMenu
+          items={menuItems}
+          trigger={
+            <button
+              type="button"
+              className="p-1 hover:bg-white/20 rounded transition-colors"
+              aria-label="Actions projet"
+            >
+              <Icons.MoreHorizontal className="w-4 h-4 text-white/60" />
+            </button>
+          }
+        />
+      </div>
+      {isExpanded && childProjects.length > 0 && (
+        <ul>
+          {childProjects.map((childProject) => {
+            const childCost = projectCosts.get(childProject.id);
+            const isChildActive = childProject.id === activeProjectId;
+            const childHasChildren = allProjects.some(
+              (p) => p.parentProjectId === childProject.id,
+            );
+            const isChildExpanded = expandedProjects.has(childProject.id);
+
+            return (
+              <ProjectItem
+                key={childProject.id}
+                project={childProject}
+                organization={organization}
+                allProjects={allProjects}
+                cost={childCost?.totalMonthlyCost}
+                isActive={isChildActive}
+                onClose={onClose}
+                menuItems={getProjectMenuItems(childProject)}
+                depth={depth + 1}
+                isExpanded={isChildExpanded}
+                hasChildren={childHasChildren}
+                onToggleExpand={() => onToggleProjectExpand(childProject.id)}
+                projectCosts={projectCosts}
+                getProjectMenuItems={getProjectMenuItems}
+                activeProjectId={activeProjectId}
+                expandedProjects={expandedProjects}
+                onToggleProjectExpand={onToggleProjectExpand}
+              />
+            );
+          })}
+        </ul>
+      )}
+    </li>
+  );
+}
 
 function OrganizationItem({
   organization,
@@ -58,6 +202,9 @@ function OrganizationItem({
   onCloneProject,
   onMoveProject,
   onDeleteProject,
+  onCreateSubProject,
+  expandedProjects,
+  onToggleProjectExpand,
 }: OrganizationItemProps) {
   const totalCost = useMemo(
     () =>
@@ -71,6 +218,11 @@ function OrganizationItem({
   const budgetPercent = organization.budgetTarget
     ? (totalCost / organization.budgetTarget) * 100
     : null;
+
+  const rootProjects = useMemo(
+    () => projects.filter((p) => !p.parentProjectId),
+    [projects],
+  );
 
   const orgMenuItems: DropdownMenuItem[] = useMemo(
     () => [
@@ -93,6 +245,11 @@ function OrganizationItem({
     (project: Project): DropdownMenuItem[] => {
       const items: DropdownMenuItem[] = [
         {
+          label: "Ajouter un sous-projet",
+          icon: <Icons.Plus className="w-4 h-4" />,
+          onClick: () => onCreateSubProject(project.id),
+        },
+        {
           label: "Dupliquer",
           icon: <Icons.Copy className="w-4 h-4" />,
           onClick: () => onCloneProject(project),
@@ -113,7 +270,13 @@ function OrganizationItem({
       });
       return items;
     },
-    [allOrganizations.length, onCloneProject, onMoveProject, onDeleteProject],
+    [
+      allOrganizations.length,
+      onCloneProject,
+      onMoveProject,
+      onDeleteProject,
+      onCreateSubProject,
+    ],
   );
 
   return (
@@ -188,93 +351,40 @@ function OrganizationItem({
         )}
       </div>
 
-      {isExpanded && projects.length > 0 && (
+      {isExpanded && rootProjects.length > 0 && (
         <ul className="pl-6">
-          {projects.map((project) => {
+          {rootProjects.map((project) => {
             const cost = projectCosts.get(project.id);
             const isProjectActive = project.id === activeProjectId;
+            const hasChildren = projects.some(
+              (p) => p.parentProjectId === project.id,
+            );
+            const isProjectExpanded = expandedProjects.has(project.id);
 
             return (
               <ProjectItem
                 key={project.id}
                 project={project}
                 organization={organization}
+                allProjects={projects}
                 cost={cost?.totalMonthlyCost}
                 isActive={isProjectActive}
                 onClose={onClose}
                 menuItems={getProjectMenuItems(project)}
+                depth={0}
+                isExpanded={isProjectExpanded}
+                hasChildren={hasChildren}
+                onToggleExpand={() => onToggleProjectExpand(project.id)}
+                projectCosts={projectCosts}
+                getProjectMenuItems={getProjectMenuItems}
+                activeProjectId={activeProjectId}
+                expandedProjects={expandedProjects}
+                onToggleProjectExpand={onToggleProjectExpand}
               />
             );
           })}
         </ul>
       )}
-    </li>
-  );
-}
-
-interface ProjectItemProps {
-  project: Project;
-  organization: Organization;
-  cost?: number;
-  isActive: boolean;
-  onClose?: () => void;
-  menuItems: DropdownMenuItem[];
-}
-
-function ProjectItem({
-  project,
-  organization,
-  cost,
-  isActive,
-  onClose,
-  menuItems,
-}: ProjectItemProps) {
-  return (
-    <li>
-      <div
-        className={`
-					flex items-center gap-2 w-full text-left px-3 py-2 cursor-pointer transition-all duration-150
-					${
-            isActive
-              ? "bg-[#5754aa] border-l-2 border-l-white"
-              : "border-l-2 border-l-transparent hover:bg-white/5 hover:border-l-white/30"
-          }
-				`}
-      >
-        <Link
-          to="/org/$orgId/project/$projectId/runtimes"
-          params={{ orgId: organization.id, projectId: project.id }}
-          className="flex-1 flex items-center gap-2 min-w-0"
-          onClick={onClose}
-          aria-current={isActive ? "page" : undefined}
-        >
-          <Icons.Folder
-            className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-white" : "text-white/40"}`}
-          />
-          <span
-            className={`truncate text-sm ${isActive ? "text-white font-medium" : "text-white/70"}`}
-          >
-            {project.name}
-          </span>
-        </Link>
-        <span
-          className={`text-xs tabular-nums flex-shrink-0 ${isActive ? "text-white" : "text-white/50"}`}
-        >
-          {cost !== undefined ? formatPrice(cost) : "..."}
-        </span>
-        <DropdownMenu
-          items={menuItems}
-          trigger={
-            <button
-              type="button"
-              className="p-1 hover:bg-white/20 rounded transition-colors"
-              aria-label="Actions projet"
-            >
-              <Icons.MoreHorizontal className="w-4 h-4 text-white/60" />
-            </button>
-          }
-        />
-      </div>
     </li>
   );
 }
@@ -295,7 +405,7 @@ export function Sidebar({ onClose }: SidebarProps) {
   const addToast = useToastStore((s) => s.addToast);
   const { orgId: activeOrgId = null, projectId: activeProjectId = null } =
     useParams({ strict: false });
-  const projectCosts = useAllProjectsCosts();
+  const projectCosts = useAllProjectsCostsWithDescendants();
 
   const [cloneOrgTarget, setCloneOrgTarget] = useState<Organization | null>(
     null,
@@ -327,6 +437,10 @@ export function Sidebar({ onClose }: SidebarProps) {
     () => new Set(activeOrgId ? [activeOrgId] : []),
   );
 
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
+    () => new Set(),
+  );
+
   const toggleOrgExpansion = useCallback((orgId: string) => {
     setExpandedOrgs((prev) => {
       const next = new Set(prev);
@@ -334,6 +448,18 @@ export function Sidebar({ onClose }: SidebarProps) {
         next.delete(orgId);
       } else {
         next.add(orgId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleProjectExpansion = useCallback((projectId: string) => {
+    setExpandedProjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectId)) {
+        next.delete(projectId);
+      } else {
+        next.add(projectId);
       }
       return next;
     });
@@ -347,17 +473,39 @@ export function Sidebar({ onClose }: SidebarProps) {
     onClose?.();
   }, [organizations.length, createOrganization, navigate, onClose]);
 
-  const handleCreateProject = useCallback(() => {
-    if (!activeOrgId) return;
-    const orgProjects = projectsByOrg.get(activeOrgId) ?? [];
-    const name = `Projet ${orgProjects.length + 1}`;
-    const newProjectId = createProject(activeOrgId, name);
-    navigate({
-      to: "/org/$orgId/project/$projectId/runtimes",
-      params: { orgId: activeOrgId, projectId: newProjectId },
-    });
-    onClose?.();
-  }, [activeOrgId, projectsByOrg, createProject, navigate, onClose]);
+  const handleCreateProject = useCallback(
+    (parentProjectId?: string) => {
+      if (!activeOrgId) return;
+      const orgProjects = projectsByOrg.get(activeOrgId) ?? [];
+
+      let name: string;
+      if (parentProjectId) {
+        const parentProject = orgProjects.find((p) => p.id === parentProjectId);
+        const siblingCount = orgProjects.filter(
+          (p) => p.parentProjectId === parentProjectId,
+        ).length;
+        name = `${parentProject?.name ?? "Projet"} - ${siblingCount + 1}`;
+      } else {
+        const rootProjectsCount = orgProjects.filter(
+          (p) => !p.parentProjectId,
+        ).length;
+        name = `Projet ${rootProjectsCount + 1}`;
+      }
+
+      const newProjectId = createProject(activeOrgId, name, parentProjectId);
+
+      if (parentProjectId) {
+        setExpandedProjects((prev) => new Set(prev).add(parentProjectId));
+      }
+
+      navigate({
+        to: "/org/$orgId/project/$projectId/runtimes",
+        params: { orgId: activeOrgId, projectId: newProjectId },
+      });
+      onClose?.();
+    },
+    [activeOrgId, projectsByOrg, createProject, navigate, onClose],
+  );
 
   const handleCloneOrg = useCallback(
     (newName: string) => {
@@ -485,6 +633,9 @@ export function Sidebar({ onClose }: SidebarProps) {
                 onCloneProject={setCloneProjectTarget}
                 onMoveProject={setMoveProjectTarget}
                 onDeleteProject={setDeleteProjectTarget}
+                onCreateSubProject={handleCreateProject}
+                expandedProjects={expandedProjects}
+                onToggleProjectExpand={toggleProjectExpansion}
               />
             ))}
           </ul>
@@ -501,7 +652,7 @@ export function Sidebar({ onClose }: SidebarProps) {
               bg-white/10 hover:bg-white/20 active:bg-white/5
               text-white/80 hover:text-white transition-colors duration-150
             "
-            onClick={handleCreateProject}
+            onClick={() => handleCreateProject()}
             aria-label="Creer un nouveau projet"
           >
             <Icons.Plus className="w-4 h-4" />

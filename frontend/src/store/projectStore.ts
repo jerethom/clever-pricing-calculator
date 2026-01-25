@@ -42,7 +42,11 @@ export interface OrganizationActions {
 
 export interface ProjectActions {
   // Project actions
-  createProject: (organizationId: string, name: string) => string;
+  createProject: (
+    organizationId: string,
+    name: string,
+    parentProjectId?: string,
+  ) => string;
   updateProject: (id: string, updates: Partial<Pick<Project, "name">>) => void;
   deleteProject: (id: string) => void;
   setActiveProject: (id: string | null) => void;
@@ -169,12 +173,20 @@ export const useProjectStore = create<ProjectStore>()(
           };
           state.organizations.push(newOrg);
 
-          // Cloner tous les projets de l'organisation
+          // Cloner tous les projets de l'organisation en preservant la hierarchie
           const orgProjects = state.projects.filter(
             (p) => p.organizationId === orgId,
           );
+
+          // Mapper les anciens IDs vers les nouveaux IDs
+          const idMapping = new Map<string, string>();
           for (const project of orgProjects) {
-            const newProjectId = generateProjectId();
+            idMapping.set(project.id, generateProjectId());
+          }
+
+          for (const project of orgProjects) {
+            const newProjectId = idMapping.get(project.id);
+            if (!newProjectId) continue;
 
             // Cloner les runtimes avec nouveaux IDs
             const clonedRuntimes = project.runtimes.map((runtime) => ({
@@ -192,9 +204,15 @@ export const useProjectStore = create<ProjectStore>()(
               id: generateAddonId(),
             }));
 
+            // Mapper le parentProjectId vers le nouvel ID si present
+            const newParentProjectId = project.parentProjectId
+              ? idMapping.get(project.parentProjectId)
+              : undefined;
+
             const newProject: Project = {
               id: newProjectId,
               organizationId: newOrgId,
+              parentProjectId: newParentProjectId,
               name: project.name,
               createdAt: timestamp,
               updatedAt: timestamp,
@@ -211,12 +229,17 @@ export const useProjectStore = create<ProjectStore>()(
       },
 
       // Project actions
-      createProject: (organizationId: string, name: string) => {
+      createProject: (
+        organizationId: string,
+        name: string,
+        parentProjectId?: string,
+      ) => {
         const id = generateProjectId();
         const timestamp = now();
         const newProject: Project = {
           id,
           organizationId,
+          parentProjectId,
           name,
           createdAt: timestamp,
           updatedAt: timestamp,
@@ -242,11 +265,24 @@ export const useProjectStore = create<ProjectStore>()(
 
       deleteProject: (id: string) => {
         set((state) => {
-          const index = state.projects.findIndex((p) => p.id === id);
-          if (index !== -1) {
-            state.projects.splice(index, 1);
-          }
-          if (state.activeProjectId === id) {
+          // Collecter tous les IDs a supprimer (projet + descendants)
+          const idsToDelete = new Set<string>();
+
+          const collectDescendants = (parentId: string) => {
+            idsToDelete.add(parentId);
+            for (const project of state.projects) {
+              if (project.parentProjectId === parentId) {
+                collectDescendants(project.id);
+              }
+            }
+          };
+
+          collectDescendants(id);
+
+          // Supprimer tous les projets collectes
+          state.projects = state.projects.filter((p) => !idsToDelete.has(p.id));
+
+          if (state.activeProjectId && idsToDelete.has(state.activeProjectId)) {
             state.activeProjectId = null;
           }
         });
@@ -303,10 +339,31 @@ export const useProjectStore = create<ProjectStore>()(
 
       moveProject: (projectId: string, targetOrgId: string) => {
         set((state) => {
-          const project = state.projects.find((p) => p.id === projectId);
-          if (project) {
-            project.organizationId = targetOrgId;
-            project.updatedAt = now();
+          // Collecter tous les IDs a deplacer (projet + descendants)
+          const idsToMove = new Set<string>();
+
+          const collectDescendants = (parentId: string) => {
+            idsToMove.add(parentId);
+            for (const project of state.projects) {
+              if (project.parentProjectId === parentId) {
+                collectDescendants(project.id);
+              }
+            }
+          };
+
+          collectDescendants(projectId);
+
+          // Deplacer tous les projets collectes
+          const timestamp = now();
+          for (const project of state.projects) {
+            if (idsToMove.has(project.id)) {
+              project.organizationId = targetOrgId;
+              project.updatedAt = timestamp;
+              // Detacher le projet racine de son ancien parent
+              if (project.id === projectId) {
+                project.parentProjectId = undefined;
+              }
+            }
           }
         });
       },

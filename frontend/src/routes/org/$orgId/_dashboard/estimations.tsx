@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useShallow } from "zustand/shallow";
 import { OrganizationEstimations } from "@/components/organization/OrganizationEstimations";
-import { useActiveOrganizationCosts } from "@/hooks/useCostCalculation";
+import { useActiveOrganizationCostsWithDescendants } from "@/hooks/useCostCalculation";
 import {
   selectActiveOrganization,
   selectActiveOrganizationProjects,
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/org/$orgId/_dashboard/estimations")({
     const projects = useProjectStore(
       useShallow(selectActiveOrganizationProjects),
     );
-    const projectCosts = useActiveOrganizationCosts();
+    const projectCosts = useActiveOrganizationCostsWithDescendants();
 
     if (!organization) {
       return null;
